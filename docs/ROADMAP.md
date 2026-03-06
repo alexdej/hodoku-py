@@ -139,6 +139,19 @@ Output: `<puzzle> # <before-cat> <tech>(<count>) <after-cat>`
 **SSTS** = Singles + Locked Candidates + Subsets + X-Wing + Swordfish +
 Jellyfish + XY-Wing + Simple Colors + Multi Colors. All implemented as of row 13.
 
+## Parking lot
+
+Techniques that are implemented in HoDoKu but not currently on the roadmap.
+Revisit if needed, but don't block progress on them.
+
+| Technique | Notes |
+|-----------|-------|
+| Franken fish | Fish using blocks as base/cover units (mixed row/col/block). Rare in practice, significant added complexity. |
+| Mutant fish | Fully generalized fish — any combination of rows, cols, and blocks as base or cover. Even rarer. |
+| Avoidable Rectangles (AR1/AR2) | Like Unique Rectangles but require tracking which cells were given vs. solved. Our Grid doesn't record givens. |
+
+---
+
 ## Implementation notes
 
 - Add each new technique to `SudokuStepFinder.get_step()` in `step_finder.py`

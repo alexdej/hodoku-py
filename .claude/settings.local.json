@@ -6,7 +6,8 @@
       "Bash(java:*)",
       "Bash(MSYS_NO_PATHCONV=1 bash:*)",
       "Bash(PYTHONPATH=src python3:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(ls:*)"
     ]
   }
 }

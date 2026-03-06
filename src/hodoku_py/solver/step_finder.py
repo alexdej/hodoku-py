@@ -9,6 +9,7 @@ from __future__ import annotations
 from hodoku_py.core.grid import Grid
 from hodoku_py.core.solution_step import SolutionStep
 from hodoku_py.core.types import SolutionType
+from hodoku_py.solver.chains import ChainSolver
 from hodoku_py.solver.coloring import ColoringSolver
 from hodoku_py.solver.fish import FishSolver
 from hodoku_py.solver.simple import SimpleSolver
@@ -64,6 +65,10 @@ _FISH_TYPES = frozenset({
     SolutionType.SASHIMI_JELLYFISH,
 })
 
+_CHAIN_TYPES = frozenset({
+    SolutionType.X_CHAIN,
+})
+
 _UNIQUENESS_TYPES = frozenset({
     SolutionType.UNIQUENESS_1,
     SolutionType.UNIQUENESS_2,
@@ -87,6 +92,7 @@ class SudokuStepFinder:
         self._coloring = ColoringSolver(grid)
         self._fish = FishSolver(grid)
         self._uniqueness = UniquenessSolver(grid)
+        self._chains = ChainSolver(grid)
 
     def get_step(self, sol_type: SolutionType) -> SolutionStep | None:
         """Return the next step of the given type, or None if not found."""
@@ -102,4 +108,6 @@ class SudokuStepFinder:
             return self._fish.get_step(sol_type)
         if sol_type in _UNIQUENESS_TYPES:
             return self._uniqueness.get_step(sol_type)
+        if sol_type in _CHAIN_TYPES:
+            return self._chains.get_step(sol_type)
         return None
