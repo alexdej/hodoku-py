@@ -80,16 +80,16 @@ in the same order.
 4. **Wings** (`tests/test_validate_wings.py`) — W-Wing, XY-Wing, and XYZ-Wing all
    match HoDoKu on clean puzzles.
 
-5. **Coloring** (`tests/test_validate_coloring.py`) — Simple Colors Trap and
-   Multi-Colors 1 match HoDoKu. Simple Colors Wrap and Multi-Colors 2 require
-   Finned X-Wing (row 14); parked as skipped tests.
+5. **Coloring** (`tests/test_validate_coloring.py`) — Simple Colors Trap,
+   Multi-Colors 1 & 2 all pass. Simple Colors Wrap still skipped (no clean
+   puzzle found yet — needs a puzzle where Wrap fires with only SSTS before it).
 
-6. **Uniqueness** (`tests/test_validate_uniqueness.py`) — UT1–4, UT6, and BUG+1
-   all match HoDoKu on clean puzzles. UT5 and Hidden Rectangle pending test
-   puzzles. Harness updated to parse BUG+1's colon-free `=>` output format.
+6. **Uniqueness** (`tests/test_validate_uniqueness.py`) — UT1–6, Hidden Rectangle,
+   and BUG+1 all pass. Harness updated to parse BUG+1's colon-free `=>` format.
+   AR1/AR2 skipped permanently (require givens tracking not in our Grid).
 
-7. **Basic fish** (`tests/test_validate_fish.py`) — X-Wing and Swordfish match
-   HoDoKu on clean puzzles. Jellyfish pending test puzzle.
+7. **Basic fish** (`tests/test_validate_fish.py`) — X-Wing, Swordfish, and
+   Jellyfish all pass.
 
 ---
 
@@ -107,19 +107,33 @@ python scripts/find_clean_puzzle.py --tech XY_WING --seeds 0-1000
 python scripts/find_clean_puzzle.py --tech W_WING --allowed "XY-Wing" --seeds 0-500
 ```
 
-### HoDoKu puzzle generation (batch mode)
+### HoDoKu puzzle search — `/s /sc` (works via direct java, not hodoku.sh)
 
-HoDoKu has a `/s /sc` flag to generate puzzles matching specific criteria, but
-it requires a full GUI/config environment and returns 0 results when run
-headless from the command line.  **Use `find_clean_puzzle.py` instead.**
-
-For reference, the intended syntax was:
 ```bash
-# Generate puzzles where ER appears with only singles before/after (type :2)
-MSYS_NO_PATHCONV=1 bash hodoku/hodoku.sh /s /sc "er:2" /o stdout
-# Types: :3=singles only, :2=SSTS before+singles after, :1=SSTS before+after, :0=no restrictions
-# Technique codes: er, sk, 2sk, bf3 (swordfish), xyw (XY-Wing), etc. (/lt to list all)
+cd hodoku
+java -Xmx512m -jar hodoku.jar /s /sc hr
 ```
+
+Replace `hr` with any technique code. Common codes: `hr` (hidden rectangle),
+`bf2` (X-Wing), `bf3` (swordfish), `bf4` (jellyfish), `ut1`–`ut6`,
+`sk` (skyscraper), `2sk` (2-string kite), `er` (empty rectangle),
+`xyw` (XY-Wing), `sc` (simple colors), `mc` (multi colors). Run `/lt` for full list.
+
+Output: `<puzzle> # <before-cat> <tech>(<count>) <after-cat>`
+- Categories describe what comes **before** and **after** the target step
+- `s` = Singles only, `ssts` = SSTS or below, `x` = beyond SSTS
+- e.g. `# ssts hr(1) x` → SSTS steps before, 1 HR, then advanced steps after
+- e.g. `# s hr(1) ssts` → only Singles before, 1 HR, then SSTS steps after
+- Multiple hits: `# ssts hr(1) hr(1) x` → two separate HR steps in the solve
+
+**Cleanness suffix** — append to technique code (e.g. `hr:2`):
+- `:3` — Singles only before AND after ← **ideal**
+- `:2` — SSTS before, Singles after ← **good fallback** (no "singles before, SSTS after" option)
+- `:1` — SSTS before AND after (acceptable; we now implement all of SSTS)
+- `:0` — unrestricted
+
+**SSTS** = Singles + Locked Candidates + Subsets + X-Wing + Swordfish +
+Jellyfish + XY-Wing + Simple Colors + Multi Colors. All implemented as of row 13.
 
 ## Implementation notes
 

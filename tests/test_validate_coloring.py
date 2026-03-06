@@ -24,10 +24,11 @@ COLORING_PUZZLES = [
         "600280000207609580000000000100300000000000650400021090010005000008400023000000070",
         SolutionType.SIMPLE_COLORS_TRAP,
     ),
-    # Simple Colors Wrap: TODO
-    pytest.param(
-        "simple_colors_wrap", "", SolutionType.SIMPLE_COLORS_WRAP,
-        marks=pytest.mark.skip(reason="need a clean puzzle"),
+    # Simple Colors Wrap: 8 in r157 => r1c9,r2c14,r39c2,r4c4,r5c3,r6c7,r7c6,r9c5<>8
+    (
+        "simple_colors_wrap",
+        "000000000000030605200105040000090300060700500010004002790600000500000981102000000",
+        SolutionType.SIMPLE_COLORS_WRAP,
     ),
     # Multi-Colors 1: 1 (r1c5,r4c3)/(r1c7,r2c4,r4c5),(r2c9,r6c7)/(r5c9) => r5c23<>1
     (
@@ -35,12 +36,11 @@ COLORING_PUZZLES = [
         "000006000007030040106080095700900850900040020400008000093050010000007000000060002",
         SolutionType.MULTI_COLORS_1,
     ),
-    # Multi-Colors 2: needs X-Wing/Finned X-Wing (row 13) before MC2 step
-    pytest.param(
+    # Multi-Colors 2: 9 (r1c4,r8c7)/(r1c7,r2c6,r5c4,r9c9),(r6c5,r7c6)/(r9c5) => r1c7,r2c6,r5c4,r9c9<>9
+    (
         "multi_colors_2",
-        "100000040030000580590002000000000000050703600000000954070008060000460870003005000",
+        "450000008016000000000003400037200090000000001000600040000050800000070056800004300",
         SolutionType.MULTI_COLORS_2,
-        marks=pytest.mark.skip(reason="dirty: requires X-Wing (row 13) to reach MC2 state"),
     ),
 ]
 

@@ -62,11 +62,10 @@ dmypy.json
 .DS_Store
 Thumbs.db
 
-# HoDoKu source code (not needed in VCS)
-/hodoku/HoDoKu/
-
-# HoDoKu data files (large, generated)
-/hodoku/**/*.dat
+# HoDoKu directory — keep only jar and shell wrapper, exclude everything else
+hodoku/*
+!hodoku/hodoku.jar
+!hodoku/hodoku.sh
 
 # Claude Code
 .claude/
