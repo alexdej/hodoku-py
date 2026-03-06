@@ -30,6 +30,7 @@ _PLACEMENT_TYPES: frozenset[SolutionType] = frozenset({
     SolutionType.FULL_HOUSE,
     SolutionType.NAKED_SINGLE,
     SolutionType.HIDDEN_SINGLE,
+    SolutionType.BRUTE_FORCE,
 })
 
 

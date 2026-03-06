@@ -9,6 +9,7 @@ from __future__ import annotations
 from hodoku_py.core.grid import Grid
 from hodoku_py.core.solution_step import SolutionStep
 from hodoku_py.core.types import SolutionType
+from hodoku_py.solver.brute_force import BruteForceSolver
 from hodoku_py.solver.chains import ChainSolver
 from hodoku_py.solver.coloring import ColoringSolver
 from hodoku_py.solver.fish import FishSolver
@@ -95,6 +96,7 @@ class SudokuStepFinder:
         self._fish = FishSolver(grid)
         self._uniqueness = UniquenessSolver(grid)
         self._chains = ChainSolver(grid)
+        self._brute_force = BruteForceSolver(grid)
 
     def get_step(self, sol_type: SolutionType) -> SolutionStep | None:
         """Return the next step of the given type, or None if not found."""
@@ -112,4 +114,6 @@ class SudokuStepFinder:
             return self._uniqueness.get_step(sol_type)
         if sol_type in _CHAIN_TYPES:
             return self._chains.get_step(sol_type)
+        if sol_type is SolutionType.BRUTE_FORCE:
+            return self._brute_force.get_step(sol_type)
         return None
