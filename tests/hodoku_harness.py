@@ -144,15 +144,14 @@ def _parse_step_line(line: str) -> HodokuStep | None:
 
     if "=>" in rest:
         # Elimination step: "<context> => <cells><>digit, ..."
+        # Cell groups can contain commas (e.g. "r7c12,r9c5<>5") so we use
+        # finditer rather than splitting on commas first.
         elim_part = rest.split("=>", 1)[1].strip()
-        for seg in elim_part.split(","):
-            seg = seg.strip()
-            m = _ELIM_GROUP_RE.fullmatch(seg)
-            if m:
-                cells = _parse_compact_cells(m.group(1))
-                digit = int(m.group(2))
-                for cell in cells:
-                    step.eliminations.append((cell, digit))
+        for m in _ELIM_GROUP_RE.finditer(elim_part):
+            cells = _parse_compact_cells(m.group(1))
+            digit = int(m.group(2))
+            for cell in cells:
+                step.eliminations.append((cell, digit))
     else:
         # Placement step: "r<r>c<c>=<digit>"
         m = _PLACEMENT_RE.search(rest)

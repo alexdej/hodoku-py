@@ -26,10 +26,23 @@ class SolveResult:
     solved: bool = False
 
 
+_PLACEMENT_TYPES: frozenset[SolutionType] = frozenset({
+    SolutionType.FULL_HOUSE,
+    SolutionType.NAKED_SINGLE,
+    SolutionType.HIDDEN_SINGLE,
+})
+
+
 def _apply_step(grid: Grid, step: SolutionStep) -> None:
-    """Apply a solution step to the grid."""
-    for idx, val in zip(step.indices, step.values):
-        grid.set_cell(idx, val)
+    """Apply a solution step to the grid.
+
+    For placement steps (singles), set_cell is called for each (index, value).
+    For elimination steps (LC, subsets, …), only candidates_to_delete is applied.
+    In both cases, step.indices on non-placement steps is pattern context only.
+    """
+    if step.type in _PLACEMENT_TYPES:
+        for idx, val in zip(step.indices, step.values):
+            grid.set_cell(idx, val)
     for cand in step.candidates_to_delete:
         grid.del_candidate(cand.index, cand.value)
 

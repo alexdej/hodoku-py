@@ -16,6 +16,16 @@ _SIMPLE_TYPES = frozenset({
     SolutionType.FULL_HOUSE,
     SolutionType.NAKED_SINGLE,
     SolutionType.HIDDEN_SINGLE,
+    SolutionType.LOCKED_CANDIDATES_1,
+    SolutionType.LOCKED_CANDIDATES_2,
+    SolutionType.LOCKED_PAIR,
+    SolutionType.NAKED_PAIR,
+    SolutionType.LOCKED_TRIPLE,
+    SolutionType.NAKED_TRIPLE,
+    SolutionType.NAKED_QUADRUPLE,
+    SolutionType.HIDDEN_PAIR,
+    SolutionType.HIDDEN_TRIPLE,
+    SolutionType.HIDDEN_QUADRUPLE,
 })
 
 
