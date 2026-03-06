@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hodoku-py"
+version = "0.1.0"
+description = "Python port of HoDoKu's sudoku solver, hint engine, and generator"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hodoku_py"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
