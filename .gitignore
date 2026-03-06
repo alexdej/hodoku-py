@@ -67,3 +67,6 @@ Thumbs.db
 
 # HoDoKu data files (large, generated)
 /hodoku/**/*.dat
+
+# Claude Code
+.claude/
