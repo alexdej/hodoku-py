@@ -17,3 +17,6 @@ packages = ["src/hodoku_py"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "hodoku: requires hodoku.jar and Java (skipped automatically if unavailable)",
+]

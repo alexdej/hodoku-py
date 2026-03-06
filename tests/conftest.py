@@ -11,9 +11,6 @@ import pytest
 from tests.hodoku_harness import HodokuResult, run_hodoku
 
 PROJECT_ROOT = Path(__file__).parent.parent
-HODOKU_SH = PROJECT_ROOT / "hodoku" / "hodoku.sh"
-
-
 HODOKU_JAR = PROJECT_ROOT / "hodoku" / "hodoku.jar"
 
 

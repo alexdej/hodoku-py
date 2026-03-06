@@ -11,6 +11,8 @@ from __future__ import annotations
 import pytest
 
 from hodoku_py.core.types import SolutionType
+
+pytestmark = pytest.mark.hodoku
 from hodoku_py.solver.solver import SudokuSolver
 from tests.hodoku_harness import HodokuResult, HodokuStep
 
