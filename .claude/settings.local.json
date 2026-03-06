@@ -3,7 +3,10 @@
     "allow": [
       "Bash(python:*)",
       "Bash(jj status:*)",
-      "Bash(java:*)"
+      "Bash(java:*)",
+      "Bash(MSYS_NO_PATHCONV=1 bash:*)",
+      "Bash(PYTHONPATH=src python3:*)",
+      "Bash(python3:*)"
     ]
   }
 }

@@ -62,7 +62,11 @@ def _build_name_map() -> dict[str, SolutionType]:
         # HoDoKu properties key → our SolutionType
         "Almost Locked Set Chain":      SolutionType.ALS_XY_CHAIN,   # properties mismatch
         "Simple Colors":                SolutionType.SIMPLE_COLORS_TRAP,
+        "Simple Colors Trap":           SolutionType.SIMPLE_COLORS_TRAP,
+        "Simple Colors Wrap":           SolutionType.SIMPLE_COLORS_WRAP,
         "Multi Colors":                 SolutionType.MULTI_COLORS_1,
+        "Multi Colors 1":               SolutionType.MULTI_COLORS_1,
+        "Multi Colors 2":               SolutionType.MULTI_COLORS_2,
         "Nice Loop/AIC":                SolutionType.CONTINUOUS_NICE_LOOP,
         "Grouped Nice Loop/AIC":        SolutionType.GROUPED_CONTINUOUS_NICE_LOOP,
         "Forcing Chain":                SolutionType.FORCING_CHAIN_CONTRADICTION,
@@ -129,12 +133,20 @@ _ELIM_GROUP_RE = re.compile(r"([r\d,c]+)<>(\d)")
 def _parse_step_line(line: str) -> HodokuStep | None:
     """Parse one indented step line. Returns None if the line is not a step."""
     line = line.strip()
-    if not line or ":" not in line:
+    if not line:
         return None
 
-    colon = line.index(":")
-    technique = line[:colon].strip()
-    rest = line[colon + 1:].strip()
+    # Some techniques (e.g. BUG+1) use "Technique Name => elims" without a colon
+    if ":" not in line:
+        if "=>" not in line:
+            return None
+        arrow = line.index("=>")
+        technique = line[:arrow].strip()
+        rest = line[arrow:]  # keep "=>" so the elimination parser below works
+    else:
+        colon = line.index(":")
+        technique = line[:colon].strip()
+        rest = line[colon + 1:].strip()
 
     solution_type = _NAME_MAP.get(technique)
     if solution_type is None:
