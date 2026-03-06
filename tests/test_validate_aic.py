@@ -17,11 +17,11 @@ _AIC_TYPES = frozenset({
 })
 
 AIC_PUZZLES = [
-    # AIC (x2): 7 7- r3c4 =7= r3c5 =8= ... => r3c5,r56c4<>7  and  5 5- r1c5 =5= ... => r1c7,r3c56<>5
-    # Clean: ssts before, singles after
+    # AIC: 5 5- r1c4 =5= r3c6 =8= r3c5 =9= r6c5 =3= r6c1 -3- r3c1 -5 => r1c13,r3c6<>5
+    # Clean: ssts before, ssts after (single AIC, all surrounding techniques implemented)
     (
         "aic_1",
-        "000009008050036702604000000002900000800000105000060024003010000001520380000007400",
+        "060003098000070305010200007000000030900002400048000000000050001600000000290000003",
         SolutionType.AIC,
     ),
     # Continuous Nice Loop: 2/3/6/8 5= r7c6 =2= r6c6 ... => r46c4,r6c5<>2, r26c5<>3, r7c6<>6, r78c6<>8

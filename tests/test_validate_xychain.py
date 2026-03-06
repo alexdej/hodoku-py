@@ -31,11 +31,11 @@ XYCHAIN_PUZZLES = [
         "000000000100506200000003698001000000400090050257000000000070940002961000000008302",
         SolutionType.XY_CHAIN,
     ),
-    # Remote Pair: 8/7 r2c4 -7- r3c6 -8- r3c9 -7- r6c9 => r6c4<>8
-    # Clean: singles before, ssts after
+    # Remote Pair: 1/6 r3c2 -6- r3c9 -1- r1c7 -6- r6c7 => r6c2<>1, r6c2<>6
+    # Clean: singles before, singles after
     (
         "remote_pair_1",
-        "000000405009005000602000000700100009008672000000004000060000701047030590003000020",
+        "050390000800000500300720040000046703000007200500000000006003028480009000001000000",
         SolutionType.REMOTE_PAIR,
     ),
 ]
