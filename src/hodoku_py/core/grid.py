@@ -8,6 +8,8 @@ Candidate masks: bit (d-1) set means digit d is still a candidate.
 
 from __future__ import annotations
 
+import collections
+
 # ---------------------------------------------------------------------------
 # Static lookup tables — computed once at module load, never mutated
 # ---------------------------------------------------------------------------
@@ -33,7 +35,7 @@ BLOCKS: tuple[tuple[int, ...], ...] = tuple(
 )
 ALL_UNITS: tuple[tuple[int, ...], ...] = LINES + COLS + BLOCKS
 
-# For each cell: (row_index, col_index, box_index)
+# For each cell: (row_index, col_index, box_index) — all 0-based within their type
 def _build_constraints() -> tuple[tuple[int, int, int], ...]:
     result = []
     for i in range(81):
@@ -44,6 +46,11 @@ def _build_constraints() -> tuple[tuple[int, int, int], ...]:
     return tuple(result)
 
 CONSTRAINTS: tuple[tuple[int, int, int], ...] = _build_constraints()
+
+# For each cell: indices into ALL_UNITS — (row_idx, col_idx+9, box_idx+18)
+CELL_CONSTRAINTS: tuple[tuple[int, int, int], ...] = tuple(
+    (r, c + 9, b + 18) for r, c, b in CONSTRAINTS
+)
 
 # Buddy sets: for each cell, the int bitmask of its 20 peers
 def _build_buddies() -> tuple[int, ...]:
@@ -94,6 +101,9 @@ class Grid:
         "candidates",
         "candidate_sets",
         "solution",
+        "free",
+        "ns_queue",
+        "hs_queue",
     )
 
     def __init__(self) -> None:
@@ -108,6 +118,18 @@ class Grid:
             self.candidate_sets[d] = (1 << 81) - 1  # all cells initially
         # solution array — filled by generator after uniqueness check
         self.solution: list[int] = [0] * 81
+        # free[constraint_index][digit] = count of unsolved cells in that
+        # constraint still holding digit as a candidate.
+        # 27 constraints (rows 0-8, cols 9-17, boxes 18-26), digits 0-9 (0 unused)
+        self.free: list[list[int]] = [[0] * 10 for _ in range(27)]
+        for c in range(27):
+            for d in range(1, 10):
+                self.free[c][d] = 9  # all 9 cells start with all candidates
+        # Naked-single queue: (cell_index, digit) — cell has exactly 1 candidate left
+        self.ns_queue: collections.deque[tuple[int, int]] = collections.deque()
+        # Hidden-single queue: (constraint_index, digit) — constraint has exactly 1
+        # cell left for digit
+        self.hs_queue: collections.deque[tuple[int, int]] = collections.deque()
 
     # ------------------------------------------------------------------
     # Parsing
@@ -127,37 +149,66 @@ class Grid:
         return "".join(str(v) if v else "0" for v in self.values)
 
     # ------------------------------------------------------------------
-    # Cell mutation — keep values, candidates, and candidate_sets in sync
+    # Cell mutation — keep values, candidates, candidate_sets, free in sync
     # ------------------------------------------------------------------
 
+    def _del_cand(self, index: int, digit: int) -> None:
+        """Remove one candidate from a cell, update free[] and queues."""
+        mask = DIGIT_MASKS[digit]
+        if not (self.candidates[index] & mask):
+            return
+        self.candidates[index] &= ~mask
+        self.candidate_sets[digit] &= ~(1 << index)
+        for c in CELL_CONSTRAINTS[index]:
+            self.free[c][digit] -= 1
+            if self.free[c][digit] == 1:
+                # Find the one remaining cell in this unit that still has digit.
+                # candidate_sets[digit] is already updated, so bitwise-AND with
+                # the unit mask gives exactly that cell.
+                rem = self.candidate_sets[digit] & ALL_UNIT_MASKS[c]
+                if rem:
+                    cell = (rem & -rem).bit_length() - 1
+                    self.hs_queue.append((cell, digit))
+        remaining = self.candidates[index]
+        if remaining != 0 and (remaining & (remaining - 1)) == 0:
+            self.ns_queue.append((index, remaining.bit_length()))
+
     def set_cell(self, index: int, value: int) -> None:
-        """Place a digit in a cell and propagate eliminations to buddies."""
+        """Place a digit in a cell and propagate eliminations to buddies.
+
+        Mirrors Sudoku2.setCell:
+          1. Remove value from all buddy candidates (triggers HS/NS queue updates).
+          2. Remove all remaining candidates from own cell, update free[].
+        """
         if self.values[index] == value:
             return
         self.values[index] = value
-        # Remove all candidates from this cell
+
+        # Step 1: eliminate value from every buddy
+        buddies = BUDDIES[index]
+        while buddies:
+            lsb = buddies & -buddies
+            j = lsb.bit_length() - 1
+            buddies ^= lsb
+            self._del_cand(j, value)
+
+        # Step 2: clear all remaining candidates from this cell, update free[]
         old_mask = self.candidates[index]
         self.candidates[index] = 0
         for d in range(1, 10):
             if old_mask & DIGIT_MASKS[d]:
                 self.candidate_sets[d] &= ~(1 << index)
-        # Eliminate this digit from all buddies
-        buddy_mask = BUDDIES[index]
-        self.candidate_sets[value] &= ~buddy_mask
-        buddies = buddy_mask
-        while buddies:
-            lsb = buddies & -buddies
-            j = lsb.bit_length() - 1
-            buddies ^= lsb
-            if self.candidates[j] & DIGIT_MASKS[value]:
-                self.candidates[j] &= ~DIGIT_MASKS[value]
+                for c in CELL_CONSTRAINTS[index]:
+                    self.free[c][d] -= 1
+                    if self.free[c][d] == 1 and d != value:
+                        rem = self.candidate_sets[d] & ALL_UNIT_MASKS[c]
+                        if rem:
+                            cell = (rem & -rem).bit_length() - 1
+                            self.hs_queue.append((cell, d))
 
     def del_candidate(self, index: int, digit: int) -> None:
-        """Remove a candidate digit from a cell."""
-        mask = DIGIT_MASKS[digit]
-        if self.candidates[index] & mask:
-            self.candidates[index] &= ~mask
-            self.candidate_sets[digit] &= ~(1 << index)
+        """Public API: remove a candidate digit from a cell."""
+        self._del_cand(index, digit)
 
     # ------------------------------------------------------------------
     # Queries
@@ -203,6 +254,9 @@ class Grid:
         g.candidates = list(self.candidates)
         g.candidate_sets = list(self.candidate_sets)
         g.solution = list(self.solution)
+        g.free = [list(row) for row in self.free]
+        g.ns_queue = collections.deque(self.ns_queue)
+        g.hs_queue = collections.deque(self.hs_queue)
         return g
 
     def set(self, other: Grid) -> None:
@@ -211,6 +265,9 @@ class Grid:
         self.candidates = list(other.candidates)
         self.candidate_sets = list(other.candidate_sets)
         self.solution = list(other.solution)
+        self.free = [list(row) for row in other.free]
+        self.ns_queue = collections.deque(other.ns_queue)
+        self.hs_queue = collections.deque(other.hs_queue)
 
     def __repr__(self) -> str:
         return f"Grid({self.get_sudoku_string()})"
