@@ -56,6 +56,12 @@ _FISH_TYPES = frozenset({
     SolutionType.X_WING,
     SolutionType.SWORDFISH,
     SolutionType.JELLYFISH,
+    SolutionType.FINNED_X_WING,
+    SolutionType.FINNED_SWORDFISH,
+    SolutionType.FINNED_JELLYFISH,
+    SolutionType.SASHIMI_X_WING,
+    SolutionType.SASHIMI_SWORDFISH,
+    SolutionType.SASHIMI_JELLYFISH,
 })
 
 _UNIQUENESS_TYPES = frozenset({

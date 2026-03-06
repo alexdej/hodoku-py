@@ -37,7 +37,7 @@ Each layer depends only on those above it in the list.
 | 11 | Coloring | `solver/coloring.py` | ✅ | Simple Colors (Trap/Wrap), Multi-Colors 1&2 |
 | 12 | Uniqueness | `solver/uniqueness.py` | ✅ | Uniqueness Tests 1–6, Hidden Rectangle, BUG+1 (AR1/AR2 skipped — require givens tracking) |
 | 13 | Basic fish | `solver/fish.py` | ✅ | X-Wing, Swordfish, Jellyfish (and larger) |
-| 14 | Finned/Franken/Mutant fish | `solver/fish.py` | ⬜ | Finned, Sashimi, Franken, Mutant variants |
+| 14 | Finned/Sashimi fish | `solver/fish.py` | ✅ | Finned X-Wing/Swordfish/Jellyfish, Sashimi variants (Franken/Mutant not implemented) |
 | 15 | Chains | `solver/chains.py` | ⬜ | X-Chain, XY-Chain, Remote Pair, Nice Loop/AIC |
 | 16 | ALS | `solver/als.py` | ⬜ | ALS-XZ, ALS-XY-Wing, ALS-XY-Chain, Death Blossom, Sue de Coq |
 | 17 | Forcing chains/nets | `solver/tabling.py` | ⬜ | Forcing Chain/Net (Contradiction + Verity), Grouped Nice Loop/AIC |
@@ -90,6 +90,10 @@ in the same order.
 
 7. **Basic fish** (`tests/test_validate_fish.py`) — X-Wing, Swordfish, and
    Jellyfish all pass.
+
+8. **Finned/Sashimi fish** (`tests/test_validate_finned_fish.py`) — Finned
+   X-Wing, Finned Swordfish, and Finned Jellyfish all pass. Sashimi variants
+   implemented but no test puzzle yet. Franken/Mutant not implemented.
 
 ---
 
