@@ -38,10 +38,10 @@ Each layer depends only on those above it in the list.
 | 12 | Uniqueness | `solver/uniqueness.py` | ✅ | Uniqueness Tests 1–6, Hidden Rectangle, BUG+1 (AR1/AR2 skipped — require givens tracking) |
 | 13 | Basic fish | `solver/fish.py` | ✅ | X-Wing, Swordfish, Jellyfish (and larger) |
 | 14 | Finned/Sashimi fish | `solver/fish.py` | ✅ | Finned X-Wing/Swordfish/Jellyfish, Sashimi variants (Franken/Mutant not implemented) |
-| 15 | Chains | `solver/chains.py` | ⬜ | X-Chain, XY-Chain, Remote Pair, Nice Loop/AIC |
+| 15 | Chains | `solver/chains.py` | 🔧 | X-Chain ✅, XY-Chain ✅, Remote Pair ✅, DNL/CNL/AIC pending (see `memory/aic_nice_loop_notes.md`) |
 | 16 | ALS | `solver/als.py` | ⬜ | ALS-XZ, ALS-XY-Wing, ALS-XY-Chain, Death Blossom, Sue de Coq |
 | 17 | Forcing chains/nets | `solver/tabling.py` | ⬜ | Forcing Chain/Net (Contradiction + Verity), Grouped Nice Loop/AIC |
-| 18 | Templates | `solver/templates.py` | ⬜ | Template Set, Template Delete |
+| 18 | Templates | `solver/templates.py` | ⬜ | Template Set, Template Delete — no puzzle-level validation test needed; `/s /sc ts` only works in GUI mode and examples are essentially unfindable headlessly. Test at unit level: verify AND/OR of 46,656 precomputed templates produces correct set/delete masks. |
 | 19 | Brute force | `solver/brute_force.py` | ⬜ | Last-resort guess |
 
 ## Generator + public API

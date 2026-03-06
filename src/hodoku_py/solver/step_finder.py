@@ -67,6 +67,8 @@ _FISH_TYPES = frozenset({
 
 _CHAIN_TYPES = frozenset({
     SolutionType.X_CHAIN,
+    SolutionType.XY_CHAIN,
+    SolutionType.REMOTE_PAIR,
 })
 
 _UNIQUENESS_TYPES = frozenset({
