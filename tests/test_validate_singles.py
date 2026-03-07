@@ -10,10 +10,10 @@ from __future__ import annotations
 
 import pytest
 
-from hodoku_py.core.types import SolutionType
+from hodoku.core.types import SolutionType
 
 pytestmark = pytest.mark.hodoku
-from hodoku_py.solver.solver import SudokuSolver
+from hodoku.solver.solver import SudokuSolver
 from tests.hodoku_harness import HodokuResult, HodokuStep
 
 
@@ -86,7 +86,7 @@ def test_singles_match_hodoku(puzzle: str, solve_with_hodoku) -> None:
 @pytest.mark.parametrize("puzzle", EASY_PUZZLES)
 def test_solver_produces_correct_solution(puzzle: str) -> None:
     """Solved grid must match a brute-force reference (no HoDoKu needed)."""
-    from hodoku_py.core.grid import Grid
+    from hodoku.core.grid import Grid
 
     solver = SudokuSolver()
     result = solver.solve(puzzle)
@@ -101,7 +101,7 @@ def test_solver_produces_correct_solution(puzzle: str) -> None:
         for cand in step.candidates_to_delete:
             g.del_candidate(cand.index, cand.value)
 
-    from hodoku_py.core.grid import LINES, COLS, BLOCKS
+    from hodoku.core.grid import LINES, COLS, BLOCKS
     for unit in list(LINES) + list(COLS) + list(BLOCKS):
         digits = {g.values[j] for j in unit}
         assert digits == set(range(1, 10)), f"Unit {unit} is not complete: {digits}"

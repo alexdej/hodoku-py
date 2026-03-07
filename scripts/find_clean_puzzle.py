@@ -142,8 +142,8 @@ def hodoku_techniques(puzzle: str) -> set[str]:
 def our_solver_uses(puzzle: str, technique_name: str) -> bool:
     """Return True if our solver applies the named SolutionType to this puzzle."""
     sys.path.insert(0, str(_REPO_ROOT / "src"))
-    from hodoku_py.solver.solver import SudokuSolver  # noqa: PLC0415
-    from hodoku_py.core.types import SolutionType      # noqa: PLC0415
+    from hodoku.solver.solver import SudokuSolver  # noqa: PLC0415
+    from hodoku.core.types import SolutionType      # noqa: PLC0415
 
     try:
         target = SolutionType[technique_name]

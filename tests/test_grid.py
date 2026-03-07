@@ -1,6 +1,6 @@
 import pytest
 
-from hodoku_py.core.grid import Grid, CONSTRAINTS, BUDDIES, LINES, COLS, BLOCKS
+from hodoku.core.grid import Grid, CONSTRAINTS, BUDDIES, LINES, COLS, BLOCKS
 
 
 # A simple easy puzzle (Wikipedia example)

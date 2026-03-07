@@ -1,4 +1,4 @@
-from hodoku_py.core.cell_set import CellSet
+from hodoku.core.cell_set import CellSet
 
 
 def test_empty_on_init():

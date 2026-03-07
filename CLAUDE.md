@@ -8,7 +8,7 @@ Goal is 100% fidelity to HoDoKu.
 A Python library. Public API surface:
 
 ```python
-from hodoku_py import Solver, Generator, DifficultyType
+from hodoku import Solver, Generator, DifficultyType
 
 solver = Solver()
 result = solver.solve("530070000...")   # returns steps, level, score
@@ -37,9 +37,9 @@ Every technique implementation must be validated against HoDoKu output on the sa
 
 ```
 docs/               # CODEBASE_MAP.md, ARCHITECTURE.md — reference these before coding
-hodoku/             # HoDoKu JAR + Java source (read-only reference)
+hodoku/             # HoDoKu JAR
 src/
-  hodoku_py/        # the library
+  hodoku/        # the library
     core/           # Grid, CellSet, SolutionStep, types, scoring
     solver/         # SudokuSolver, SudokuStepFinder, all specialized solvers
     generator/      # SudokuGenerator, pattern support
@@ -47,6 +47,10 @@ src/
 tests/
 pyproject.toml
 ```
+
+## Hodoku source code
+
+HoDoKu source code is available for reference at `../HoDoKu` (relative to the project directory).
 
 ## Implementation order
 

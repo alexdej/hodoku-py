@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from hodoku_py.core.types import SolutionType
-from hodoku_py.solver.solver import SudokuSolver
+from hodoku.core.types import SolutionType
+from hodoku.solver.solver import SudokuSolver
 from tests.hodoku_harness import HodokuResult
 
 pytestmark = pytest.mark.hodoku

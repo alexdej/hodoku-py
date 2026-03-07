@@ -7,7 +7,7 @@ Python port of HoDoKu's solver, hint engine, and generator — no GUI.
 ## Module breakdown
 
 ```
-hodoku_py/
+hodoku/
 ├── __init__.py
 ├── api.py                  # Public-facing library API
 ├── core/
@@ -201,7 +201,7 @@ class GroupNode:
 ```python
 # api.py — the only import users need
 
-from hodoku_py.api import Solver, Generator, SolutionType, DifficultyType
+from hodoku.api import Solver, Generator, SolutionType, DifficultyType
 
 class Solver:
     def solve(self, puzzle: str) -> SolveResult:
@@ -247,7 +247,7 @@ class Generator:
 
 **Usage example:**
 ```python
-from hodoku_py.api import Solver, Generator, DifficultyType
+from hodoku.api import Solver, Generator, DifficultyType
 
 solver = Solver()
 result = solver.solve("530070000600195000098000060800060003400803001700020006060000280000419005000080079")
@@ -321,7 +321,7 @@ After phase 9 (SimpleSolver), the Python output can be compared against HoDoKu b
 
 ```bash
 bash hodoku/hodoku.sh /vp /o stdout <puzzle>
-python -m hodoku_py <puzzle>
+python -m hodoku <puzzle>
 # compare step-by-step
 ```
 

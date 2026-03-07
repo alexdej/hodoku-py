@@ -15,10 +15,10 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from hodoku_py.core.types import SolutionType
+from hodoku.core.types import SolutionType
 
 EXEMPLARS_FILE = (
-    Path(__file__).parent.parent.parent / "hodoku" / "HoDoKu" / "exemplars-1.0.txt"
+    Path(__file__).parent.parent.parent / "hodoku" / "exemplars-1.0.txt"
 )
 
 # ---------------------------------------------------------------------------

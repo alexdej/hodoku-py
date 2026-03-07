@@ -21,8 +21,8 @@ from pathlib import Path
 
 import pytest
 
-from hodoku_py.core.types import SolutionType
-from hodoku_py.solver.solver import SudokuSolver
+from hodoku.core.types import SolutionType
+from hodoku.solver.solver import SudokuSolver
 from tests.hodoku_harness import HodokuResult
 from tests.regression.exemplars_parser import ExemplarEntry, parse_exemplars
 

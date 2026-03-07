@@ -16,7 +16,7 @@ import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from hodoku_py.core.types import DifficultyType, SolutionType
+from hodoku.core.types import DifficultyType, SolutionType
 
 # ---------------------------------------------------------------------------
 # Project root — hodoku.sh lives here

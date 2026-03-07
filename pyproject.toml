@@ -13,7 +13,7 @@ dependencies = []
 dev = ["pytest"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/hodoku_py"]
+packages = ["src/hodoku"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

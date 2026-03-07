@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from hodoku_py.core.grid import Grid
-from hodoku_py.core.types import SolutionType
-from hodoku_py.solver.brute_force import BruteForceSolver
-from hodoku_py.solver.solver import SudokuSolver
+from hodoku.core.grid import Grid
+from hodoku.core.types import SolutionType
+from hodoku.solver.brute_force import BruteForceSolver
+from hodoku.solver.solver import SudokuSolver
 
 
 # ---------------------------------------------------------------------------
@@ -62,7 +62,7 @@ def test_brute_force_produces_valid_solution() -> None:
     solver = BruteForceSolver(grid)
 
     # Drain all steps into the grid
-    from hodoku_py.solver.solver import _apply_step, _PLACEMENT_TYPES
+    from hodoku.solver.solver import _apply_step, _PLACEMENT_TYPES
     for _ in range(80):
         step = solver.get_step(SolutionType.BRUTE_FORCE)
         if step is None:
