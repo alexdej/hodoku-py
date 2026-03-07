@@ -19,4 +19,5 @@ packages = ["src/hodoku_py"]
 testpaths = ["tests"]
 markers = [
     "hodoku: requires hodoku.jar and Java (skipped automatically if unavailable)",
+    "regression: exemplars regression suite (slow; run with tests/regression/)",
 ]

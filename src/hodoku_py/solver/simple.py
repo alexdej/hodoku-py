@@ -302,6 +302,7 @@ class SimpleSolver:
 
         # Collect eliminations; track whether they occur outside the box
         to_delete: list[tuple[int, int]] = []
+        seen_elims: set[tuple[int, int]] = set()
         found_constraint = [False, False, False]
         anz_found = 0
 
@@ -316,7 +317,10 @@ class SimpleSolver:
                     continue
                 for d in range(1, 10):
                     if del_mask & DIGIT_MASKS[d]:
-                        to_delete.append((cell, d))
+                        key = (cell, d)
+                        if key not in seen_elims:
+                            seen_elims.add(key)
+                            to_delete.append(key)
                 if not found_constraint[i]:
                     # Count this constraint if: it's the box (i==2)
                     # OR the cell is outside the block (not sharing block with subset)

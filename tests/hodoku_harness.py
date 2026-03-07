@@ -180,7 +180,7 @@ def _parse_step_line(line: str) -> HodokuStep | None:
 # ---------------------------------------------------------------------------
 
 _HEADER_RE = re.compile(
-    r"^([0-9]{81})\s+#\d+\s+(\w+)\s+\((\d+)\)"
+    r"^([0-9.]{81})\s+#\d+\s+(\w+)\s+\((\d+)\)"
 )
 
 
@@ -228,6 +228,27 @@ def parse_hodoku_output(output: str) -> HodokuResult | None:
 
 
 # ---------------------------------------------------------------------------
+# Batch output parser
+# ---------------------------------------------------------------------------
+
+def parse_hodoku_batch_output(output: str) -> dict[str, HodokuResult]:
+    """Parse the stdout from a batch HoDoKu run (`/vp /o stdout /bs <file>`).
+
+    Returns a dict mapping puzzle string → HodokuResult.
+    """
+    results: dict[str, HodokuResult] = {}
+    # Split on puzzle header lines; each starts with an 81-digit string
+    sections = re.split(r"(?m)(?=^[0-9.]{81}\s+#\d+)", output)
+    for section in sections:
+        if not section.strip():
+            continue
+        result = parse_hodoku_output(section)
+        if result and result.puzzle:
+            results[result.puzzle] = result
+    return results
+
+
+# ---------------------------------------------------------------------------
 # Subprocess runner
 # ---------------------------------------------------------------------------
 
@@ -263,6 +284,65 @@ def run_hodoku(puzzle: str, timeout: int = 30) -> HodokuResult | None:
         return None
     except FileNotFoundError as e:
         raise RuntimeError(f"bash or hodoku.sh not found: {e}") from e
+
+
+# ---------------------------------------------------------------------------
+# Batch subprocess runner
+# ---------------------------------------------------------------------------
+
+def run_hodoku_batch(
+    puzzles: list[str],
+    timeout: int = 300,
+) -> dict[str, HodokuResult]:
+    """Run HoDoKu on *puzzles* in a single JVM invocation.
+
+    Writes puzzles to a temp file, runs HoDoKu with ``/bs``, and returns
+    a mapping of puzzle string → HodokuResult.  Unknown/invalid puzzles are
+    silently omitted from the result dict.
+    """
+    import os
+    import tempfile
+
+    if not puzzles:
+        return {}
+
+    hodoku_jar = PROJECT_ROOT / "hodoku" / "hodoku.jar"
+    if not hodoku_jar.exists():
+        raise FileNotFoundError(f"hodoku.jar not found at {hodoku_jar}")
+
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".txt", delete=False, encoding="utf-8"
+    ) as tmp:
+        for p in puzzles:
+            tmp.write(p + "\n")
+        tmpfile = tmp.name
+
+    cmd = [
+        "java", "-Xmx512m",
+        "-Djava.util.logging.config.file=/dev/null",
+        "-jar", str(hodoku_jar),
+        "/vp", "/o", "stdout", "/bs", tmpfile,
+    ]
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            cwd=str(PROJECT_ROOT),
+        )
+        if result.returncode != 0 and not result.stdout:
+            warnings.warn(
+                f"HoDoKu batch exited {result.returncode}: {result.stderr[:200]}",
+                stacklevel=2,
+            )
+            return {}
+        return parse_hodoku_batch_output(result.stdout)
+    except subprocess.TimeoutExpired:
+        warnings.warn(f"HoDoKu batch timed out after {timeout}s", stacklevel=2)
+        return {}
+    finally:
+        os.unlink(tmpfile)
 
 
 # ---------------------------------------------------------------------------
