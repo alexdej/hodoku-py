@@ -9,7 +9,8 @@
       "Bash(python3:*)",
       "Bash(ls:*)",
       "Bash(C:/Users/adeja/miniforge3/envs/hodoku-py/python.exe:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(xargs cat)"
     ]
   }
 }

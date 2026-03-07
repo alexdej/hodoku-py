@@ -9,6 +9,7 @@ from __future__ import annotations
 from hodoku.core.grid import Grid
 from hodoku.core.solution_step import SolutionStep
 from hodoku.core.types import SolutionType
+from hodoku.solver.als import AlsSolver
 from hodoku.solver.brute_force import BruteForceSolver
 from hodoku.solver.chains import ChainSolver
 from hodoku.solver.coloring import ColoringSolver
@@ -66,6 +67,13 @@ _FISH_TYPES = frozenset({
     SolutionType.SASHIMI_JELLYFISH,
 })
 
+_ALS_TYPES = frozenset({
+    SolutionType.ALS_XZ,
+    SolutionType.ALS_XY_WING,
+    SolutionType.ALS_XY_CHAIN,
+    SolutionType.DEATH_BLOSSOM,
+})
+
 _CHAIN_TYPES = frozenset({
     SolutionType.TURBOT_FISH,
     SolutionType.X_CHAIN,
@@ -99,6 +107,7 @@ class SudokuStepFinder:
         self._fish = FishSolver(grid)
         self._uniqueness = UniquenessSolver(grid)
         self._chains = ChainSolver(grid)
+        self._als = AlsSolver(grid)
         self._brute_force = BruteForceSolver(grid)
 
     def get_step(self, sol_type: SolutionType) -> SolutionStep | None:
@@ -115,6 +124,8 @@ class SudokuStepFinder:
             return self._fish.get_step(sol_type)
         if sol_type in _UNIQUENESS_TYPES:
             return self._uniqueness.get_step(sol_type)
+        if sol_type in _ALS_TYPES:
+            return self._als.get_step(sol_type)
         if sol_type in _CHAIN_TYPES:
             return self._chains.get_step(sol_type)
         if sol_type is SolutionType.BRUTE_FORCE:

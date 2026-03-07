@@ -66,5 +66,8 @@ class SolutionStep:
     def add_candidate_to_delete(self, index: int, value: int) -> None:
         self.candidates_to_delete.append(Candidate(index, value))
 
+    def add_als(self, indices: int, candidates: int) -> None:
+        self.alses.append((indices, candidates))
+
     def __repr__(self) -> str:
         return f"SolutionStep({self.type.name}, indices={self.indices}, values={self.values})"
