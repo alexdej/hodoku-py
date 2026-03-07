@@ -522,6 +522,7 @@ class ChainSolver:
         """Search for DNL, CNL, and AIC steps in one DFS pass; return the global best."""
         grid = self.grid
         links = _build_nl_links(grid)
+        group_nodes: list = []  # empty for non-grouped; extended in Phase 3
         deletes_dnl: dict[tuple, tuple[int, SolutionStep]] = {}
         deletes_cnl: dict[tuple, tuple[int, SolutionStep]] = {}
         deletes_aic: dict[tuple, tuple[int, SolutionStep]] = {}
@@ -533,33 +534,28 @@ class ChainSolver:
                 if not (grid.candidate_sets[start_cand] >> start_cell & 1):
                     continue
 
-                start_node = start_cell * 9 + (start_cand - 1)
+                start_nid = start_cell * 9 + (start_cand - 1)
 
                 # Try every first link (both strong and weak — unlike X-Chain).
                 # The first link's strength is preserved as-is (no downgrade).
-                for first_end_node, first_is_strong in links[start_node]:
-                    first_end_cell = first_end_node // 9
-                    first_end_cand = first_end_node % 9 + 1
-
+                for first_end_nid, first_is_strong in links[start_nid]:
                     # Self-link guard
-                    if first_end_cell == start_cell and first_end_cand == start_cand:
+                    if first_end_nid == start_nid:
                         continue
 
-                    chain: list[tuple[int, int]] = [
-                        (start_cell, start_cand),
-                        (first_end_cell, first_end_cand),
-                    ]
+                    # chain_occupied: bitmask of cells already committed to the chain.
+                    # Starts with start_cell; first_end_nid's cell is added when we
+                    # recurse deeper (matching Java's chainSet.add timing).
+                    chain: list[int] = [start_nid, first_end_nid]
                     link_strong: list[bool] = [first_is_strong]
-                    # chain_cells: cells already in the chain (for lasso detection).
-                    # Starts with {start_cell}; first_end_cell is added when we
-                    # recurse deeper from it (matching Java's chainSet.add timing).
-                    chain_cells: set[int] = {start_cell}
+                    chain_occupied: int = 1 << start_cell
 
                     self._dfs_nl(
-                        links, chain, link_strong, chain_cells,
+                        links, chain, link_strong, chain_occupied,
                         strong_only=not first_is_strong,
                         start_cell=start_cell,
                         start_cand=start_cand,
+                        group_nodes=group_nodes,
                         deletes_dnl=deletes_dnl,
                         deletes_cnl=deletes_cnl,
                         deletes_aic=deletes_aic,
@@ -580,45 +576,49 @@ class ChainSolver:
     def _dfs_nl(
         self,
         links: list[list[tuple[int, bool]]],
-        chain: list[tuple[int, int]],
+        chain: list[int],
         link_strong: list[bool],
-        chain_cells: set[int],
+        chain_occupied: int,
         strong_only: bool,
         start_cell: int,
         start_cand: int,
+        group_nodes: list,
         deletes_dnl: dict,
         deletes_cnl: dict,
         deletes_aic: dict,
     ) -> None:
         """DFS over the NL link graph.
 
-        chain[k] = (cell, cand) node; link_strong[k] = strength of the link
-        FROM chain[k] TO chain[k+1] (for k >= 0).
+        chain[k] = node ID; link_strong[k] = strength of the link FROM chain[k]
+        TO chain[k+1] (for k >= 0).  Node IDs: 0–728 are regular cell-candidate
+        nodes (nid = cell*9 + cand-1); 729+ are group nodes (Phase 3).
 
-        chain_cells mirrors Java's chainSet: contains start_cell and all cells
-        visited before the current tail.  A link back to any cell in chain_cells
-        is a lasso (skip) unless that cell is start_cell (a loop — check it).
+        chain_occupied is a bitmask of cells committed to the chain.  It mirrors
+        Java's chainSet: contains start_cell and all cells visited before the
+        current tail.  A link back to any occupied cell is a lasso (skip) unless
+        it returns to start_cell via a regular node (a loop — check it).
         """
         if len(chain) >= _MAX_NL_CHAIN:
             return
 
-        current_cell, current_cand = chain[-1]
-        current_node = current_cell * 9 + (current_cand - 1)
+        current_nid = chain[-1]
 
-        for end_node, link_is_strong in links[current_node]:
+        for end_nid, link_is_strong in links[current_nid]:
             if strong_only and not link_is_strong:
                 continue
 
-            end_cell = end_node // 9
-            end_cand = end_node % 9 + 1
+            # Decode end node (regular only in Phase 2; group nodes added in Phase 3)
+            end_cell = end_nid // 9
+            end_cand = end_nid % 9 + 1
+            end_mask = 1 << end_cell
 
             # Self-link guard
-            if end_cell == current_cell and end_cand == current_cand:
+            if end_nid == current_nid:
                 continue
 
-            # Loop / lasso detection
+            # Loop / lasso detection via chain_occupied bitmask
             is_loop = False
-            if end_cell in chain_cells:
+            if end_mask & chain_occupied:
                 if end_cell != start_cell:
                     continue  # lasso: hits a middle cell
                 is_loop = True
@@ -627,9 +627,11 @@ class ChainSolver:
             # Matches Java: if (!entry.strongOnly && newLinkIsStrong) downgrade.
             effective_strong = link_is_strong and strong_only
 
-            # Add current cell to visited before going deeper (Java: chainSet.add).
-            added = current_cell not in chain_cells
-            chain_cells.add(current_cell)
+            # Add current node's cell to chain_occupied before going deeper
+            # (Java: chainSet.add).  Save prev so we can restore on backtrack.
+            current_cell = current_nid // 9
+            prev_occupied = chain_occupied
+            chain_occupied |= 1 << current_cell
 
             if is_loop:
                 # Minimum 3 links: chain has start + >=2 intermediates.
@@ -640,6 +642,7 @@ class ChainSolver:
                         close_cand=end_cand,
                         start_cell=start_cell,
                         start_cand=start_cand,
+                        group_nodes=group_nodes,
                         deletes_dnl=deletes_dnl,
                         deletes_cnl=deletes_cnl,
                     )
@@ -653,17 +656,18 @@ class ChainSolver:
                 if effective_strong and len(chain) >= 3 and link_strong[0]:
                     self._check_aic(
                         start_cell, start_cand, end_cell, end_cand,
-                        chain, deletes_aic,
+                        chain, group_nodes, deletes_aic,
                     )
 
-                chain.append((end_cell, end_cand))
+                chain.append(end_nid)
                 link_strong.append(effective_strong)
 
                 self._dfs_nl(
-                    links, chain, link_strong, chain_cells,
+                    links, chain, link_strong, chain_occupied,
                     strong_only=not effective_strong,
                     start_cell=start_cell,
                     start_cand=start_cand,
+                    group_nodes=group_nodes,
                     deletes_dnl=deletes_dnl,
                     deletes_cnl=deletes_cnl,
                     deletes_aic=deletes_aic,
@@ -672,23 +676,23 @@ class ChainSolver:
                 link_strong.pop()
                 chain.pop()
 
-            if added:
-                chain_cells.discard(current_cell)
+            chain_occupied = prev_occupied
 
     def _check_nice_loop(
         self,
-        chain: list[tuple[int, int]],
+        chain: list[int],
         link_strong: list[bool],
         close_strong: bool,
         close_cand: int,
         start_cell: int,
         start_cand: int,
+        group_nodes: list,
         deletes_dnl: dict,
         deletes_cnl: dict,
     ) -> None:
         """Classify and record a Nice Loop.
 
-        chain[0] = (start_cell, start_cand); chain[1:] are intermediate nodes.
+        chain[0] = start_nid; chain[1:] are intermediate node IDs.
         link_strong[k] = strength of link from chain[k] to chain[k+1].
         close_strong / close_cand describe the loop-closing link back to start_cell.
 
@@ -731,52 +735,61 @@ class ChainSolver:
             step = SolutionStep(SolutionType.CONTINUOUS_NICE_LOOP)
 
             # Build the full loop as parallel arrays for easy indexed access.
-            # full_nodes[k] = chain[k] for k<len(chain), then (start_cell, ec).
-            # full_strong[k] = strength of link from full_nodes[k] to full_nodes[k+1].
-            full_nodes: list[tuple[int, int]] = chain + [(start_cell, ec)]
+            # full_chain[k] = node ID; close_nid is the loop-closing node at start_cell.
+            # full_strong[k] = strength of link from full_chain[k] to full_chain[k+1].
+            close_nid = start_cell * 9 + (ec - 1)
+            full_chain: list[int] = chain + [close_nid]
             full_strong: list[bool] = link_strong + [close_strong]
-            n = len(full_nodes)
+            n = len(full_chain)
 
             # Mask of all cells in the loop (used to exclude them from buddy elims).
             chain_mask = 0
-            for cell, _ in chain:
-                chain_mask |= 1 << cell
+            for nid in chain:
+                chain_mask |= 1 << (nid // 9)
 
             # Pass 1: cell entered AND exited via strong inter-cell links with a
             # weak intra-cell link in between → delete all OTHER candidates from it.
             # Added in chain-traversal order, ascending digit within each cell
             # (matches Java's SudokuSet.getAllCandidates() ascending output).
-            for i in range(1, n - 2):  # need chain[i], [i+1], [i+2] all valid
-                if (full_strong[i - 1]                           # strong arrival at [i]
-                        and full_nodes[i - 1][0] != full_nodes[i][0]  # inter-cell
-                        and not full_strong[i]                   # weak link [i]→[i+1]
-                        and full_nodes[i][0] == full_nodes[i + 1][0]  # intra-cell
-                        and full_strong[i + 1]                   # strong departure
-                        and full_nodes[i + 1][0] != full_nodes[i + 2][0]):
-                    c1 = full_nodes[i][1]
-                    c2 = full_nodes[i + 2][1]
-                    cell = full_nodes[i][0]
+            # Group nodes are skipped (they have no intra-cell weak links).
+            for i in range(1, n - 2):  # need [i], [i+1], [i+2] all valid
+                ni = full_chain[i]
+                ni_cell = ni // 9
+                ni_prev = full_chain[i - 1]
+                ni_next = full_chain[i + 1]
+                ni_next2 = full_chain[i + 2]
+                if (full_strong[i - 1]                        # strong arrival at [i]
+                        and ni_prev // 9 != ni_cell           # inter-cell arrival
+                        and not full_strong[i]                # weak link [i]→[i+1]
+                        and ni_next // 9 == ni_cell           # intra-cell
+                        and full_strong[i + 1]                # strong departure
+                        and ni_next2 // 9 != ni_cell):        # inter-cell departure
+                    c1 = ni % 9 + 1
+                    c2 = ni_next2 % 9 + 1
                     for d in range(1, 10):
-                        if d != c1 and d != c2 and grid.candidate_sets[d] >> cell & 1:
-                            step.add_candidate_to_delete(cell, d)
+                        if d != c1 and d != c2 and grid.candidate_sets[d] >> ni_cell & 1:
+                            step.add_candidate_to_delete(ni_cell, d)
 
             # Pass 2: weak inter-cell link → eliminate that candidate from all
             # cells that see both endpoints (excluding chain cells).
             # Added in chain-traversal order, ascending cell-index within each link
             # (matches Java's SudokuSet iterator which yields ascending indices).
             for i in range(1, n):
-                if (not full_strong[i - 1]                            # weak link
-                        and full_nodes[i - 1][0] != full_nodes[i][0]):  # inter-cell
+                ni_prev = full_chain[i - 1]
+                ni = full_chain[i]
+                if (not full_strong[i - 1]            # weak link
+                        and ni_prev // 9 != ni // 9): # inter-cell
+                    cand = ni % 9 + 1
                     shared = (
-                        BUDDIES[full_nodes[i - 1][0]]
-                        & BUDDIES[full_nodes[i][0]]
-                        & grid.candidate_sets[full_nodes[i][1]]
+                        BUDDIES[ni_prev // 9]
+                        & BUDDIES[ni // 9]
+                        & grid.candidate_sets[cand]
                         & ~chain_mask
                     )
                     tmp = shared
                     while tmp:
                         lsb = tmp & -tmp
-                        step.add_candidate_to_delete(lsb.bit_length() - 1, full_nodes[i][1])
+                        step.add_candidate_to_delete(lsb.bit_length() - 1, cand)
                         tmp ^= lsb
         else:
             return  # no valid loop type
@@ -785,8 +798,8 @@ class ChainSolver:
             return
 
         # Record chain cells as indices.
-        for cell, _ in chain:
-            step.add_index(cell)
+        for nid in chain:
+            step.add_index(nid // 9)
 
         key = tuple(sorted((c.index, c.value) for c in step.candidates_to_delete))
         dmap = deletes_dnl if step.type == SolutionType.DISCONTINUOUS_NICE_LOOP else deletes_cnl
@@ -800,7 +813,8 @@ class ChainSolver:
         start_cand: int,
         end_cell: int,
         end_cand: int,
-        chain: list[tuple[int, int]],
+        chain: list[int],
+        group_nodes: list,
         deletes_aic: dict,
     ) -> None:
         """Record an AIC step if eliminations exist.
@@ -841,8 +855,8 @@ class ChainSolver:
                 return
 
         # Chain indices: all nodes in chain plus the AIC endpoint.
-        for cell, _ in chain:
-            step.add_index(cell)
+        for nid in chain:
+            step.add_index(nid // 9)
         step.add_index(end_cell)
 
         key = tuple(sorted((c.index, c.value) for c in step.candidates_to_delete))

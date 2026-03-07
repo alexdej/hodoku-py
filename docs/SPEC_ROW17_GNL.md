@@ -177,9 +177,34 @@ If yes, upgrade the type:
 
 ---
 
-## Implementation Plan
+## Implementation Phases
 
-### Files to change
+### Phase 1: Group node collection + link building
+- Add `_GroupNode` dataclass and `_collect_group_nodes(grid)`
+- Add `_build_gnl_links(grid, group_nodes)` extending the existing NL link graph
+  with GN nodes at indices 729+i
+- Testable in isolation: verify group nodes are collected correctly on a known puzzle
+
+### Phase 2: Refactor `_dfs_nl` to use node IDs  ← **start here**
+- Replace `(cell, cand)` tuples with integer node IDs throughout
+- Replace `chain_cells: set[int]` with `chain_occupied: int` bitmask
+- Pure refactor — no behavior change for the non-grouped case
+- Confirm existing NL/AIC results are unchanged before proceeding
+
+### Phase 3: Wire in grouped DFS
+- `_find_nice_loop(grouped=False)` variant using `_build_gnl_links` and passing
+  `group_nodes` to the DFS
+- `_check_nice_loop`: CNL pass 2 uses `GN.buddies`, pass 1 skips group nodes
+- Type upgrade: DNL→GDNL, CNL→GCNL, AIC→GAIC when any chain node is a group node
+- Update `get_step` dispatch + `_CHAIN_TYPES` in step_finder
+
+### Phase 4: Test
+- Find a GNL puzzle: `MSYS_NO_PATHCONV=1 java -Xmx512m -jar hodoku/hodoku.jar /s /sc gnl`
+- Validate eliminations match HoDoKu's output (same approach as `test_validate_aic.py`)
+
+---
+
+## Files to change
 
 1. **`src/hodoku/core/types.py`** — no changes needed (GROUPED types already present)
 
