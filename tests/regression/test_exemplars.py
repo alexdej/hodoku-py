@@ -21,8 +21,8 @@ from pathlib import Path
 
 import pytest
 
-from hodoku.core.types import SolutionType
 from hodoku.solver.solver import SudokuSolver
+from tests.compare import first_divergence, hodoku_path, solution_path
 from tests.hodoku_harness import HodokuResult
 from tests.regression.exemplars_parser import ExemplarEntry, parse_exemplars
 
@@ -55,34 +55,6 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _solution_path(solver_result) -> list[tuple[SolutionType, tuple]]:
-    """Convert our solve result to a comparable list of (type, outcome) tuples."""
-    path = []
-    for step in solver_result.steps:
-        if step.candidates_to_delete:
-            outcome = tuple(sorted((c.index, c.value) for c in step.candidates_to_delete))
-        else:
-            outcome = tuple(sorted(zip(step.indices, step.values)))
-        path.append((step.type, outcome))
-    return path
-
-
-def _hodoku_path(hodoku_result: HodokuResult) -> list[tuple[SolutionType | None, tuple]]:
-    """Convert a HodokuResult to the same comparable form."""
-    path = []
-    for step in hodoku_result.steps:
-        if step.eliminations:
-            outcome = tuple(sorted(step.eliminations))
-        else:
-            outcome = tuple(sorted((idx, val) for idx, val in zip(step.indices, step.values)))
-        path.append((step.solution_type, outcome))
-    return path
-
-
-# ---------------------------------------------------------------------------
 # The test
 # ---------------------------------------------------------------------------
 
@@ -100,8 +72,8 @@ def test_matches_hodoku(
     solver = SudokuSolver()
     our_result = solver.solve(entry.puzzle)
 
-    ours = _solution_path(our_result)
-    theirs = _hodoku_path(hodoku_result)
+    ours = solution_path(our_result)
+    theirs = hodoku_path(hodoku_result)
 
     # Warn if the section's expected technique doesn't appear in HoDoKu's path.
     if entry.expected_types:
@@ -118,8 +90,7 @@ def test_matches_hodoku(
         assert ours == theirs, (
             f"[{entry.section_code}: {entry.section_name}] line {entry.line_num}\n"
             f"  puzzle: {entry.puzzle}\n"
-            f"  ours ({len(ours)} steps):   {ours}\n"
-            f"  HoDoKu ({len(theirs)} steps): {theirs}"
+            f"{first_divergence(ours, theirs)}"
         )
     except AssertionError:
         if entry.test_id in _KNOWN_FAILURES:

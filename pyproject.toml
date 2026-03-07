@@ -17,7 +17,9 @@ packages = ["src/hodoku"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+norecursedirs = ["sdm"]
 markers = [
     "hodoku: requires hodoku.jar and Java (skipped automatically if unavailable)",
     "regression: exemplars regression suite (slow; run with tests/regression/)",
+    "sdm: broad SDM-file suite (opt-in; run with pytest tests/sdm/)",
 ]
