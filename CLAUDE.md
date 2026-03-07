@@ -91,7 +91,7 @@ Build in this sequence — each layer depends only on those above:
 - IMPORTANT! We are targeting 100% fidelity with HoDoKu down to the smallest detail of ordering. In general
   when porting code, favor exact behavior matches: sort and enumerate items in the same order, set
   MIN and MAX constants the same, and so on. There might be times where the HoDoKu code seems sub-optimal
-  but keep in mind that the goal here of this port is fidelity, not optimization. Two solve paths that 
+  but keep in mind that the goal of this port is fidelity, not optimization. Two solve paths that 
   would be equivalent from a Sudoku perspective will fail the regression suite.
 
 ## HoDoKu compatibility rule: elimination ordering
@@ -116,9 +116,10 @@ Full details in `docs/ROADMAP.md` → "HoDoKu compatibility: elimination orderin
 ## Python environment
 
 - We are using `conda` to manage python environments and dependencies. the environment for this project is called `hodoku-py`
-- Do not attempt to run `python`, `pip`, `pytest` or any other python-related command outside the correct conda environment.
+- Before getting started check that you have access to the correct conda env. Do not attempt to run `python`, `pip`, `pytest` or 
+  any other python-related command outside the correct conda environment.
 - Inside the conda environment, all python commands should be available in the PATH. if you're not finding them, stop what you're 
-  doing and ask the user for help. 
+  doing and ask the user for help. Do not run `conda run` but rather run `python` directly.
 - Try to keep use of python commands consistent so that the user has the option to approve each tool once for the whole session. If 
   you switch between different python executables the user has to approve each time and that slows us down.
 

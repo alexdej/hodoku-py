@@ -151,6 +151,7 @@ class ChainSolver:
         if sol_type in (
             SolutionType.CONTINUOUS_NICE_LOOP,
             SolutionType.DISCONTINUOUS_NICE_LOOP,
+            SolutionType.AIC,
         ):
             return self._find_nice_loop()
         return None
@@ -518,11 +519,12 @@ class ChainSolver:
     # ------------------------------------------------------------------
 
     def _find_nice_loop(self) -> SolutionStep | None:
-        """Search for DNL and CNL steps in one DFS pass; return the global best."""
+        """Search for DNL, CNL, and AIC steps in one DFS pass; return the global best."""
         grid = self.grid
         links = _build_nl_links(grid)
         deletes_dnl: dict[tuple, tuple[int, SolutionStep]] = {}
         deletes_cnl: dict[tuple, tuple[int, SolutionStep]] = {}
+        deletes_aic: dict[tuple, tuple[int, SolutionStep]] = {}
 
         for start_cell in range(81):
             if grid.values[start_cell] != 0:
@@ -560,12 +562,16 @@ class ChainSolver:
                         start_cand=start_cand,
                         deletes_dnl=deletes_dnl,
                         deletes_cnl=deletes_cnl,
+                        deletes_aic=deletes_aic,
                     )
 
-        # Both DNL and CNL compete; return the best regardless of target_type.
+        # DNL, CNL, and AIC all compete; return the best.
         # (CONTINUOUS_NICE_LOOP is the single SOLVER_STEPS trigger for all NL types.)
-        all_steps = [step for _, step in deletes_dnl.values()] + \
-                    [step for _, step in deletes_cnl.values()]
+        all_steps = (
+            [step for _, step in deletes_dnl.values()]
+            + [step for _, step in deletes_cnl.values()]
+            + [step for _, step in deletes_aic.values()]
+        )
         if not all_steps:
             return None
         all_steps.sort(key=_step_sort_key)
@@ -582,6 +588,7 @@ class ChainSolver:
         start_cand: int,
         deletes_dnl: dict,
         deletes_cnl: dict,
+        deletes_aic: dict,
     ) -> None:
         """DFS over the NL link graph.
 
@@ -638,6 +645,17 @@ class ChainSolver:
                     )
                 # Don't recurse past a loop (Java: entry.aktIndex = entry.endIndex).
             else:
+                # AIC check: open chain ending with a strong link.
+                # Mirrors TablingSolver.checkAics(offTable): the chain must start
+                # with a strong first link (link_strong[0]=True = off-table, start OFF)
+                # and the current link must be strong (end node is ON).
+                # Minimum distance of 3 links: len(chain) >= 3 before appending.
+                if effective_strong and len(chain) >= 3 and link_strong[0]:
+                    self._check_aic(
+                        start_cell, start_cand, end_cell, end_cand,
+                        chain, deletes_aic,
+                    )
+
                 chain.append((end_cell, end_cand))
                 link_strong.append(effective_strong)
 
@@ -648,6 +666,7 @@ class ChainSolver:
                     start_cand=start_cand,
                     deletes_dnl=deletes_dnl,
                     deletes_cnl=deletes_cnl,
+                    deletes_aic=deletes_aic,
                 )
 
                 link_strong.pop()
@@ -774,6 +793,62 @@ class ChainSolver:
         old = dmap.get(key)
         if old is None or old[0] > len(chain):
             dmap[key] = (len(chain), step)
+
+    def _check_aic(
+        self,
+        start_cell: int,
+        start_cand: int,
+        end_cell: int,
+        end_cand: int,
+        chain: list[tuple[int, int]],
+        deletes_aic: dict,
+    ) -> None:
+        """Record an AIC step if eliminations exist.
+
+        Mirrors TablingSolver.checkAic():
+          Type 1 (start_cand == end_cand): eliminate start_cand from all cells
+            that see both start_cell and end_cell (at least 2 such cells in Java's
+            inclusive-buddy view; with our exclusive-buddy BUDDIES, any non-empty set).
+          Type 2 (different candidates, end_cell sees start_cell): eliminate
+            end_cand from start_cell and start_cand from end_cell.
+        """
+        grid = self.grid
+        step = SolutionStep(SolutionType.AIC)
+
+        if start_cand == end_cand:
+            # Type 1: any cell seeing both endpoints can't have start_cand.
+            elim = BUDDIES[start_cell] & BUDDIES[end_cell] & grid.candidate_sets[start_cand]
+            if not elim:
+                return
+            tmp = elim
+            while tmp:
+                lsb = tmp & -tmp
+                step.add_candidate_to_delete(lsb.bit_length() - 1, start_cand)
+                tmp ^= lsb
+        else:
+            # Type 2: end_cell must see start_cell; eliminate cross-candidates.
+            if not (BUDDIES[start_cell] >> end_cell & 1):
+                return
+            # Add in ascending cell-index order for HoDoKu compatibility.
+            cells = sorted([
+                (start_cell, end_cand) if grid.candidate_sets[end_cand] >> start_cell & 1 else None,
+                (end_cell, start_cand) if grid.candidate_sets[start_cand] >> end_cell & 1 else None,
+            ], key=lambda x: x[0] if x else 999)
+            for item in cells:
+                if item is not None:
+                    step.add_candidate_to_delete(item[0], item[1])
+            if not step.candidates_to_delete:
+                return
+
+        # Chain indices: all nodes in chain plus the AIC endpoint.
+        for cell, _ in chain:
+            step.add_index(cell)
+        step.add_index(end_cell)
+
+        key = tuple(sorted((c.index, c.value) for c in step.candidates_to_delete))
+        old = deletes_aic.get(key)
+        if old is None or old[0] > len(chain):
+            deletes_aic[key] = (len(chain), step)
 
     # ------------------------------------------------------------------
     # Shared helper
