@@ -66,12 +66,18 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         default=42,
         help="RNG seed for random sampling (default: 42).",
     )
+    parser.addoption(
+        "--sdm-all",
+        action="store_true",
+        default=False,
+        help="Test every puzzle in the file (overrides --sdm-count).",
+    )
 
 
-def _load_sdm(path: Path, count: int, seed: int) -> list[str]:
+def _load_sdm(path: Path, count: int, seed: int, all_puzzles: bool = False) -> list[str]:
     lines = path.read_text(encoding="utf-8").splitlines()
     puzzles = [ln.strip()[:81] for ln in lines if len(ln.strip()) >= 81]
-    if len(puzzles) > count:
+    if not all_puzzles and len(puzzles) > count:
         rng = random.Random(seed)
         puzzles = rng.sample(puzzles, count)
     return puzzles
@@ -84,10 +90,11 @@ def sdm_puzzles(request: pytest.FixtureRequest) -> list[str]:
         pytest.skip("--sdm-file not provided")
     count = request.config.getoption("--sdm-count")
     seed = request.config.getoption("--sdm-seed")
+    all_puzzles = request.config.getoption("--sdm-all")
     path = _resolve_sdm_path(sdm_file)
     if not path.exists():
         pytest.fail(f"--sdm-file not found: {path}")
-    return _load_sdm(path, count, seed)
+    return _load_sdm(path, count, seed, all_puzzles)
 
 
 @pytest.fixture(scope="session")

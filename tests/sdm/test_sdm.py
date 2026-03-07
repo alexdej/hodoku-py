@@ -28,17 +28,13 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         return
     # Puzzles are loaded by the sdm_puzzles session fixture; use indirect
     # parametrize so each puzzle becomes its own test item with a clean ID.
+    import random
+    from tests.sdm.conftest import _load_sdm, _resolve_sdm_path
     count = metafunc.config.getoption("--sdm-count")
     seed = metafunc.config.getoption("--sdm-seed")
-
-    import random
-    from tests.sdm.conftest import _resolve_sdm_path
+    all_puzzles = metafunc.config.getoption("--sdm-all")
     path = _resolve_sdm_path(sdm_file)
-    lines = path.read_text(encoding="utf-8").splitlines()
-    puzzles = [ln.strip()[:81] for ln in lines if len(ln.strip()) >= 81]
-    if len(puzzles) > count:
-        rng = random.Random(seed)
-        puzzles = rng.sample(puzzles, count)
+    puzzles = _load_sdm(path, count, seed, all_puzzles)
 
     metafunc.parametrize("puzzle", puzzles, ids=[f"p{i}" for i in range(len(puzzles))])
 
