@@ -2,9 +2,8 @@
 
 Provides:
   --sdm-file PATH    path to an .sdm file (required to run any tests)
-  --sdm-count N      how many puzzles to sample (default: 20)
+  --sdm-count N      limit to N randomly sampled puzzles (default: all)
   --sdm-seed N       RNG seed for random sampling (default: 42)
-  --sdm-all          test every puzzle in the file (overrides --sdm-count)
 
 Session fixtures:
   sdm_entries          the sampled SdmEntry objects
@@ -58,7 +57,7 @@ def _resolve_sdm_path(sdm_file: str) -> Path:
     return PROJECT_ROOT / path
 
 
-def _load_sdm(path: Path, count: int, seed: int, all_puzzles: bool = False, *, file_stem: str | None = None) -> list[SdmEntry]:
+def _load_sdm(path: Path, count: int | None, seed: int, *, file_stem: str | None = None) -> list[SdmEntry]:
     """Parse an .sdm file into SdmEntry objects.
 
     Lines starting with # are section titles unless the content after # is
@@ -88,7 +87,7 @@ def _load_sdm(path: Path, count: int, seed: int, all_puzzles: bool = False, *, f
             test_id = f"{file_stem}::{local_id}" if file_stem else local_id
             entries.append(SdmEntry(puzzle=puzzle, section=section, test_id=test_id))
 
-    if not all_puzzles and len(entries) > count:
+    if count is not None and len(entries) > count:
         rng = random.Random(seed)
         entries = rng.sample(entries, count)
 
@@ -104,20 +103,14 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
         "--sdm-count",
         type=int,
-        default=20,
-        help="Number of puzzles to sample from the .sdm file (default: 20).",
+        default=None,
+        help="Limit to N randomly sampled puzzles (default: all).",
     )
     parser.addoption(
         "--sdm-seed",
         type=int,
         default=42,
         help="RNG seed for random sampling (default: 42).",
-    )
-    parser.addoption(
-        "--sdm-all",
-        action="store_true",
-        default=False,
-        help="Test every puzzle in the file (overrides --sdm-count).",
     )
 
 
@@ -128,11 +121,10 @@ def sdm_entries(request: pytest.FixtureRequest) -> list[SdmEntry]:
         pytest.skip("--sdm-file not provided")
     count = request.config.getoption("--sdm-count")
     seed = request.config.getoption("--sdm-seed")
-    all_puzzles = request.config.getoption("--sdm-all")
     path = _resolve_sdm_path(sdm_file)
     if not path.exists():
         pytest.fail(f"--sdm-file not found: {path}")
-    return _load_sdm(path, count, seed, all_puzzles, file_stem=path.stem)
+    return _load_sdm(path, count, seed, file_stem=path.stem)
 
 
 @pytest.fixture(scope="session")

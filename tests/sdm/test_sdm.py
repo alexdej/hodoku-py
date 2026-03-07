@@ -1,16 +1,13 @@
 """Broad-variety SDM regression suite.
 
-Samples puzzles from an .sdm file, runs both our solver and HoDoKu, and
-compares solution paths step-for-step.
-
-# comments in the .sdm file become section labels in test IDs and failure output.
+Runs all puzzles from an .sdm file by default; use --sdm-count to sample a
+subset. # comments become section labels in test IDs and failure output.
 Commented-out puzzle lines (# followed by 81 digits/dots) are silently skipped.
 
 Run (requires Java and --sdm-file):
-    pytest tests/sdm/ --sdm-file tests/testdata/top1465.sdm
-    pytest tests/sdm/ --sdm-file tests/testdata/sudocue_top10000.sdm --sdm-count 100
-    pytest tests/sdm/ --sdm-file top1465 --sdm-seed 7 -v
-    pytest tests/sdm/ --sdm-file top1465 --sdm-all
+    pytest tests/sdm/ --sdm-file top1465
+    pytest tests/sdm/ --sdm-file sudocue_top10000 --sdm-count 100
+    pytest tests/sdm/ --sdm-file top1465 --sdm-count 50 --sdm-seed 7 -v
 """
 
 from __future__ import annotations
@@ -33,9 +30,8 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
         return
     count = metafunc.config.getoption("--sdm-count")
     seed = metafunc.config.getoption("--sdm-seed")
-    all_puzzles = metafunc.config.getoption("--sdm-all")
     path = _resolve_sdm_path(sdm_file)
-    entries = _load_sdm(path, count, seed, all_puzzles, file_stem=path.stem)
+    entries = _load_sdm(path, count, seed, file_stem=path.stem)
     metafunc.parametrize("entry", entries, ids=[e.test_id for e in entries])
 
 
