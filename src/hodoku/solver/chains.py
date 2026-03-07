@@ -1,16 +1,174 @@
-"""Chain solver: X-Chain, XY-Chain, Remote Pair, Discontinuous/Continuous Nice Loop.
+"""Chain solver: X-Chain, XY-Chain, Remote Pair, Discontinuous/Continuous Nice Loop,
+Grouped Nice Loop.
 
-Mirrors Java's ChainSolver.
+Mirrors Java's ChainSolver and TablingSolver (group-node portions).
 """
 
 from __future__ import annotations
 
-from hodoku.core.grid import ALL_UNITS, BUDDIES, CELL_CONSTRAINTS, CONSTRAINTS, Grid
+from dataclasses import dataclass
+
+from hodoku.core.grid import (
+    ALL_UNITS, BLOCK_MASKS, BUDDIES, CELL_CONSTRAINTS, COL_MASKS,
+    CONSTRAINTS, LINE_MASKS, Grid,
+)
 from hodoku.core.solution_step import SolutionStep
 from hodoku.core.types import SolutionType
 
 _MAX_CHAIN = 20  # maximum chain length (number of nodes)
 _MAX_NL_CHAIN = 20  # maximum chain length for Nice Loop / AIC
+
+
+# ---------------------------------------------------------------------------
+# Group nodes (for Grouped Nice Loop)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class _GroupNode:
+    """A group node for digit d: 2–3 cells sharing a block and a row or col."""
+    digit: int
+    cells: int    # bitmask of cells in group
+    buddies: int  # intersection of BUDDIES of all cells (cells that see ALL group cells)
+    block: int    # block index 0–8
+    line: int     # row index 0–8, or -1 if not row-aligned
+    col: int      # col index 0–8, or -1 if not col-aligned
+    index1: int   # first cell index
+    index2: int   # second cell index
+    index3: int   # third cell index, or -1 for 2-cell groups
+
+
+def _make_group_node(digit: int, cells_mask: int, block_idx: int) -> _GroupNode:
+    """Construct a _GroupNode from a bitmask of 2–3 cells."""
+    indices: list[int] = []
+    tmp = cells_mask
+    while tmp:
+        lsb = tmp & -tmp
+        indices.append(lsb.bit_length() - 1)
+        tmp ^= lsb
+    index1, index2 = indices[0], indices[1]
+    index3 = indices[2] if len(indices) > 2 else -1
+    r1, c1, _ = CONSTRAINTS[index1]
+    r2, c2, _ = CONSTRAINTS[index2]
+    line = r1 if r1 == r2 else -1
+    col  = c1 if c1 == c2 else -1
+    buddies = BUDDIES[index1] & BUDDIES[index2]
+    if index3 >= 0:
+        buddies &= BUDDIES[index3]
+    return _GroupNode(
+        digit=digit, cells=cells_mask, buddies=buddies,
+        block=block_idx, line=line, col=col,
+        index1=index1, index2=index2, index3=index3,
+    )
+
+
+def _collect_group_nodes(grid: Grid) -> list[_GroupNode]:
+    """Return all group nodes for the current grid state.
+
+    Mirrors GroupNode.getGroupNodes(): rows first, then cols, each crossed
+    with all 9 blocks, for each digit 1–9.
+    """
+    gns: list[_GroupNode] = []
+    # Lines (rows) first
+    for line_idx in range(9):
+        lmask = LINE_MASKS[line_idx]
+        for cand in range(1, 10):
+            cand_in_house = grid.candidate_sets[cand] & lmask
+            if not cand_in_house:
+                continue
+            for block_idx in range(9):
+                tmp = cand_in_house & BLOCK_MASKS[block_idx]
+                if tmp.bit_count() >= 2:
+                    gns.append(_make_group_node(cand, tmp, block_idx))
+    # Columns next
+    for col_idx in range(9):
+        cmask = COL_MASKS[col_idx]
+        for cand in range(1, 10):
+            cand_in_house = grid.candidate_sets[cand] & cmask
+            if not cand_in_house:
+                continue
+            for block_idx in range(9):
+                tmp = cand_in_house & BLOCK_MASKS[block_idx]
+                if tmp.bit_count() >= 2:
+                    gns.append(_make_group_node(cand, tmp, block_idx))
+    return gns
+
+
+def _build_gnl_links(
+    grid: Grid,
+    group_nodes: list[_GroupNode],
+) -> list[list[tuple[int, bool]]]:
+    """Extend the NL link graph (nodes 0–728) with group node entries (729+i).
+
+    For each group node GN_i (index 729+i):
+      Weak  GN ↔ cell: cell has digit d and is in gn.buddies.
+      Strong GN ↔ cell: GN + cell are the only positions for d in a shared house.
+      Weak  GN ↔ GN2:  same digit, no overlap, share a house.
+      Strong GN ↔ GN2: same digit, no overlap, share a house, no other candidates.
+
+    Duplicates are accepted (harmless in DFS, matches Java's behaviour).
+    Mirrors TablingSolver.fillTablesWithGroupNodes().
+    """
+    links = _build_nl_links(grid)
+    for _ in group_nodes:
+        links.append([])
+
+    for i, gn in enumerate(group_nodes):
+        gn_nid = 729 + i
+        d = gn.digit
+
+        # --- GN ↔ single-cell weak links ---
+        tmp = grid.candidate_sets[d] & gn.buddies
+        while tmp:
+            lsb = tmp & -tmp
+            cell = lsb.bit_length() - 1
+            tmp ^= lsb
+            cell_nid = cell * 9 + (d - 1)
+            links[gn_nid].append((cell_nid, False))
+            links[cell_nid].append((gn_nid, False))
+
+        # --- GN ↔ single-cell strong links (one other cell per house) ---
+        for house_mask in _gn_house_masks(gn):
+            others = grid.candidate_sets[d] & house_mask & ~gn.cells
+            if others and not (others & (others - 1)):  # exactly one bit set
+                cell = others.bit_length() - 1
+                cell_nid = cell * 9 + (d - 1)
+                links[gn_nid].append((cell_nid, True))
+                links[cell_nid].append((gn_nid, True))
+
+        # --- GN ↔ GN links ---
+        for j, gn2 in enumerate(group_nodes):
+            if j == i or gn2.digit != d or gn.cells & gn2.cells:
+                continue
+            gn2_nid = 729 + j
+            for house_type, house_mask in _gn_shared_houses(gn, gn2):
+                links[gn_nid].append((gn2_nid, False))  # always weak
+                others = grid.candidate_sets[d] & house_mask & ~gn.cells & ~gn2.cells
+                if not others:
+                    links[gn_nid].append((gn2_nid, True))  # also strong
+
+    return links
+
+
+def _gn_house_masks(gn: _GroupNode) -> list[int]:
+    """Return bitmasks of houses GN participates in (block always; row or col if aligned)."""
+    masks = [BLOCK_MASKS[gn.block]]
+    if gn.line != -1:
+        masks.append(LINE_MASKS[gn.line])
+    if gn.col != -1:
+        masks.append(COL_MASKS[gn.col])
+    return masks
+
+
+def _gn_shared_houses(gn: _GroupNode, gn2: _GroupNode) -> list[tuple[str, int]]:
+    """Return (label, mask) for each house shared between gn and gn2."""
+    result = []
+    if gn.line != -1 and gn.line == gn2.line:
+        result.append(('line', LINE_MASKS[gn.line]))
+    if gn.col != -1 and gn.col == gn2.col:
+        result.append(('col', COL_MASKS[gn.col]))
+    if gn.block == gn2.block:
+        result.append(('block', BLOCK_MASKS[gn.block]))
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -154,6 +312,12 @@ class ChainSolver:
             SolutionType.AIC,
         ):
             return self._find_nice_loop()
+        if sol_type in (
+            SolutionType.GROUPED_CONTINUOUS_NICE_LOOP,
+            SolutionType.GROUPED_DISCONTINUOUS_NICE_LOOP,
+            SolutionType.GROUPED_AIC,
+        ):
+            return self._find_nice_loop(grouped=True)
         return None
 
     # ------------------------------------------------------------------
@@ -518,11 +682,19 @@ class ChainSolver:
     # Nice Loop (Discontinuous / Continuous)
     # ------------------------------------------------------------------
 
-    def _find_nice_loop(self) -> SolutionStep | None:
-        """Search for DNL, CNL, and AIC steps in one DFS pass; return the global best."""
+    def _find_nice_loop(self, grouped: bool = False) -> SolutionStep | None:
+        """Search for DNL, CNL, and AIC steps in one DFS pass; return the global best.
+
+        When grouped=True, extends the link graph with group nodes (729+i) and
+        upgrades matching steps to GROUPED_* types.
+        """
         grid = self.grid
-        links = _build_nl_links(grid)
-        group_nodes: list = []  # empty for non-grouped; extended in Phase 3
+        if grouped:
+            group_nodes = _collect_group_nodes(grid)
+            links = _build_gnl_links(grid, group_nodes)
+        else:
+            group_nodes = []
+            links = _build_nl_links(grid)
         deletes_dnl: dict[tuple, tuple[int, SolutionStep]] = {}
         deletes_cnl: dict[tuple, tuple[int, SolutionStep]] = {}
         deletes_aic: dict[tuple, tuple[int, SolutionStep]] = {}
@@ -607,31 +779,42 @@ class ChainSolver:
             if strong_only and not link_is_strong:
                 continue
 
-            # Decode end node (regular only in Phase 2; group nodes added in Phase 3)
-            end_cell = end_nid // 9
-            end_cand = end_nid % 9 + 1
-            end_mask = 1 << end_cell
+            # Decode end node: regular (< 729) or group node (>= 729).
+            is_end_group = end_nid >= 729
+            if is_end_group:
+                end_gn = group_nodes[end_nid - 729]
+                end_mask = end_gn.cells
+                end_cand = end_gn.digit
+                end_cell = -1  # group nodes have no single cell
+            else:
+                end_cell = end_nid // 9
+                end_cand = end_nid % 9 + 1
+                end_mask = 1 << end_cell
 
             # Self-link guard
             if end_nid == current_nid:
                 continue
 
-            # Loop / lasso detection via chain_occupied bitmask
+            # Loop / lasso detection via chain_occupied bitmask.
+            # Only regular nodes at start_cell can close a loop.
             is_loop = False
             if end_mask & chain_occupied:
-                if end_cell != start_cell:
-                    continue  # lasso: hits a middle cell
+                if is_end_group or end_cell != start_cell:
+                    continue  # lasso
                 is_loop = True
 
             # Downgrade: strong link in a weak position is recorded as weak.
             # Matches Java: if (!entry.strongOnly && newLinkIsStrong) downgrade.
             effective_strong = link_is_strong and strong_only
 
-            # Add current node's cell to chain_occupied before going deeper
+            # Add current node's cells to chain_occupied before going deeper
             # (Java: chainSet.add).  Save prev so we can restore on backtrack.
-            current_cell = current_nid // 9
+            if current_nid >= 729:
+                current_cells = group_nodes[current_nid - 729].cells
+            else:
+                current_cells = 1 << (current_nid // 9)
             prev_occupied = chain_occupied
-            chain_occupied |= 1 << current_cell
+            chain_occupied |= current_cells
 
             if is_loop:
                 # Minimum 3 links: chain has start + >=2 intermediates.
@@ -653,7 +836,7 @@ class ChainSolver:
                 # with a strong first link (link_strong[0]=True = off-table, start OFF)
                 # and the current link must be strong (end node is ON).
                 # Minimum distance of 3 links: len(chain) >= 3 before appending.
-                if effective_strong and len(chain) >= 3 and link_strong[0]:
+                if effective_strong and len(chain) >= 3 and link_strong[0] and not is_end_group:
                     self._check_aic(
                         start_cell, start_cand, end_cell, end_cand,
                         chain, group_nodes, deletes_aic,
@@ -745,47 +928,62 @@ class ChainSolver:
             # Mask of all cells in the loop (used to exclude them from buddy elims).
             chain_mask = 0
             for nid in chain:
-                chain_mask |= 1 << (nid // 9)
+                if nid < 729:
+                    chain_mask |= 1 << (nid // 9)
+                else:
+                    chain_mask |= group_nodes[nid - 729].cells
 
             # Pass 1: cell entered AND exited via strong inter-cell links with a
             # weak intra-cell link in between → delete all OTHER candidates from it.
             # Added in chain-traversal order, ascending digit within each cell
             # (matches Java's SudokuSet.getAllCandidates() ascending output).
-            # Group nodes are skipped (they have no intra-cell weak links).
+            # Group nodes are skipped: "group nodes cannot provide weak links in
+            # the cells through which they are reached" (Java comment).
             for i in range(1, n - 2):  # need [i], [i+1], [i+2] all valid
                 ni = full_chain[i]
+                if ni >= 729:
+                    continue  # group nodes don't participate in pass 1
                 ni_cell = ni // 9
                 ni_prev = full_chain[i - 1]
                 ni_next = full_chain[i + 1]
                 ni_next2 = full_chain[i + 2]
-                if (full_strong[i - 1]                        # strong arrival at [i]
-                        and ni_prev // 9 != ni_cell           # inter-cell arrival
-                        and not full_strong[i]                # weak link [i]→[i+1]
-                        and ni_next // 9 == ni_cell           # intra-cell
-                        and full_strong[i + 1]                # strong departure
-                        and ni_next2 // 9 != ni_cell):        # inter-cell departure
-                    c1 = ni % 9 + 1
-                    c2 = ni_next2 % 9 + 1
-                    for d in range(1, 10):
-                        if d != c1 and d != c2 and grid.candidate_sets[d] >> ni_cell & 1:
-                            step.add_candidate_to_delete(ni_cell, d)
+                # Inter-cell arrival: prev must be different cell (group node = always inter)
+                if ni_prev < 729 and ni_prev // 9 == ni_cell:
+                    continue
+                if not full_strong[i - 1]:
+                    continue
+                # Intra-cell weak link: next must be regular node at same cell
+                if ni_next >= 729 or ni_next // 9 != ni_cell:
+                    continue
+                if full_strong[i]:
+                    continue
+                # Strong inter-cell departure
+                if not full_strong[i + 1]:
+                    continue
+                if ni_next2 < 729 and ni_next2 // 9 == ni_cell:
+                    continue
+                c1 = ni % 9 + 1
+                c2 = (ni_next2 % 9 + 1) if ni_next2 < 729 else group_nodes[ni_next2 - 729].digit
+                for d in range(1, 10):
+                    if d != c1 and d != c2 and grid.candidate_sets[d] >> ni_cell & 1:
+                        step.add_candidate_to_delete(ni_cell, d)
 
             # Pass 2: weak inter-cell link → eliminate that candidate from all
             # cells that see both endpoints (excluding chain cells).
+            # For group nodes, use gn.buddies instead of BUDDIES[cell].
             # Added in chain-traversal order, ascending cell-index within each link
             # (matches Java's SudokuSet iterator which yields ascending indices).
             for i in range(1, n):
                 ni_prev = full_chain[i - 1]
                 ni = full_chain[i]
-                if (not full_strong[i - 1]            # weak link
-                        and ni_prev // 9 != ni // 9): # inter-cell
-                    cand = ni % 9 + 1
-                    shared = (
-                        BUDDIES[ni_prev // 9]
-                        & BUDDIES[ni // 9]
-                        & grid.candidate_sets[cand]
-                        & ~chain_mask
-                    )
+                if not full_strong[i - 1]:
+                    # Intra-cell weak link (same regular cell) → skip
+                    if ni_prev < 729 and ni < 729 and ni_prev // 9 == ni // 9:
+                        continue
+                    cand = (ni % 9 + 1) if ni < 729 else group_nodes[ni - 729].digit
+                    b_prev = BUDDIES[ni_prev // 9] if ni_prev < 729 else group_nodes[ni_prev - 729].buddies
+                    b_curr = BUDDIES[ni // 9]      if ni < 729      else group_nodes[ni - 729].buddies
+                    shared = b_prev & b_curr & grid.candidate_sets[cand] & ~chain_mask
                     tmp = shared
                     while tmp:
                         lsb = tmp & -tmp
@@ -797,12 +995,33 @@ class ChainSolver:
         if not step.candidates_to_delete:
             return
 
-        # Record chain cells as indices.
+        # Upgrade to grouped type if any chain node is a group node.
+        if group_nodes and any(nid >= 729 for nid in chain):
+            if step.type == SolutionType.DISCONTINUOUS_NICE_LOOP:
+                step.type = SolutionType.GROUPED_DISCONTINUOUS_NICE_LOOP
+            elif step.type == SolutionType.CONTINUOUS_NICE_LOOP:
+                step.type = SolutionType.GROUPED_CONTINUOUS_NICE_LOOP
+
+        # Record chain nodes as cell indices.
         for nid in chain:
-            step.add_index(nid // 9)
+            if nid < 729:
+                step.add_index(nid // 9)
+            else:
+                gn = group_nodes[nid - 729]
+                step.add_index(gn.index1)
+                step.add_index(gn.index2)
+                if gn.index3 >= 0:
+                    step.add_index(gn.index3)
 
         key = tuple(sorted((c.index, c.value) for c in step.candidates_to_delete))
-        dmap = deletes_dnl if step.type == SolutionType.DISCONTINUOUS_NICE_LOOP else deletes_cnl
+        dmap = (
+            deletes_dnl
+            if step.type in (
+                SolutionType.DISCONTINUOUS_NICE_LOOP,
+                SolutionType.GROUPED_DISCONTINUOUS_NICE_LOOP,
+            )
+            else deletes_cnl
+        )
         old = dmap.get(key)
         if old is None or old[0] > len(chain):
             dmap[key] = (len(chain), step)
@@ -854,9 +1073,20 @@ class ChainSolver:
             if not step.candidates_to_delete:
                 return
 
+        # Upgrade to grouped type if any chain node is a group node.
+        if group_nodes and any(nid >= 729 for nid in chain):
+            step.type = SolutionType.GROUPED_AIC
+
         # Chain indices: all nodes in chain plus the AIC endpoint.
         for nid in chain:
-            step.add_index(nid // 9)
+            if nid < 729:
+                step.add_index(nid // 9)
+            else:
+                gn = group_nodes[nid - 729]
+                step.add_index(gn.index1)
+                step.add_index(gn.index2)
+                if gn.index3 >= 0:
+                    step.add_index(gn.index3)
         step.add_index(end_cell)
 
         key = tuple(sorted((c.index, c.value) for c in step.candidates_to_delete))
