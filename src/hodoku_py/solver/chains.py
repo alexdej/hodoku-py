@@ -84,6 +84,8 @@ class ChainSolver:
         self.grid = grid
 
     def get_step(self, sol_type: SolutionType) -> SolutionStep | None:
+        if sol_type == SolutionType.TURBOT_FISH:
+            return self._find_turbot_fish()
         if sol_type == SolutionType.X_CHAIN:
             return self._find_x_chain()
         if sol_type == SolutionType.XY_CHAIN:
@@ -91,6 +93,14 @@ class ChainSolver:
         if sol_type == SolutionType.REMOTE_PAIR:
             return self._find_remote_pair()
         return None
+
+    # ------------------------------------------------------------------
+    # Turbot Fish (X-Chain restricted to 3 links / 4 nodes)
+    # ------------------------------------------------------------------
+
+    def _find_turbot_fish(self) -> SolutionStep | None:
+        """Find the best Turbot Fish (X-Chain with at most 3 links)."""
+        return self._find_x_chain_impl(SolutionType.TURBOT_FISH, max_nodes=4)
 
     # ------------------------------------------------------------------
     # X-Chain
@@ -103,6 +113,9 @@ class ChainSolver:
         shortest per set), then returns the one ranked first by HoDoKu's
         comparator (most eliminations, then lowest weighted index sum).
         """
+        return self._find_x_chain_impl(SolutionType.X_CHAIN, max_nodes=_MAX_CHAIN)
+
+    def _find_x_chain_impl(self, sol_type: SolutionType, max_nodes: int) -> SolutionStep | None:
         grid = self.grid
         # elim_key → (chain_length, step): shortest chain per elimination set
         deletes_map: dict[tuple, tuple[int, SolutionStep]] = {}
@@ -137,6 +150,8 @@ class ChainSolver:
                         start=start,
                         start_buddies=start_buddies,
                         deletes_map=deletes_map,
+                        sol_type=sol_type,
+                        max_nodes=max_nodes,
                     )
 
         if not deletes_map:
@@ -156,8 +171,10 @@ class ChainSolver:
         start: int,
         start_buddies: int,
         deletes_map: dict,
+        sol_type: SolutionType = SolutionType.X_CHAIN,
+        max_nodes: int = _MAX_CHAIN,
     ) -> None:
-        if len(chain) >= _MAX_CHAIN:
+        if len(chain) >= max_nodes:
             return
 
         current = chain[-1]
@@ -181,7 +198,7 @@ class ChainSolver:
             if effective_strong and len(chain) > 2:
                 elim = start_buddies & BUDDIES[nb]
                 if elim:
-                    self._record(digit, SolutionType.X_CHAIN, chain, elim, deletes_map)
+                    self._record(digit, sol_type, chain, elim, deletes_map)
 
             self._dfs_x(
                 digit, links, chain, chain_set,
@@ -189,6 +206,8 @@ class ChainSolver:
                 start=start,
                 start_buddies=start_buddies,
                 deletes_map=deletes_map,
+                sol_type=sol_type,
+                max_nodes=max_nodes,
             )
 
             chain.pop()

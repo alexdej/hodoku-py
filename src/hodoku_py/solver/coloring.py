@@ -56,7 +56,7 @@ class ColoringSolver:
         while start:
             c1: set[int] = set()
             c2: set[int] = set()
-            seed = next(iter(start))
+            seed = min(start)  # match Java: always pick lowest-index cell first
             self._color_dfs(seed, cand, True, start, c1, c2)
             if c1 and c2:
                 color_pairs.append((frozenset(c1), frozenset(c2)))
@@ -191,7 +191,13 @@ class ColoringSolver:
     # ------------------------------------------------------------------
 
     def _find_multi_colors(self) -> SolutionStep | None:
-        """Return the first Multi-Colors step."""
+        """Return the first Multi-Colors step.
+
+        Mirrors Java: for each (i,j) pair, first try MC2 (accumulating
+        eliminations from both a1 and a2), then MC1 (accumulating from
+        all 4 pair combinations).  Return on the first non-empty result.
+        """
+        grid = self.grid
         for cand in range(1, 10):
             pairs = self._do_coloring(cand)
             n = len(pairs)
@@ -202,29 +208,38 @@ class ColoringSolver:
                     a1, a2 = pairs[i]
                     b1, b2 = pairs[j]
 
-                    # MC type 2: if color of A sees BOTH colors of B → eliminate A color
-                    for a_color, a_other in ((a1, a2), (a2, a1)):
-                        if self._set_sees_both(a_color, b1, b2):
-                            elim = set(a_color) & self._cells_with_cand(cand)
-                            if elim:
-                                step = self._make_mc_step(
-                                    SolutionType.MULTI_COLORS_2, cand,
-                                    a1, a2, b1, b2, elim
-                                )
-                                return step
+                    # MC type 2: accumulate eliminations from a1 and a2 that each
+                    # see both colors of B.
+                    elim_mask = 0
+                    if self._set_sees_both(a1, b1, b2):
+                        for cell in a1:
+                            if grid.candidate_sets[cand] >> cell & 1:
+                                elim_mask |= 1 << cell
+                    if self._set_sees_both(a2, b1, b2):
+                        for cell in a2:
+                            if grid.candidate_sets[cand] >> cell & 1:
+                                elim_mask |= 1 << cell
+                    if elim_mask:
+                        elim: set[int] = set()
+                        tmp = elim_mask
+                        while tmp:
+                            lsb = tmp & -tmp
+                            elim.add(lsb.bit_length() - 1)
+                            tmp ^= lsb
+                        return self._make_mc_step(SolutionType.MULTI_COLORS_2, cand, a1, a2, b1, b2, elim)
 
-                    # MC type 1: if one color of A sees one color of B
-                    #             → eliminate cells seeing both remaining colors
-                    for a_color, a_other in ((a1, a2), (a2, a1)):
-                        for b_color, b_other in ((b1, b2), (b2, b1)):
-                            if self._sets_intersect_buddies(a_color, b_color):
-                                elim = self._trap_elim(cand, a_other, b_other)
-                                if elim:
-                                    step = self._make_mc_step(
-                                        SolutionType.MULTI_COLORS_1, cand,
-                                        a1, a2, b1, b2, elim
-                                    )
-                                    return step
+                    # MC type 1: accumulate eliminations from all 4 pair combinations.
+                    elim_mc1: set[int] = set()
+                    if self._sets_intersect_buddies(a1, b1):
+                        elim_mc1 |= self._trap_elim(cand, a2, b2)
+                    if self._sets_intersect_buddies(a1, b2):
+                        elim_mc1 |= self._trap_elim(cand, a2, b1)
+                    if self._sets_intersect_buddies(a2, b1):
+                        elim_mc1 |= self._trap_elim(cand, a1, b2)
+                    if self._sets_intersect_buddies(a2, b2):
+                        elim_mc1 |= self._trap_elim(cand, a1, b1)
+                    if elim_mc1:
+                        return self._make_mc_step(SolutionType.MULTI_COLORS_1, cand, a1, a2, b1, b2, elim_mc1)
         return None
 
     def _set_sees_both(
