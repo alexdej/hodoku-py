@@ -32,11 +32,8 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     seed = metafunc.config.getoption("--sdm-seed")
 
     import random
-    from pathlib import Path
-    PROJECT_ROOT = Path(__file__).parent.parent.parent
-    path = Path(sdm_file)
-    if not path.is_absolute():
-        path = PROJECT_ROOT / path
+    from tests.sdm.conftest import _resolve_sdm_path
+    path = _resolve_sdm_path(sdm_file)
     lines = path.read_text(encoding="utf-8").splitlines()
     puzzles = [ln.strip()[:81] for ln in lines if len(ln.strip()) >= 81]
     if len(puzzles) > count:

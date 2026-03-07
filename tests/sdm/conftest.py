@@ -20,6 +20,32 @@ import pytest
 from tests.hodoku_harness import HodokuResult, run_hodoku_batch
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
+TESTDATA_DIR = PROJECT_ROOT / "tests" / "testdata"
+
+
+def _resolve_sdm_path(sdm_file: str) -> Path:
+    """Resolve --sdm-file to an actual path.
+
+    Accepts:
+      - absolute path
+      - path relative to project root
+      - bare stem like "top1465" (looked up in tests/testdata/)
+    """
+    path = Path(sdm_file)
+    if path.is_absolute():
+        return path
+    # Try as-is relative to project root
+    candidate = PROJECT_ROOT / path
+    if candidate.exists():
+        return candidate
+    # Try as a bare stem in testdata/
+    stem = path.stem if path.suffix else sdm_file
+    for suffix in (".sdm", ".txt"):
+        candidate = TESTDATA_DIR / (stem + suffix)
+        if candidate.exists():
+            return candidate
+    # Return the relative path; caller will fail with a clear message
+    return PROJECT_ROOT / path
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
@@ -58,9 +84,7 @@ def sdm_puzzles(request: pytest.FixtureRequest) -> list[str]:
         pytest.skip("--sdm-file not provided")
     count = request.config.getoption("--sdm-count")
     seed = request.config.getoption("--sdm-seed")
-    path = Path(sdm_file)
-    if not path.is_absolute():
-        path = PROJECT_ROOT / path
+    path = _resolve_sdm_path(sdm_file)
     if not path.exists():
         pytest.fail(f"--sdm-file not found: {path}")
     return _load_sdm(path, count, seed)
