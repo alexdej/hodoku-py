@@ -361,7 +361,7 @@ class UniquenessSolver:
                     del_cand = cand2
                 if del_cand != -1:
                     s = make_step(SolutionType.UNIQUENESS_6)
-                    for cell in additional:
+                    for cell in sorted(additional):
                         if grid.candidates[cell] >> (del_cand - 1) & 1:
                             s.add_candidate_to_delete(cell, del_cand)
                     if s.candidates_to_delete:

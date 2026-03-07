@@ -71,6 +71,8 @@ _CHAIN_TYPES = frozenset({
     SolutionType.X_CHAIN,
     SolutionType.XY_CHAIN,
     SolutionType.REMOTE_PAIR,
+    SolutionType.CONTINUOUS_NICE_LOOP,   # trigger for all NL types (DNL + CNL)
+    SolutionType.DISCONTINUOUS_NICE_LOOP,  # aliased to same score; dispatched here too
 })
 
 _UNIQUENESS_TYPES = frozenset({

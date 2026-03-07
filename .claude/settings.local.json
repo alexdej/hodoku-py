@@ -7,7 +7,8 @@
       "Bash(MSYS_NO_PATHCONV=1 bash:*)",
       "Bash(PYTHONPATH=src python3:*)",
       "Bash(python3:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(C:/Users/adeja/miniforge3/envs/hodoku-py/python.exe:*)"
     ]
   }
 }

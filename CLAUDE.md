@@ -1,6 +1,7 @@
 # hodoku-py
 
 Python port of HoDoKu's algorithmic core: solver, hint engine, puzzle generator. No GUI.
+Goal is 100% fidelity to HoDoKu.
 
 ## What we're building
 
@@ -85,9 +86,54 @@ Build in this sequence — each layer depends only on those above:
 - **Chain encoding**: use same 32-bit bit-packed int format as Java (required for TablingSolver)
 - **Static tables**: `Sudoku2`'s lookup arrays → module-level constants in `core/grid.py`
 
+## A note on porting approach and trade-offs
+
+- IMPORTANT! We are targeting 100% fidelity with HoDoKu down to the smallest detail of ordering. In general
+  when porting code, favor exact behavior matches: sort and enumerate items in the same order, set
+  MIN and MAX constants the same, and so on. There might be times where the HoDoKu code seems sub-optimal
+  but keep in mind that the goal here of this port is fidelity, not optimization. Two solve paths that 
+  would be equivalent from a Sudoku perspective will fail the regression suite.
+
+## HoDoKu compatibility rule: elimination ordering
+
+When a technique finds candidate eliminations, **always add them to the
+`SolutionStep` in ascending cell-index order** (`sorted(cells)`).  Java's
+`SudokuSet` is ordered, so `addCandidateToDelete` is always called
+lowest-index first.  The order matters because `del_candidate` feeds
+`hs_queue`: the first elimination hits the queue first and determines which
+hidden single fires next.  Getting this wrong causes solve-path divergence.
+Full details in `docs/ROADMAP.md` → "HoDoKu compatibility: elimination ordering".
+
 ## Testing approach
 
 - Unit-test each solver in isolation with puzzle strings where that technique is the next step
 - Compare full solution paths against HoDoKu batch output for regression
-- Test corpus lives in `tests/puzzles/` as text files (one puzzle per line)
 - Benchmark suite separate from correctness tests
+- The goal is 100% fidelity with HoDoKu, down to the precise step-by-step solve path, even if a different
+  solve path would be equivalent (or better). This project is a strict port of HoDoKu as it stands, not an attempt
+  to improve or optimize it. Maintaining strict step-by-step fidelity simplifies validation.
+
+## Python environment
+
+- We are using `conda` to manage python environments and dependencies. the environment for this project is called `hodoku-py`
+- Do not attempt to run `python`, `pip`, `pytest` or any other python-related command outside the correct conda environment.
+- Inside the conda environment, all python commands should be available in the PATH. if you're not finding them, stop what you're 
+  doing and ask the user for help. 
+- Try to keep use of python commands consistent so that the user has the option to approve each tool once for the whole session. If 
+  you switch between different python executables the user has to approve each time and that slows us down.
+
+## Shell
+
+- The user always launches claude code in the project's working directory.
+- NEVER use `cd` to change to the current working directory before running a command. The working directory is already set — just run the command directly.
+- If for some reason the working directory is incorrect, stop what you are doing and ask the user for help.
+- IMPORTANT: On Windows with Git Bash, `/c/Users/...` and `C:\Users\...` are the SAME path.
+- Do NOT do `cd /c/Users/.../project && command` if the cwd is `C:\Users\...\project`. They are equivalent — skip the `cd`.
+- When working with java, hodoku.jar expects commands line arguments to have a `/` eg `/bs`. Set MSYS_NO_PATHCONV=1 when working with hodoku.jar or else git bash will interpret
+  command line arguments as paths and mangle them.
+
+## Source control
+
+- jujutsu (jj) is configured for this project, backed by git.
+- jj will track working changes automatically. Once a task is complete, use `jj commit` with a descriptive message to clean up working state.
+- This is not a collaborative project; all work is being done on this one instance, and will be pushed to github once complete.

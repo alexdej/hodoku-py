@@ -57,7 +57,7 @@ Each layer depends only on those above it in the list.
 
 Every technique is validated by comparing our step sequence against HoDoKu's
 `/vp` output on the same puzzle — same technique type, same cell, same digit,
-in the same order.
+in the same order. Goal is 100% fidelity.
 
 - **Pure Python tests** — no HoDoKu needed, run instantly: `pytest -m "not hodoku"`
 - **HoDoKu validation tests** — require `hodoku.jar` + Java: `pytest -m hodoku`
@@ -132,9 +132,9 @@ Output: `<puzzle> # <before-cat> <tech>(<count>) <after-cat>`
 
 **Cleanness suffix** — append to technique code (e.g. `hr:2`):
 - `:3` — Singles only before AND after ← **ideal**
-- `:2` — SSTS before, Singles after ← **good fallback** (no "singles before, SSTS after" option)
-- `:1` — SSTS before AND after (acceptable; we now implement all of SSTS)
-- `:0` — unrestricted
+- `:2` — SSTS before, Singles after
+- `:1` — SSTS before AND after ← **good fallback** (we now implement all of SSTS)
+- `:0` — unrestricted (may be necessary for difficult techniques)
 
 **SSTS** = Singles + Locked Candidates + Subsets + X-Wing + Swordfish +
 Jellyfish + XY-Wing + Simple Colors + Multi Colors. All implemented as of row 13.
@@ -157,3 +157,21 @@ Revisit if needed, but don't block progress on them.
 - Add each new technique to `SudokuStepFinder.get_step()` in `step_finder.py`
 - Add a `pytestmark = pytest.mark.hodoku` line to every validation test module
 - Techniques within a file can be added incrementally; re-run validation after each
+
+### HoDoKu compatibility: elimination ordering
+
+When building a `SolutionStep`, **always add eliminations in ascending cell-index
+order** (i.e. iterate `sorted(cells)`). Java's `SudokuSet` stores and iterates
+elements in ascending order, so `addCandidateToDelete` is called lowest-index
+first. The elimination order matters because `del_candidate` feeds the hidden-
+single queue (`hs_queue`): the first eliminated cell's constraint changes hit the
+queue first, and that determines which hidden single fires next. If our code
+iterates an unordered Python `set` or a list built in traversal order, the queue
+gets a different entry first and the solve path diverges from HoDoKu's.
+
+**Checklist for new techniques:**
+- Collect candidate cells into a sorted container, or call `sorted()` before
+  the `add_candidate_to_delete` loop.
+- Same applies to the hidden-single queue itself: Java's `SudokuSinglesQueue` is
+  a plain FIFO populated in the order `del_candidate` is called, so elimination
+  order is the only lever we have.
