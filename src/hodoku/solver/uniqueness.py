@@ -53,20 +53,18 @@ class UniquenessSolver:
         results: list[SolutionStep] = []
         allowed = self._compute_allowed()
 
+        # Java only starts from bivalue cells (getAnzCandidates(i) == 2)
         for i11 in range(81):
             if grid.values[i11] != 0:
                 continue
-            n = bin(grid.candidates[i11]).count("1")
-            if n < 2:
+            if bin(grid.candidates[i11]).count("1") != 2:
                 continue
             cands = [d for d in range(1, 10) if grid.candidates[i11] >> (d - 1) & 1]
-            for ci in range(len(cands)):
-                for cj in range(ci + 1, len(cands)):
-                    cand1, cand2 = cands[ci], cands[cj]
-                    self._find_ur_for_pair(
-                        i11, cand1, cand2, seen_rects, [], target_type,
-                        collector=results, allowed=allowed,
-                    )
+            cand1, cand2 = cands[0], cands[1]
+            self._find_ur_for_pair(
+                i11, cand1, cand2, seen_rects, [], target_type,
+                collector=results, allowed=allowed,
+            )
         return results
 
     # ------------------------------------------------------------------
@@ -176,23 +174,20 @@ class UniquenessSolver:
         cached: list[SolutionStep] = []
         allowed = self._compute_allowed()
 
+        # Java only starts from bivalue cells (getAnzCandidates(i) == 2)
         for i11 in range(81):
             if grid.values[i11] != 0:
                 continue
-            n = bin(grid.candidates[i11]).count("1")
-            if n < 2:
+            if bin(grid.candidates[i11]).count("1") != 2:
                 continue
             cands = [d for d in range(1, 10) if grid.candidates[i11] >> (d - 1) & 1]
-            # Try all pairs from the candidates of this starting cell
-            for ci in range(len(cands)):
-                for cj in range(ci + 1, len(cands)):
-                    cand1, cand2 = cands[ci], cands[cj]
-                    step = self._find_ur_for_pair(
-                        i11, cand1, cand2, seen_rects, cached, target_type,
-                        allowed=allowed,
-                    )
-                    if step is not None:
-                        return step
+            cand1, cand2 = cands[0], cands[1]
+            step = self._find_ur_for_pair(
+                i11, cand1, cand2, seen_rects, cached, target_type,
+                allowed=allowed,
+            )
+            if step is not None:
+                return step
 
         # Return cached step of the requested type
         for step in cached:

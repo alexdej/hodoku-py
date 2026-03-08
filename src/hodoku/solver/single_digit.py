@@ -227,21 +227,13 @@ class SingleDigitSolver:
                     er_col  = ER_COLS[b][p]
 
                     line_full = block_cands & LINE_MASKS[er_line]
-                    not_enough = True
-                    if line_full.bit_count() >= 2:
-                        not_enough = False
                     line_part = line_full & ~COL_MASKS[er_col]
                     if not line_part:
                         continue
 
                     col_full = block_cands & COL_MASKS[er_col]
-                    if col_full.bit_count() >= 2:
-                        not_enough = False
                     col_part = col_full & ~LINE_MASKS[er_line]
                     if not col_part:
-                        continue
-
-                    if not_enough:
                         continue
 
                     for cells, col_mode, constr in (
@@ -442,14 +434,8 @@ class SingleDigitSolver:
 
                     # Col part: block candidates in ER col, excluding ER row intersection
                     col_full = block_cands & COL_MASKS[er_col]
-                    if col_full.bit_count() >= 2:
-                        not_enough = False
                     col_part = col_full & ~LINE_MASKS[er_line]
                     if not col_part:
-                        continue
-
-                    # Both parts have only 1 candidate → degenerate case, skip
-                    if not_enough:
                         continue
 
                     # Direction 1: iterate ER row cells, conjugate search in cols
