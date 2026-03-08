@@ -104,6 +104,32 @@ class SimpleSolver:
     # Locked Candidates
     # ------------------------------------------------------------------
 
+    def find_all(self, sol_type: SolutionType) -> list[SolutionStep]:
+        """Return ALL steps of the given type (used by reglib harness and /bsa mode)."""
+        if sol_type == SolutionType.LOCKED_CANDIDATES_1:
+            return self._lc_in_units_all(18, BLOCKS)
+        if sol_type == SolutionType.LOCKED_CANDIDATES_2:
+            return self._lc_in_units_all(0, LINES) + self._lc_in_units_all(9, COLS)
+        if sol_type in (SolutionType.LOCKED_PAIR,):
+            return self._find_naked_xle_all(2, locked_only=True)
+        if sol_type == SolutionType.NAKED_PAIR:
+            return self._find_naked_xle_all(2, locked_only=False)
+        if sol_type in (SolutionType.LOCKED_TRIPLE,):
+            return self._find_naked_xle_all(3, locked_only=True)
+        if sol_type == SolutionType.NAKED_TRIPLE:
+            return self._find_naked_xle_all(3, locked_only=False)
+        if sol_type == SolutionType.NAKED_QUADRUPLE:
+            return self._find_naked_xle_all(4, locked_only=False)
+        if sol_type == SolutionType.HIDDEN_PAIR:
+            return self._find_hidden_xle_all(2)
+        if sol_type == SolutionType.HIDDEN_TRIPLE:
+            return self._find_hidden_xle_all(3)
+        if sol_type == SolutionType.HIDDEN_QUADRUPLE:
+            return self._find_hidden_xle_all(4)
+        # For all other types, fall back to get_step (yields 0 or 1 result).
+        step = self.get_step(sol_type)
+        return [step] if step is not None else []
+
     def _find_locked_candidates(self, sol_type: SolutionType) -> SolutionStep | None:
         """Dispatch LC1 (blocks→row/col) and LC2 (row/col→block)."""
         if sol_type == SolutionType.LOCKED_CANDIDATES_1:
@@ -170,6 +196,54 @@ class SimpleSolver:
                         )
         return None
 
+    def _lc_in_units_all(
+        self,
+        constraint_base: int,
+        units: tuple[tuple[int, ...], ...],
+    ) -> list[SolutionStep]:
+        """Like _lc_in_units but collects all matching steps instead of returning first."""
+        g = self.grid
+        results = []
+        for unit_idx in range(9):
+            for cand in range(1, 10):
+                unit_free = g.free[unit_idx + constraint_base][cand]
+                if unit_free not in (2, 3):
+                    continue
+                first = True
+                same = [True, True, True]
+                constraint = [0, 0, 0]
+                for cell in units[unit_idx]:
+                    if not (g.candidates[cell] & DIGIT_MASKS[cand]):
+                        continue
+                    cc = CELL_CONSTRAINTS[cell]
+                    if first:
+                        constraint[0], constraint[1], constraint[2] = cc
+                        first = False
+                    else:
+                        for j in range(3):
+                            if same[j] and constraint[j] != cc[j]:
+                                same[j] = False
+
+                skip_constraint = unit_idx + constraint_base
+                if constraint_base == 18:
+                    if same[0] and g.free[constraint[0]][cand] > unit_free:
+                        results.append(self._create_lc_step(
+                            SolutionType.LOCKED_CANDIDATES_1, cand,
+                            skip_constraint, ALL_UNITS[constraint[0]],
+                        ))
+                    if same[1] and g.free[constraint[1]][cand] > unit_free:
+                        results.append(self._create_lc_step(
+                            SolutionType.LOCKED_CANDIDATES_1, cand,
+                            skip_constraint, ALL_UNITS[constraint[1]],
+                        ))
+                else:
+                    if same[2] and g.free[constraint[2]][cand] > unit_free:
+                        results.append(self._create_lc_step(
+                            SolutionType.LOCKED_CANDIDATES_2, cand,
+                            skip_constraint, ALL_UNITS[constraint[2]],
+                        ))
+        return results
+
     def _create_lc_step(
         self,
         sol_type: SolutionType,
@@ -210,12 +284,23 @@ class SimpleSolver:
             return step
         return self._naked_in_units(COLS, anz, False, True)
 
+    def _find_naked_xle_all(self, anz: int, locked_only: bool) -> list[SolutionStep]:
+        """Collect ALL Naked/Locked Subset steps of size anz."""
+        naked_only = not locked_only
+        results: list[SolutionStep] = []
+        self._naked_in_units(BLOCKS, anz, locked_only, naked_only, _results=results)
+        if not locked_only:
+            self._naked_in_units(LINES, anz, False, True, _results=results)
+            self._naked_in_units(COLS, anz, False, True, _results=results)
+        return results
+
     def _naked_in_units(
         self,
         units: tuple[tuple[int, ...], ...],
         anz: int,
         locked_only: bool,
         naked_only: bool,
+        _results: list[SolutionStep] | None = None,
     ) -> SolutionStep | None:
         g = self.grid
         for entity in range(9):
@@ -244,7 +329,9 @@ class SimpleSolver:
                                 anz, locked_only, naked_only,
                             )
                             if step is not None:
-                                return step
+                                if _results is None:
+                                    return step
+                                _results.append(step)
                     else:
                         for i3 in range(i2 + 1, n - anz + 3):
                             m3 = m2 | g.candidates[eligible[i3]]
@@ -257,7 +344,9 @@ class SimpleSolver:
                                         anz, locked_only, naked_only,
                                     )
                                     if step is not None:
-                                        return step
+                                        if _results is None:
+                                            return step
+                                        _results.append(step)
                             else:
                                 for i4 in range(i3 + 1, n):
                                     m4 = m3 | g.candidates[eligible[i4]]
@@ -270,7 +359,9 @@ class SimpleSolver:
                                             anz, locked_only, naked_only,
                                         )
                                         if step is not None:
-                                            return step
+                                            if _results is None:
+                                                return step
+                                            _results.append(step)
         return None
 
     def _create_subset_step(
@@ -380,11 +471,20 @@ class SimpleSolver:
             return step
         return self._hidden_in_units(9, COLS, anz)
 
+    def _find_hidden_xle_all(self, anz: int) -> list[SolutionStep]:
+        """Collect ALL Hidden Subset steps of size anz."""
+        results: list[SolutionStep] = []
+        self._hidden_in_units(18, BLOCKS, anz, _results=results)
+        self._hidden_in_units(0, LINES, anz, _results=results)
+        self._hidden_in_units(9, COLS, anz, _results=results)
+        return results
+
     def _hidden_in_units(
         self,
         constraint_base: int,
         units: tuple[tuple[int, ...], ...],
         anz: int,
+        _results: list[SolutionStep] | None = None,
     ) -> SolutionStep | None:
         g = self.grid
         for entity in range(9):
@@ -425,7 +525,9 @@ class SimpleSolver:
                                 units[entity], [d1, d2], cm2,
                             )
                             if step is not None:
-                                return step
+                                if _results is None:
+                                    return step
+                                _results.append(step)
                     else:
                         for i3 in range(i2 + 1, ne - anz + 3):
                             d3 = eligible[i3]
@@ -436,7 +538,9 @@ class SimpleSolver:
                                         units[entity], [d1, d2, d3], cm3,
                                     )
                                     if step is not None:
-                                        return step
+                                        if _results is None:
+                                            return step
+                                        _results.append(step)
                             else:
                                 for i4 in range(i3 + 1, ne):
                                     d4 = eligible[i4]
@@ -446,7 +550,9 @@ class SimpleSolver:
                                             units[entity], [d1, d2, d3, d4], cm4,
                                         )
                                         if step is not None:
-                                            return step
+                                            if _results is None:
+                                                return step
+                                            _results.append(step)
         return None
 
     def _create_hidden_step(

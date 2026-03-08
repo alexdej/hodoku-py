@@ -18,7 +18,7 @@ from pathlib import Path
 from hodoku.core.types import SolutionType
 
 EXEMPLARS_FILE = (
-    Path(__file__).parent.parent.parent / "hodoku" / "exemplars-1.0.txt"
+    Path(__file__).parent / "exemplars-1.0.txt"
 )
 
 # ---------------------------------------------------------------------------

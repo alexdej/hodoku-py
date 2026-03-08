@@ -60,13 +60,14 @@ def _build_grid(entry: ReglibEntry) -> Grid:
     return grid
 
 
-def _find_step(finder: SudokuStepFinder, sol_types: frozenset[SolutionType]):
-    """Try each SolutionType in turn; return the first step found."""
+def _find_all_steps(
+    finder: SudokuStepFinder, sol_types: frozenset[SolutionType]
+) -> list:
+    """Return all steps of any of the given SolutionTypes."""
+    results = []
     for sol_type in sorted(sol_types, key=lambda t: t.value):
-        step = finder.get_step(sol_type)
-        if step is not None:
-            return step
-    return None
+        results.extend(finder.find_all(sol_type))
+    return results
 
 
 def test_reglib_technique(reglib_entry: ReglibEntry) -> None:
@@ -83,18 +84,18 @@ def test_reglib_technique(reglib_entry: ReglibEntry) -> None:
 
     grid = _build_grid(entry)
     finder = SudokuStepFinder(grid)
-    step = _find_step(finder, entry.solution_types)
+    steps = _find_all_steps(finder, entry.solution_types)
 
     # --- Fail case: technique must NOT fire ---
     if entry.fail_case:
-        assert step is None, (
+        assert not steps, (
             f"Technique {entry.technique_code} should NOT fire on this board, "
-            f"but found: {step}"
+            f"but found: {steps[0]}"
         )
         return
 
-    # --- Normal case: technique must fire with correct output ---
-    assert step is not None, (
+    # --- Normal case: at least one step must match expected output ---
+    assert steps, (
         f"Technique {entry.technique_code} did not fire on this board.\n"
         f"  givens_placed:  {entry.givens_placed}\n"
         f"  deleted_cands:  {entry.deleted_candidates}\n"
@@ -106,24 +107,29 @@ def test_reglib_technique(reglib_entry: ReglibEntry) -> None:
         expected = frozenset(
             ((r - 1) * 9 + (c - 1), d) for d, r, c in entry.eliminations
         )
-        actual = frozenset(
-            (cand.index, cand.value) for cand in step.candidates_to_delete
-        )
-        assert actual == expected, (
-            f"Technique {entry.technique_code} elimination mismatch:\n"
+        actual_sets = [
+            frozenset((cand.index, cand.value) for cand in step.candidates_to_delete)
+            for step in steps
+        ]
+        assert expected in actual_sets, (
+            f"Technique {entry.technique_code} elimination mismatch — "
+            f"expected set not found among {len(steps)} step(s):\n"
             f"  expected: {_fmt_cell_set(expected)}\n"
-            f"  actual:   {_fmt_cell_set(actual)}"
+            f"  found:    {[_fmt_cell_set(s) for s in actual_sets]}"
         )
 
     elif entry.placements:
         expected = frozenset(
             ((r - 1) * 9 + (c - 1), d) for d, r, c in entry.placements
         )
-        actual = frozenset(zip(step.indices, step.values))
-        assert actual == expected, (
-            f"Technique {entry.technique_code} placement mismatch:\n"
+        actual_sets = [
+            frozenset(zip(step.indices, step.values)) for step in steps
+        ]
+        assert expected in actual_sets, (
+            f"Technique {entry.technique_code} placement mismatch — "
+            f"expected set not found among {len(steps)} step(s):\n"
             f"  expected: {_fmt_cell_set(expected)}\n"
-            f"  actual:   {_fmt_cell_set(actual)}"
+            f"  found:    {[_fmt_cell_set(s) for s in actual_sets]}"
         )
 
 

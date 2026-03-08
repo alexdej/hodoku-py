@@ -1,48 +1,51 @@
-# The GUID tag ensures this resolves to the locally-built dev image and never
-# accidentally pulls a stranger's image from Docker Hub.
-FROM hodoku-dev:693f55f2-e0e7-4624-8f8f-5f0bf01e51dd
+# Self-contained image for running Claude Code in the hodoku-py dev environment.
+# Layers are ordered slowest-to-change first so pyproject.toml edits don't
+# invalidate the expensive Rust/Node/jj build steps.
+FROM python:3.12-slim
 
-# Node.js LTS via NodeSource — Debian's bundled version is too old for Claude Code.
-# git is required by Claude Code for repository operations.
+# ── Layer 1: system packages ─────────────────────────────────────────────────
+# Includes Java for hodoku.jar and build-essential for Rust compilation.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl git \
+    && apt-get install -y --no-install-recommends \
+       curl git ca-certificates unzip build-essential default-jre-headless \
     && curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g @anthropic-ai/claude-code
+# ── Layer 2: Claude Code ──────────────────────────────────────────────────────
+RUN curl -fsSL https://claude.ai/install.sh | bash
 
-# Git read-only wrapper — blocks write operations so Claude can't commit or push.
-# Placed at /usr/local/bin/git (ahead of the real git in PATH).
-RUN real_git=$(which git) && \
-    cat > /usr/local/bin/git <<EOF
-#!/bin/bash
-case "\$1" in
-  commit|push|reset|merge|rebase|clean|tag)
-    echo "git \$1 is disabled (read-only container)" >&2; exit 1 ;;
-  checkout|switch)
-    # allow read-only forms (e.g. checkout <file> is fine; block branch switching)
-    if echo "\$@" | grep -qE '^\s*(checkout|switch)\s+-'; then
-      echo "git \$1 is disabled (read-only container)" >&2; exit 1
-    fi
-    exec $real_git "\$@" ;;
-  branch)
-    # allow listing (git branch, git branch -a) but block create/delete/rename
-    if echo "\$@" | grep -qE '(-d|-D|-m|-M|-c|-C)'; then
-      echo "git branch write ops are disabled (read-only container)" >&2; exit 1
-    fi
-    exec $real_git "\$@" ;;
-  *)
-    exec $real_git "\$@" ;;
-esac
-EOF
-RUN chmod +x /usr/local/bin/git
+# ── Layer 3: Rust + jujutsu ───────────────────────────────────────────────────
+# Expensive; only rebuilds when the rustup/jj versions change.
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+RUN cargo install cargo-binstall
+RUN cargo binstall --strategies crate-meta-data jj-cli
 
-# Pass your API key at runtime:
-#   docker run -it --rm -v "$(pwd)":/workspace -e ANTHROPIC_API_KEY=... hodoku-claude:693f55f2-e0e7-4624-8f8f-5f0bf01e51dd
+# verify
+RUN jj --version
+
+# Block git push and jj git push — Claude should never push to remote.
+RUN printf '#!/bin/bash\nif [ "$1" = "push" ]; then\n  echo "git push is disabled in this container" >&2; exit 1\nfi\nexec /usr/bin/git "$@"\n' > /usr/local/bin/git \
+    && chmod +x /usr/local/bin/git
+
+# ── Layer 4: Python deps ──────────────────────────────────────────────────────
+# Placed last so pyproject.toml changes only invalidate this layer.
+WORKDIR /tmp
+COPY pyproject.toml .
+RUN mkdir -p src/hodoku \
+    && pip install --no-cache-dir -e ".[dev]"
+
+WORKDIR /workspace
+
+# Pass your API key at runtime, and mount jj config for identity:
+#   docker run -it --rm \
+#     -v "$(pwd)":/workspace \
+#     -v "$HOME/.config/jj":/root/.config/jj:ro \
+#     -e ANTHROPIC_API_KEY=... \
+#     hodoku-claude:693f55f2-e0e7-4624-8f8f-5f0bf01e51dd
 #
-# Build order (base image must exist first):
-#   docker build -f Dockerfile.dev   -t hodoku-dev:693f55f2-e0e7-4624-8f8f-5f0bf01e51dd .
+# Build (no longer depends on Dockerfile.dev):
 #   docker build -f Dockerfile.claude -t hodoku-claude:693f55f2-e0e7-4624-8f8f-5f0bf01e51dd .
 
 ENTRYPOINT ["claude"]

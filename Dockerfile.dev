@@ -13,6 +13,7 @@ WORKDIR /workspace
 # before the real source is mounted at runtime.
 COPY pyproject.toml .
 RUN mkdir -p src/hodoku \
+    && touch src/hodoku/__init__.py \
     && pip install --no-cache-dir -e ".[dev]"
 
 # Source is mounted at runtime (see usage below), so the editable install
@@ -20,7 +21,7 @@ RUN mkdir -p src/hodoku \
 #
 # Usage:
 #   docker build -f Dockerfile.dev -t hodoku-dev:693f55f2-e0e7-4624-8f8f-5f0bf01e51dd .
-#   docker run -it --rm -v "$(pwd)":/workspace hodoku-dev:693f55f2-e0e7-4624-8f8f-5f0bf01e51dd
+#   docker run -it --rm -v "/$(pwd)":/workspace hodoku-dev:693f55f2-e0e7-4624-8f8f-5f0bf01e51dd
 #
 # Inside the container, run tests as normal:
 #   pytest tests/
