@@ -174,6 +174,69 @@ Output: `<puzzle> # <before-cat> <tech>(<count>) <after-cat>`
 **SSTS** = Singles + Locked Candidates + Subsets + X-Wing + Swordfish +
 Jellyfish + XY-Wing + Simple Colors + Multi Colors. All implemented as of row 13.
 
+## Cross-cutting gaps
+
+These are capabilities that HoDoKu exposes across all technique layers but that
+we have not yet implemented. They are not tied to a single solver; each one
+requires changes across most or all of the specialized solvers.
+
+### `findAll*()` — enumerate all instances (highest priority)
+
+HoDoKu exposes two parallel execution paths for every technique:
+
+| Path | Our status | Used by |
+|------|-----------|---------|
+| `getStep(type)` → first match | **Implemented** | Solve loop (`/vp`) |
+| `findAll*(type)` → all matches | **Not implemented** | `/bsa` mode, reglib test harness |
+
+Java's `RegressionTester` calls `findAll*()` and checks whether the expected
+step appears **anywhere** in the full result list. Because we only implement
+`get_step()`, reglib tests that correspond to the 2nd or 3rd instance of a
+technique will fail even though our solve paths match HoDoKu exactly.
+
+**Impact on `tests/reglib/`:** many reglib entries will report false failures
+until `find_all()` is added. The reglib harness is already built and wired up;
+it just needs each solver to expose `find_all(sol_type)` in addition to
+`get_step(sol_type)`.
+
+**Implementation pattern** (mirrors Java):
+- Each specialized solver gets a `find_all(sol_type) -> list[SolutionStep]`
+  method (analogous to Java's `findAllNakedXle()`, `findAllSimpleColors()`,
+  `findAllChains()`, etc.)
+- `SudokuStepFinder` gets a `find_all(sol_type)` dispatcher that routes to the
+  correct specialized solver, similar to the existing `get_step()` dispatcher
+- The `find_all()` implementation for most solvers is the same search loop as
+  `get_step()` but without the early-return — collect all results, deduplicate,
+  and return the list
+
+This is a significant but mechanical refactor. Every solver row (7–19) needs
+updating. Good approach: implement for one solver end-to-end, wire into the
+reglib harness, verify the failure count drops, then repeat for the others.
+
+### Remaining unimplemented techniques
+
+| Technique | Code | Notes |
+|-----------|------|-------|
+| Sue de Coq | 1101 | Complex interaction of ALS + Locked Candidates. Skipped in reglib harness (`_SKIP_CODES`). |
+| Template Set/Delete | 1201/1202 | `solver/templates.py` placeholder exists (row 18). Skipped in reglib harness. |
+| Forcing Chain Contradiction/Verity | 1301/1302 | `solver/tabling.py` (row 17). Skipped in reglib harness. In progress on a separate branch. |
+| Forcing Net Contradiction/Verity | 1303/1304 | Same file as above. Skipped in reglib harness. |
+
+### Partially wired techniques
+
+These are implemented in a solver file but not fully connected to the dispatch
+chain or not validated end-to-end:
+
+| Technique | Status | Gap |
+|-----------|--------|-----|
+| Franken/Mutant fish | Logic in `fish.py` | Not wired into `step_finder._FISH_TYPES`; never fires during a real solve |
+| Dual Two-String Kite (0404) | `SolutionType` defined | No solver logic — `single_digit.py` has no `DUAL_TWO_STRING_KITE` case |
+| Dual Empty Rectangle (0405) | `SolutionType` defined | Same — no solver logic |
+| Avoidable Rectangles AR1/AR2 | `SolutionType` defined | Require tracking which cells were given vs. solved; our `Grid` doesn't record givens |
+| Death Blossom | Implemented in `als.py` | No validation puzzle found; HoDoKu always finds a Forcing Chain first |
+
+---
+
 ## Parking lot
 
 Techniques that are implemented in HoDoKu but not currently on the roadmap.

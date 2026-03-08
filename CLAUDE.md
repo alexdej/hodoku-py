@@ -25,13 +25,17 @@ HoDoKu JAR lives at `hodoku/hodoku.jar`. Run it with:
 
 ```bash
 # Solve a puzzle, print solution path
-MSYS_NO_PATHCONV=1 bash hodoku/hodoku.sh /vp /o stdout <puzzle_string>
+bash hodoku/hodoku.sh /vp /o stdout <puzzle_string>
 
 # Find ALL applicable steps (no solve, richer output)
-MSYS_NO_PATHCONV=1 bash hodoku/hodoku.sh /bsa /o stdout <puzzle_string>
+bash hodoku/hodoku.sh /bsa /o stdout <puzzle_string>
 ```
 
 Every technique implementation must be validated against HoDoKu output on the same puzzle.
+
+**Note on Git Bash (Windows):** hodoku.jar's `/flag` arguments get mangled into Windows paths by
+Git Bash. Prefix commands with `MSYS_NO_PATHCONV=1` if running under Git Bash. This is already
+baked into `hodoku/hodoku.sh` but matters if invoking `java -jar` directly.
 
 ## Project structure
 
@@ -48,7 +52,7 @@ tests/
 pyproject.toml
 ```
 
-## Hodoku source code
+## HoDoKu source code
 
 HoDoKu source code is available for reference at `../HoDoKu` (relative to the project directory).
 
@@ -95,7 +99,7 @@ Build in this sequence — each layer depends only on those above:
 - IMPORTANT! We are targeting 100% fidelity with HoDoKu down to the smallest detail of ordering. In general
   when porting code, favor exact behavior matches: sort and enumerate items in the same order, set
   MIN and MAX constants the same, and so on. There might be times where the HoDoKu code seems sub-optimal
-  but keep in mind that the goal of this port is fidelity, not optimization. Two solve paths that 
+  but keep in mind that the goal of this port is fidelity, not optimization. Two solve paths that
   would be equivalent from a Sudoku perspective will fail the regression suite.
 
 ## HoDoKu compatibility rule: elimination ordering
@@ -116,25 +120,3 @@ Full details in `docs/ROADMAP.md` → "HoDoKu compatibility: elimination orderin
 - The goal is 100% fidelity with HoDoKu, down to the precise step-by-step solve path, even if a different
   solve path would be equivalent (or better). This project is a strict port of HoDoKu as it stands, not an attempt
   to improve or optimize it. Maintaining strict step-by-step fidelity simplifies validation.
-
-## Python environment
-
-- Python is available directly in the PATH. Run `python` and `pytest` without any wrapper.
-- Try to keep use of python commands consistent so that the user has the option to approve each tool once for the whole session. If
-  you switch between different python executables the user has to approve each time and that slows us down.
-
-## Shell
-
-- The user always launches claude code in the project's working directory.
-- NEVER use `cd` to change to the current working directory before running a command. The working directory is already set — just run the command directly.
-- If for some reason the working directory is incorrect, stop what you are doing and ask the user for help.
-- IMPORTANT: On Windows with Git Bash, `/c/Users/...` and `C:\Users\...` are the SAME path.
-- Do NOT do `cd /c/Users/.../project && command` if the cwd is `C:\Users\...\project`. They are equivalent — skip the `cd`.
-- When working with java, hodoku.jar expects commands line arguments to have a `/` eg `/bs`. Set MSYS_NO_PATHCONV=1 when working with hodoku.jar or else git bash will interpret
-  command line arguments as paths and mangle them.
-
-## Source control
-
-- jujutsu (jj) is configured for this project, backed by git, but jj is managed by the user outside the container.
-- **Git is read-only for Claude.** Use `git log`, `git status`, `git diff` freely to inspect state. Do NOT make commits, create branches, push, or run any git command that writes to the repository. Ask the user to commit when work is ready.
-- This is not a collaborative project; all work is being done on this one instance.
