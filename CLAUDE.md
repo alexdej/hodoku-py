@@ -140,5 +140,6 @@ Full details in `docs/ROADMAP.md` → "HoDoKu compatibility: elimination orderin
 ## Source control
 
 - jujutsu (jj) is configured for this project, backed by git.
-- jj will track working changes automatically. Once a task is complete, use `jj commit` with a descriptive message to clean up working state.
+- jj will track working changes automatically. Once a task is complete and all tests pass, use `jj commit` with a descriptive message to clean up working state. When ready to move on, bookmark the commit as `main` so it can be pushed to github.
 - This is not a collaborative project; all work is being done on this one instance, and will be pushed to github once complete.
+- jj bookmarks can be used to iterate or try out experimental work with the possibility to revert.

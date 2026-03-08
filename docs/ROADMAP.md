@@ -38,9 +38,9 @@ Each layer depends only on those above it in the list.
 | 12 | Uniqueness | `solver/uniqueness.py` | ✅ | Uniqueness Tests 1–6, Hidden Rectangle, BUG+1 (AR1/AR2 skipped — require givens tracking) |
 | 13 | Basic fish | `solver/fish.py` | ✅ | X-Wing, Swordfish, Jellyfish (and larger) |
 | 14 | Finned/Sashimi fish | `solver/fish.py` | ✅ | Finned X-Wing/Swordfish/Jellyfish, Sashimi variants (Franken/Mutant not implemented) |
-| 15 | Chains | `solver/chains.py` | 🔧 | X-Chain ✅, XY-Chain ✅, Remote Pair ✅, DNL/CNL/AIC pending (see `memory/aic_nice_loop_notes.md`) |
-| 16 | ALS | `solver/als.py` | ⬜ | ALS-XZ, ALS-XY-Wing, ALS-XY-Chain, Death Blossom, Sue de Coq |
-| 17 | Forcing chains/nets | `solver/tabling.py` | ⬜ | Forcing Chain/Net (Contradiction + Verity), Grouped Nice Loop/AIC |
+| 15 | Chains | `solver/chains.py` | ✅ | X-Chain, XY-Chain, Remote Pair, Turbot Fish, DNL, CNL, AIC, GDNL, GCNL, GAIC |
+| 16 | ALS | `solver/als.py` | 🔧 | ALS-XZ ✅, ALS-XY-Wing ✅, ALS-XY-Chain ✅, Death Blossom ✅ — validation blocked pending GNL (now unblocked) |
+| 17 | Forcing chains/nets | `solver/tabling.py` | ⬜ | Forcing Chain/Net (Contradiction + Verity) |
 | 18 | Templates | `solver/templates.py` | ⬜ | Template Set, Template Delete — no puzzle-level validation test needed; `/s /sc ts` only works in GUI mode and examples are essentially unfindable headlessly. Test at unit level: verify AND/OR of 46,656 precomputed templates produces correct set/delete masks. |
 | 19 | Brute force | `solver/brute_force.py` | ⬜ | Last-resort guess |
 
@@ -94,6 +94,16 @@ in the same order. Goal is 100% fidelity.
 8. **Finned/Sashimi fish** (`tests/test_validate_finned_fish.py`) — Finned
    X-Wing, Finned Swordfish, and Finned Jellyfish all pass. Sashimi variants
    implemented but no test puzzle yet. Franken/Mutant not implemented.
+
+9. **Chains** (`tests/test_validate_aic.py`) — X-Chain, XY-Chain, Remote Pair,
+   DNL, CNL, and AIC all pass. Turbot Fish implemented.
+
+10. **Grouped Nice Loop** — GDNL, GCNL, and GAIC implemented and validated
+    against HoDoKu on `...3.....6..724....2..6..73.4...796.............29..455.......1..8..6...274.1.8..`.
+    All six chain steps in the full solve path (2 DNL, 2 GDNL, 1 AIC, 1 DNL)
+    match HoDoKu exactly. Implementation: `_GroupNode`, `_collect_group_nodes()`,
+    `_build_gnl_links()` in `chains.py`; `_dfs_nl` refactored to use integer
+    node IDs and bitmask occupancy tracking. See `docs/SPEC_ROW17_GNL.md`.
 
 ---
 
