@@ -50,6 +50,27 @@ Each layer depends only on those above it in the list.
 |---|-------|------|--------|-------|
 | 20 | Generator | `generator/generator.py` | ⬜ | Backtracking solver, uniqueness validation, puzzle generation |
 | 21 | Public API | `api.py` | ⬜ | `Solver`, `Generator` classes matching the documented public surface |
+| 22 | Bad input tests | `tests/test_bad_inputs.py` | ⬜ | See note below |
+
+### Bad input / edge-case tests (row 22)
+
+Before publishing, add a test module covering inputs the public API must
+handle gracefully. Cases to cover:
+
+| Input | Expected behaviour |
+|-------|--------------------|
+| Already-solved puzzle (81 filled, valid) | `solve()` returns `solved=True`, zero steps |
+| Puzzle with no solution (contradiction in givens) | `solved=False` or raises a documented exception |
+| Puzzle with multiple solutions (non-unique) | Solver solves one branch; `rate()` / `generate()` should reject or flag non-unique puzzles |
+| Duplicate digit in a house (e.g. two 5s in same row) | Raise `ValueError` or return `solved=False` immediately |
+| Wrong-length string (< 81 or > 81 chars) | Raise `ValueError` |
+| Invalid characters (not 0–9 or `.`) | Raise `ValueError` |
+| All-empty grid (`000…0`) | Solver runs brute force; returns a valid solution |
+| Single given (hardest valid starting point) | Solver runs; terminates correctly |
+
+These tests do not require HoDoKu. They belong in `tests/test_bad_inputs.py`
+and should run in the default (non-`hodoku`) pytest target. Implement
+alongside or just after the public API (row 21).
 
 ---
 
