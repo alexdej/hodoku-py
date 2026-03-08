@@ -51,6 +51,7 @@ class UniquenessSolver:
         grid = self.grid
         seen_rects: set[tuple[int, int, int, int]] = set()
         results: list[SolutionStep] = []
+        allowed = self._compute_allowed()
 
         for i11 in range(81):
             if grid.values[i11] != 0:
@@ -64,9 +65,38 @@ class UniquenessSolver:
                     cand1, cand2 = cands[ci], cands[cj]
                     self._find_ur_for_pair(
                         i11, cand1, cand2, seen_rects, [], target_type,
-                        collector=results,
+                        collector=results, allowed=allowed,
                     )
         return results
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _compute_allowed(self) -> list[int]:
+        """Return per-digit bitmasks of empty cells not blocked by any solved cell.
+
+        allowed[d] = cells where digit d could theoretically be placed based
+        solely on the solved-cell constraints (ignoring manual candidate
+        deletions).  This corresponds to Java's ``candidatesAllowed`` array,
+        used when ``allowUniquenessMissingCandidates = true``.
+        """
+        grid = self.grid
+        # Start with all cells for each digit, then mask off solved-cell buddies
+        allowed: list[int] = [0] * 10
+        full = (1 << 81) - 1
+        for d in range(1, 10):
+            a = full
+            for i in range(81):
+                if grid.values[i] == d:
+                    a &= ~BUDDIES[i]
+                    a &= ~(1 << i)
+            # Intersect with empty cells
+            for i in range(81):
+                if grid.values[i] != 0:
+                    a &= ~(1 << i)
+            allowed[d] = a
+        return allowed
 
     # ------------------------------------------------------------------
     # BUG+1
@@ -144,6 +174,7 @@ class UniquenessSolver:
         grid = self.grid
         seen_rects: set[tuple[int, int, int, int]] = set()
         cached: list[SolutionStep] = []
+        allowed = self._compute_allowed()
 
         for i11 in range(81):
             if grid.values[i11] != 0:
@@ -157,7 +188,8 @@ class UniquenessSolver:
                 for cj in range(ci + 1, len(cands)):
                     cand1, cand2 = cands[ci], cands[cj]
                     step = self._find_ur_for_pair(
-                        i11, cand1, cand2, seen_rects, cached, target_type
+                        i11, cand1, cand2, seen_rects, cached, target_type,
+                        allowed=allowed,
                     )
                     if step is not None:
                         return step
@@ -177,10 +209,24 @@ class UniquenessSolver:
         cached: list[SolutionStep],
         target_type: SolutionType,
         collector: list[SolutionStep] | None = None,
+        allowed: list[int] | None = None,
     ) -> SolutionStep | None:
-        """Search for URs starting at i11 with the given candidate pair."""
+        """Search for URs starting at i11 with the given candidate pair.
+
+        When *allowed* is provided (list[int] indexed 0..9), cells are accepted
+        as UR members if the digit is *allowed* there (not blocked by any solved
+        cell in the same house), even if the candidate has been manually deleted.
+        This mirrors Java's ``allowUniquenessMissingCandidates = true`` mode,
+        which is HoDoKu's default.
+        """
         grid = self.grid
         r11, c11, b11 = CONSTRAINTS[i11]
+
+        def _has_cands(cell: int) -> bool:
+            if allowed is not None:
+                return bool(allowed[cand1] >> cell & 1 and allowed[cand2] >> cell & 1)
+            return bool(grid.candidates[cell] >> (cand1 - 1) & 1 and
+                        grid.candidates[cell] >> (cand2 - 1) & 1)
 
         # Find second cell in the same block sharing both candidates,
         # in the same row OR same col
@@ -192,8 +238,7 @@ class UniquenessSolver:
                 continue  # not aligned in row or col
             if grid.values[i12] != 0:
                 continue
-            if not (grid.candidates[i12] >> (cand1 - 1) & 1 and
-                    grid.candidates[i12] >> (cand2 - 1) & 1):
+            if not _has_cands(i12):
                 continue
 
             is_lines = (r11 == r12)
@@ -208,11 +253,9 @@ class UniquenessSolver:
                     continue  # must be a different block
                 if grid.values[i21] != 0 or grid.values[i22] != 0:
                     continue
-                if not (grid.candidates[i21] >> (cand1 - 1) & 1 and
-                        grid.candidates[i21] >> (cand2 - 1) & 1):
+                if not _has_cands(i21):
                     continue
-                if not (grid.candidates[i22] >> (cand1 - 1) & 1 and
-                        grid.candidates[i22] >> (cand2 - 1) & 1):
+                if not _has_cands(i22):
                     continue
 
                 # Deduplicate rectangles
