@@ -69,5 +69,43 @@ class SolutionStep:
     def add_als(self, indices: int, candidates: int) -> None:
         self.alses.append((indices, candidates))
 
+    def reset(self) -> None:
+        """Clear all fields for reuse (mirrors Java's globalStep.reset())."""
+        self.indices.clear()
+        self.values.clear()
+        self.candidates_to_delete.clear()
+        self.chains.clear()
+        self.entity = 0
+        self.entity_number = 0
+        self.alses.clear()
+        self.endo_fins.clear()
+        self.fins.clear()
+        self.color_candidates.clear()
+
+    def is_net(self) -> bool:
+        """True if any chain contains a negative entry (net branch marker)."""
+        for chain in self.chains:
+            for entry in chain:
+                if entry < 0:
+                    return True
+        return False
+
+    def get_chain_length(self) -> int:
+        """Total length across all chains (sum of chain list lengths)."""
+        total = 0
+        for chain in self.chains:
+            total += len(chain)
+        return total
+
+    def get_candidate_string(self) -> str:
+        """Canonical string for dedup — sorted candidates_to_delete."""
+        parts = sorted((c.index, c.value) for c in self.candidates_to_delete)
+        return ",".join(f"{i}:{v}" for i, v in parts)
+
+    def get_single_candidate_string(self) -> str:
+        """Canonical string for dedup — sorted indices/values (set-cell steps)."""
+        parts = sorted(zip(self.indices, self.values))
+        return ",".join(f"{i}={v}" for i, v in parts)
+
     def __repr__(self) -> str:
         return f"SolutionStep({self.type.name}, indices={self.indices}, values={self.values})"
