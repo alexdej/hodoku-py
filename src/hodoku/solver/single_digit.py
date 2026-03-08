@@ -84,6 +84,180 @@ class SingleDigitSolver:
             return self._find_empty_rectangle()
         return None
 
+    def find_all(self, sol_type: SolutionType) -> list[SolutionStep]:
+        if sol_type == SolutionType.SKYSCRAPER:
+            return self._find_skyscraper_all()
+        if sol_type == SolutionType.TWO_STRING_KITE:
+            return self._find_two_string_kite_all()
+        if sol_type == SolutionType.EMPTY_RECTANGLE:
+            return self._find_empty_rectangle_all()
+        return []
+
+    def _find_skyscraper_all(self) -> list[SolutionStep]:
+        """Return ALL Skyscraper steps."""
+        grid = self.grid
+        results: list[SolutionStep] = []
+        seen_elims: set[tuple] = set()
+        for cand in range(1, 10):
+            for lines in (True, False):
+                c_start, c_end = (0, 9) if lines else (9, 18)
+                pairs = self._collect_pairs(c_start, c_end, cand)
+                n = len(pairs)
+                for i in range(n):
+                    a0, a1 = pairs[i]
+                    for j in range(i + 1, n):
+                        b0, b1 = pairs[j]
+                        if lines:
+                            if CONSTRAINTS[a0][1] == CONSTRAINTS[b0][1]:
+                                other = 1
+                            elif CONSTRAINTS[a1][1] == CONSTRAINTS[b1][1]:
+                                other = 0
+                            else:
+                                continue
+                        else:
+                            if CONSTRAINTS[a0][0] == CONSTRAINTS[b0][0]:
+                                other = 1
+                            elif CONSTRAINTS[a1][0] == CONSTRAINTS[b1][0]:
+                                other = 0
+                            else:
+                                continue
+
+                        free_i = pairs[i][other]
+                        free_j = pairs[j][other]
+
+                        if lines:
+                            if CONSTRAINTS[free_i][1] == CONSTRAINTS[free_j][1]:
+                                continue
+                        else:
+                            if CONSTRAINTS[free_i][0] == CONSTRAINTS[free_j][0]:
+                                continue
+
+                        elim = (
+                            grid.candidate_sets[cand]
+                            & BUDDIES[free_i]
+                            & BUDDIES[free_j]
+                        )
+                        if elim:
+                            linked_i = pairs[i][1 - other]
+                            linked_j = pairs[j][1 - other]
+                            key = (cand, elim)
+                            if key not in seen_elims:
+                                seen_elims.add(key)
+                                step = SolutionStep(SolutionType.SKYSCRAPER)
+                                step.add_value(cand)
+                                step.add_index(free_i)
+                                step.add_index(free_j)
+                                step.add_index(linked_i)
+                                step.add_index(linked_j)
+                                tmp = elim
+                                while tmp:
+                                    lsb = tmp & -tmp
+                                    step.add_candidate_to_delete(
+                                        lsb.bit_length() - 1, cand
+                                    )
+                                    tmp ^= lsb
+                                results.append(step)
+        return results
+
+    def _find_two_string_kite_all(self) -> list[SolutionStep]:
+        """Return ALL 2-String Kite steps."""
+        grid = self.grid
+        results: list[SolutionStep] = []
+        seen_elims: set[tuple] = set()
+        for cand in range(1, 10):
+            line_pairs = self._collect_pairs(0, 9, cand)
+            col_pairs  = self._collect_pairs(9, 18, cand)
+            for lp in line_pairs:
+                for cp in col_pairs:
+                    la, lb = lp
+                    ca, cb = cp
+
+                    la_b = CONSTRAINTS[la][2]
+                    lb_b = CONSTRAINTS[lb][2]
+                    ca_b = CONSTRAINTS[ca][2]
+                    cb_b = CONSTRAINTS[cb][2]
+                    if la_b == ca_b:
+                        pass
+                    elif la_b == cb_b:
+                        ca, cb = cb, ca
+                    elif lb_b == ca_b:
+                        la, lb = lb, la
+                    elif lb_b == cb_b:
+                        la, lb = lb, la
+                        ca, cb = cb, ca
+                    else:
+                        continue
+
+                    if la == ca or la == cb or lb == ca or lb == cb:
+                        continue
+
+                    cross = CONSTRAINTS[cb][0] * 9 + CONSTRAINTS[lb][1]
+                    if grid.candidate_sets[cand] >> cross & 1:
+                        key = (cand, cross)
+                        if key not in seen_elims:
+                            seen_elims.add(key)
+                            step = SolutionStep(SolutionType.TWO_STRING_KITE)
+                            step.add_value(cand)
+                            step.add_index(lb)
+                            step.add_index(cb)
+                            step.add_index(la)
+                            step.add_index(ca)
+                            step.add_candidate_to_delete(cross, cand)
+                            step.fins.append(Candidate(la, cand))
+                            step.fins.append(Candidate(ca, cand))
+                            results.append(step)
+        return results
+
+    def _find_empty_rectangle_all(self) -> list[SolutionStep]:
+        """Return ALL Empty Rectangle steps."""
+        grid = self.grid
+        results: list[SolutionStep] = []
+        seen_elims: set[tuple] = set()
+        for cand in range(1, 10):
+            for b in range(9):
+                count = grid.free[18 + b][cand]
+                if count < 2 or count > 5:
+                    continue
+                block_cands = grid.candidate_sets[cand] & BLOCK_MASKS[b]
+                for p in range(9):
+                    if block_cands & ER_SETS[b][p]:
+                        continue
+
+                    er_line = ER_LINES[b][p]
+                    er_col  = ER_COLS[b][p]
+
+                    line_full = block_cands & LINE_MASKS[er_line]
+                    not_enough = True
+                    if line_full.bit_count() >= 2:
+                        not_enough = False
+                    line_part = line_full & ~COL_MASKS[er_col]
+                    if not line_part:
+                        continue
+
+                    col_full = block_cands & COL_MASKS[er_col]
+                    if col_full.bit_count() >= 2:
+                        not_enough = False
+                    col_part = col_full & ~LINE_MASKS[er_line]
+                    if not col_part:
+                        continue
+
+                    if not_enough:
+                        continue
+
+                    for cells, col_mode, constr in (
+                        (LINES[er_line], False, er_col),
+                        (COLS[er_col], True, er_line),
+                    ):
+                        step = self._check_er(cand, b, block_cands, cells, col_mode, constr)
+                        if step:
+                            key = tuple(sorted(
+                                (c.index, c.value) for c in step.candidates_to_delete
+                            ))
+                            if key not in seen_elims:
+                                seen_elims.add(key)
+                                results.append(step)
+        return results
+
     # ------------------------------------------------------------------
     # Shared helper
     # ------------------------------------------------------------------

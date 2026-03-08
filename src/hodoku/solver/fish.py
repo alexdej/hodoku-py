@@ -67,6 +67,171 @@ class FishSolver:
             return self._find_finned_fish(sol_type, sashimi=True)
         return None
 
+    def find_all(self, sol_type: SolutionType) -> list[SolutionStep]:
+        if sol_type in _FISH_SIZE:
+            return self._find_basic_fish_all(sol_type)
+        if sol_type in _FINNED_SIZE:
+            return self._find_finned_fish_all(sol_type, sashimi=False)
+        if sol_type in _SASHIMI_SIZE:
+            return self._find_finned_fish_all(sol_type, sashimi=True)
+        return []
+
+    def _find_basic_fish_all(self, sol_type: SolutionType) -> list[SolutionStep]:
+        """Return ALL basic fish of the given size."""
+        n = _FISH_SIZE[sol_type]
+        grid = self.grid
+        results: list[SolutionStep] = []
+        seen_elims: set[tuple] = set()
+
+        for cand in range(1, 10):
+            cand_set = grid.candidate_sets[cand]
+            if not cand_set:
+                continue
+
+            for row_mode in (True, False):
+                unit_masks  = LINE_MASKS if row_mode else COL_MASKS
+                cover_masks = COL_MASKS  if row_mode else LINE_MASKS
+
+                eligible: list[int] = []
+                for u in range(9):
+                    cnt = bin(cand_set & unit_masks[u]).count("1")
+                    if 2 <= cnt <= n:
+                        eligible.append(u)
+
+                if len(eligible) < n:
+                    continue
+
+                for combo in combinations(eligible, n):
+                    base_mask = 0
+                    for u in combo:
+                        base_mask |= cand_set & unit_masks[u]
+
+                    cover_indices: list[int] = []
+                    for ci in range(9):
+                        if base_mask & cover_masks[ci]:
+                            cover_indices.append(ci)
+
+                    if len(cover_indices) != n:
+                        continue
+
+                    cover_mask = 0
+                    for ci in cover_indices:
+                        cover_mask |= cover_masks[ci]
+
+                    elim_mask = cand_set & cover_mask & ~base_mask
+                    if not elim_mask:
+                        continue
+
+                    elim_key = (cand, elim_mask)
+                    if elim_key in seen_elims:
+                        continue
+                    seen_elims.add(elim_key)
+
+                    results.append(self._make_step(
+                        sol_type, cand, combo, cover_indices,
+                        base_mask, elim_mask, row_mode
+                    ))
+
+        return results
+
+    def _find_finned_fish_all(
+        self, sol_type: SolutionType, sashimi: bool
+    ) -> list[SolutionStep]:
+        """Return ALL finned/sashimi fish of the given size."""
+        n = _SASHIMI_SIZE[sol_type] if sashimi else _FINNED_SIZE[sol_type]
+        finned_type = sol_type if not sashimi else {
+            v: k for k, v in _FINNED_TO_SASHIMI.items()
+        }[sol_type]
+        grid = self.grid
+        results: list[SolutionStep] = []
+        seen_elims: set[tuple] = set()
+
+        for cand in range(1, 10):
+            cand_set = grid.candidate_sets[cand]
+            if not cand_set:
+                continue
+
+            for row_mode in (True, False):
+                unit_masks  = LINE_MASKS if row_mode else COL_MASKS
+                cover_masks = COL_MASKS  if row_mode else LINE_MASKS
+
+                eligible: list[int] = []
+                for u in range(9):
+                    if cand_set & unit_masks[u]:
+                        eligible.append(u)
+
+                if len(eligible) < n:
+                    continue
+
+                for combo in combinations(eligible, n):
+                    base_mask = 0
+                    for u in combo:
+                        base_mask |= cand_set & unit_masks[u]
+
+                    cover_indices: list[int] = []
+                    for ci in range(9):
+                        if base_mask & cover_masks[ci]:
+                            cover_indices.append(ci)
+
+                    if len(cover_indices) < n or len(cover_indices) > n + 3:
+                        continue
+
+                    for cover_combo in combinations(cover_indices, n):
+                        cover_mask = 0
+                        for ci in cover_combo:
+                            cover_mask |= cover_masks[ci]
+
+                        fin_mask = base_mask & ~cover_mask
+                        if not fin_mask:
+                            continue
+
+                        fin_block = CONSTRAINTS[fin_mask.bit_length() - 1][2]
+                        tmp = fin_mask
+                        all_same_block = True
+                        while tmp:
+                            lsb = tmp & -tmp
+                            if CONSTRAINTS[lsb.bit_length() - 1][2] != fin_block:
+                                all_same_block = False
+                                break
+                            tmp ^= lsb
+                        if not all_same_block:
+                            continue
+
+                        elim_mask = (
+                            cand_set & cover_mask
+                            & BLOCK_MASKS[fin_block]
+                            & ~base_mask
+                        )
+                        if not elim_mask:
+                            continue
+
+                        is_sashimi = False
+                        for u in combo:
+                            if not (cand_set & unit_masks[u] & cover_mask):
+                                is_sashimi = True
+                                break
+
+                        if is_sashimi != sashimi:
+                            continue
+
+                        actual_type = (
+                            _FINNED_TO_SASHIMI[finned_type]
+                            if is_sashimi else finned_type
+                        )
+
+                        elim_key = (cand, elim_mask, fin_mask)
+                        if elim_key in seen_elims:
+                            continue
+                        seen_elims.add(elim_key)
+
+                        results.append(self._make_step(
+                            actual_type, cand, combo, list(cover_combo),
+                            base_mask, elim_mask, row_mode,
+                            fin_mask=fin_mask,
+                        ))
+
+        return results
+
     # ------------------------------------------------------------------
     # Core algorithm
     # ------------------------------------------------------------------

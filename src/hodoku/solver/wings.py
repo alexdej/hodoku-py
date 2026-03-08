@@ -25,6 +25,115 @@ class WingSolver:
             return self._find_xyz_wing()
         return None
 
+    def find_all(self, sol_type: SolutionType) -> list[SolutionStep]:
+        if sol_type == SolutionType.W_WING:
+            return self._find_w_wing_all()
+        if sol_type == SolutionType.XY_WING:
+            return self._find_wing_all(xyz=False)
+        if sol_type == SolutionType.XYZ_WING:
+            return self._find_wing_all(xyz=True)
+        return []
+
+    def _find_wing_all(self, xyz: bool) -> list[SolutionStep]:
+        grid = self.grid
+        bi_cells: list[int] = []
+        tri_cells: list[int] = []
+        for i in range(81):
+            if grid.values[i] != 0:
+                continue
+            n = bin(grid.candidates[i]).count("1")
+            if n == 2:
+                bi_cells.append(i)
+            elif xyz and n == 3:
+                tri_cells.append(i)
+
+        pivot_list = tri_cells if xyz else bi_cells
+        results: list[SolutionStep] = []
+        seen_elims: set[tuple] = set()
+
+        for pi, pivot in enumerate(pivot_list):
+            pivot_mask = grid.candidates[pivot]
+            for ji, j_cell in enumerate(bi_cells):
+                if xyz and j_cell == pivot:
+                    continue
+                if not xyz and ji <= pi:
+                    continue
+                j_mask = grid.candidates[j_cell]
+                if bin(pivot_mask | j_mask).count("1") != 3:
+                    continue
+                k_start = ji + 1
+                for k_cell in bi_cells[k_start:]:
+                    if k_cell == pivot:
+                        continue
+                    k_mask = grid.candidates[k_cell]
+                    if bin(pivot_mask | j_mask | k_mask).count("1") != 3:
+                        continue
+                    if pivot_mask == j_mask or j_mask == k_mask or k_mask == pivot_mask:
+                        continue
+
+                    candidates_for_pivot = [(pivot, j_cell, k_cell)]
+                    if not xyz:
+                        candidates_for_pivot += [
+                            (j_cell, pivot, k_cell),
+                            (k_cell, j_cell, pivot),
+                        ]
+
+                    for idx1, idx2, idx3 in candidates_for_pivot:
+                        step = self._check_wing(idx1, idx2, idx3, xyz)
+                        if step:
+                            key = tuple(sorted(
+                                (c.index, c.value) for c in step.candidates_to_delete
+                            ))
+                            if key not in seen_elims:
+                                seen_elims.add(key)
+                                results.append(step)
+        return results
+
+    def _find_w_wing_all(self) -> list[SolutionStep]:
+        grid = self.grid
+        bi_cells: list[int] = []
+        for i in range(81):
+            if grid.values[i] == 0 and bin(grid.candidates[i]).count("1") == 2:
+                bi_cells.append(i)
+
+        results: list[SolutionStep] = []
+        seen_elims: set[tuple] = set()
+
+        for ii, i in enumerate(bi_cells):
+            cell_i = grid.candidates[i]
+            bits = [b + 1 for b in range(9) if cell_i >> b & 1]
+            cand_a, cand_b = bits[0], bits[1]
+            peers_a = grid.candidate_sets[cand_a] & BUDDIES[i]
+            peers_b = grid.candidate_sets[cand_b] & BUDDIES[i]
+
+            for j in bi_cells[ii + 1:]:
+                if grid.candidates[j] != cell_i:
+                    continue
+
+                elim_a = peers_a & BUDDIES[j]
+                if elim_a:
+                    step = self._check_w_link(cand_a, cand_b, i, j, elim_a)
+                    if step:
+                        key = tuple(sorted(
+                            (c.index, c.value) for c in step.candidates_to_delete
+                        ))
+                        if key not in seen_elims:
+                            seen_elims.add(key)
+                            results.append(step)
+
+                elim_b = peers_b & BUDDIES[j]
+                if elim_b:
+                    step = self._check_w_link(cand_b, cand_a, i, j, elim_b)
+                    if step:
+                        key = tuple(sorted(
+                            (c.index, c.value) for c in step.candidates_to_delete
+                        ))
+                        if key not in seen_elims:
+                            seen_elims.add(key)
+                            results.append(step)
+
+        return results
+
     # ------------------------------------------------------------------
     # XY-Wing / XYZ-Wing shared logic
     # ------------------------------------------------------------------

@@ -23,6 +23,110 @@ class ColoringSolver:
             return self._find_multi_colors()
         return None
 
+    def find_all(self, sol_type: SolutionType) -> list[SolutionStep]:
+        if sol_type == SolutionType.SIMPLE_COLORS_TRAP:
+            return self._find_simple_colors_all(wrap=False)
+        if sol_type == SolutionType.SIMPLE_COLORS_WRAP:
+            return self._find_simple_colors_all(trap=False)
+        if sol_type == SolutionType.MULTI_COLORS_1:
+            return self._find_multi_colors_all(mc2=False)
+        if sol_type == SolutionType.MULTI_COLORS_2:
+            return self._find_multi_colors_all(mc1=False)
+        return []
+
+    def _find_simple_colors_all(
+        self, trap: bool = True, wrap: bool = True
+    ) -> list[SolutionStep]:
+        results: list[SolutionStep] = []
+        seen_elims: set[tuple] = set()
+        for cand in range(1, 10):
+            pairs = self._do_coloring(cand)
+            for c1, c2 in pairs:
+                if wrap:
+                    step = self._check_wrap(cand, c1, c2)
+                    if step:
+                        key = tuple(sorted(
+                            (c.index, c.value) for c in step.candidates_to_delete
+                        ))
+                        if key not in seen_elims:
+                            seen_elims.add(key)
+                            results.append(step)
+                if trap:
+                    step = self._check_trap(cand, c1, c2)
+                    if step:
+                        key = tuple(sorted(
+                            (c.index, c.value) for c in step.candidates_to_delete
+                        ))
+                        if key not in seen_elims:
+                            seen_elims.add(key)
+                            results.append(step)
+        return results
+
+    def _find_multi_colors_all(
+        self, mc1: bool = True, mc2: bool = True
+    ) -> list[SolutionStep]:
+        results: list[SolutionStep] = []
+        seen_elims: set[tuple] = set()
+        grid = self.grid
+        for cand in range(1, 10):
+            pairs = self._do_coloring(cand)
+            n = len(pairs)
+            for i in range(n):
+                for j in range(n):
+                    if i == j:
+                        continue
+                    a1, a2 = pairs[i]
+                    b1, b2 = pairs[j]
+
+                    if mc2:
+                        elim_mask = 0
+                        if self._set_sees_both(a1, b1, b2):
+                            for cell in a1:
+                                if grid.candidate_sets[cand] >> cell & 1:
+                                    elim_mask |= 1 << cell
+                        if self._set_sees_both(a2, b1, b2):
+                            for cell in a2:
+                                if grid.candidate_sets[cand] >> cell & 1:
+                                    elim_mask |= 1 << cell
+                        if elim_mask:
+                            elim: set[int] = set()
+                            tmp = elim_mask
+                            while tmp:
+                                lsb = tmp & -tmp
+                                elim.add(lsb.bit_length() - 1)
+                                tmp ^= lsb
+                            step = self._make_mc_step(
+                                SolutionType.MULTI_COLORS_2, cand, a1, a2, b1, b2, elim
+                            )
+                            key = tuple(sorted(
+                                (c.index, c.value) for c in step.candidates_to_delete
+                            ))
+                            if key not in seen_elims:
+                                seen_elims.add(key)
+                                results.append(step)
+
+                    if mc1:
+                        elim_mc1: set[int] = set()
+                        if self._sets_intersect_buddies(a1, b1):
+                            elim_mc1 |= self._trap_elim(cand, a2, b2)
+                        if self._sets_intersect_buddies(a1, b2):
+                            elim_mc1 |= self._trap_elim(cand, a2, b1)
+                        if self._sets_intersect_buddies(a2, b1):
+                            elim_mc1 |= self._trap_elim(cand, a1, b2)
+                        if self._sets_intersect_buddies(a2, b2):
+                            elim_mc1 |= self._trap_elim(cand, a1, b1)
+                        if elim_mc1:
+                            step = self._make_mc_step(
+                                SolutionType.MULTI_COLORS_1, cand, a1, a2, b1, b2, elim_mc1
+                            )
+                            key = tuple(sorted(
+                                (c.index, c.value) for c in step.candidates_to_delete
+                            ))
+                            if key not in seen_elims:
+                                seen_elims.add(key)
+                                results.append(step)
+        return results
+
     # ------------------------------------------------------------------
     # Coloring graph builder
     # ------------------------------------------------------------------

@@ -421,6 +421,18 @@ class AlsSolver:
             return self._find_death_blossom()
         return None
 
+    def find_all(self, sol_type: SolutionType) -> list[SolutionStep]:
+        if sol_type == SolutionType.ALS_XZ:
+            return self._find_als_xz_all()
+        if sol_type == SolutionType.ALS_XY_WING:
+            return self._find_als_xy_wing_all()
+        if sol_type == SolutionType.ALS_XY_CHAIN:
+            return self._find_als_xy_chain_all()
+        if sol_type == SolutionType.DEATH_BLOSSOM:
+            step = self._find_death_blossom()
+            return [step] if step is not None else []
+        return []
+
     # ------------------------------------------------------------------
     # ALS-XZ
     # ------------------------------------------------------------------
@@ -459,6 +471,37 @@ class AlsSolver:
             return step
 
         return None
+
+    def _find_als_xz_all(self) -> list[SolutionStep]:
+        """Return ALL ALS-XZ steps (collect all, deduplicate by elimination set)."""
+        grid = self.grid
+        alses = _collect_alses(grid)
+        rcs, _, _ = _collect_rcs(alses)
+        deletes_map: dict = {}
+
+        for rc in rcs:
+            if rc.als1 >= rc.als2:
+                continue
+            als1 = alses[rc.als1]
+            als2 = alses[rc.als2]
+
+            elims: list[tuple[int, int]] = []
+            elims.extend(_check_candidates_to_delete(als1, als2, rc.cand1))
+            if rc.cand2:
+                elims.extend(_check_candidates_to_delete(als1, als2, rc.cand2))
+                elims.extend(_check_doubly_linked_als(als1, als2, rc.cand1, rc.cand2))
+                elims.extend(_check_doubly_linked_als(als2, als1, rc.cand1, rc.cand2))
+            if not elims:
+                continue
+
+            step = SolutionStep(SolutionType.ALS_XZ)
+            step.add_als(als1.indices, als1.candidates)
+            step.add_als(als2.indices, als2.candidates)
+            for cell, cand in elims:
+                step.add_candidate_to_delete(cell, cand)
+            _record_step(step, _als_index_count(step), deletes_map)
+
+        return [step for _, step in deletes_map.values()]
 
     # ------------------------------------------------------------------
     # ALS-XY-Wing
@@ -513,6 +556,46 @@ class AlsSolver:
 
         return None
 
+    def _find_als_xy_wing_all(self) -> list[SolutionStep]:
+        """Return ALL ALS-XY-Wing steps (collect all, deduplicate by elimination set)."""
+        grid = self.grid
+        alses = _collect_alses(grid)
+        rcs, _, _ = _collect_rcs(alses)
+        n_rcs = len(rcs)
+        deletes_map: dict = {}
+
+        for i in range(n_rcs):
+            rc1 = rcs[i]
+            for j in range(i + 1, n_rcs):
+                rc2 = rcs[j]
+                if rc1.cand2 == 0 and rc2.cand2 == 0 and rc1.cand1 == rc2.cand1:
+                    continue
+                c_idx, a_idx, b_idx = _identify_pivot(rc1, rc2)
+                if c_idx is None:
+                    continue
+                als_a = alses[a_idx]
+                als_b = alses[b_idx]
+                if als_a.indices & als_b.indices:
+                    continue
+                union_ab = als_a.indices | als_b.indices
+                if union_ab == als_a.indices or union_ab == als_b.indices:
+                    continue
+                elims = _check_candidates_to_delete(
+                    als_a, als_b,
+                    rc1.cand1, rc1.cand2, rc2.cand1, rc2.cand2,
+                )
+                if not elims:
+                    continue
+                step = SolutionStep(SolutionType.ALS_XY_WING)
+                step.add_als(als_a.indices, als_a.candidates)
+                step.add_als(als_b.indices, als_b.candidates)
+                step.add_als(alses[c_idx].indices, alses[c_idx].candidates)
+                for cell, cand in elims:
+                    step.add_candidate_to_delete(cell, cand)
+                _record_step(step, _als_index_count(step), deletes_map)
+
+        return [step for _, step in deletes_map.values()]
+
     # ------------------------------------------------------------------
     # ALS-XY-Chain
     # ------------------------------------------------------------------
@@ -539,6 +622,30 @@ class AlsSolver:
             als_in_chain[i] = False
 
         return _best_step(deletes_map)
+
+    def _find_als_xy_chain_all(self) -> list[SolutionStep]:
+        """Return ALL ALS-XY-Chain steps (all entries from the deduplication map)."""
+        grid = self.grid
+        alses = _collect_alses(grid)
+        rcs, start_indices, end_indices = _collect_rcs(alses)
+        deletes_map: dict = {}
+
+        n_als = len(alses)
+        als_in_chain = [False] * n_als
+        chain: list[RestrictedCommon] = []
+
+        for i in range(n_als):
+            start_als = alses[i]
+            als_in_chain[i] = True
+            self._chain_recursive(
+                i, None, True,
+                alses, rcs, start_indices, end_indices,
+                als_in_chain, chain,
+                start_als, deletes_map,
+            )
+            als_in_chain[i] = False
+
+        return [step for _, step in deletes_map.values()]
 
     def _chain_recursive(
         self,

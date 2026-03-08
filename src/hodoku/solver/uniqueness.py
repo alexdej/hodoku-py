@@ -38,6 +38,36 @@ class UniquenessSolver:
             return self._find_bug_plus_1()
         return None
 
+    def find_all(self, sol_type: SolutionType) -> list[SolutionStep]:
+        if sol_type in _UT_TYPES:
+            return self._find_ur_all(sol_type)
+        if sol_type == SolutionType.BUG_PLUS_1:
+            step = self._find_bug_plus_1()
+            return [step] if step is not None else []
+        return []
+
+    def _find_ur_all(self, target_type: SolutionType) -> list[SolutionStep]:
+        """Return ALL UR steps of the given type."""
+        grid = self.grid
+        seen_rects: set[tuple[int, int, int, int]] = set()
+        results: list[SolutionStep] = []
+
+        for i11 in range(81):
+            if grid.values[i11] != 0:
+                continue
+            n = bin(grid.candidates[i11]).count("1")
+            if n < 2:
+                continue
+            cands = [d for d in range(1, 10) if grid.candidates[i11] >> (d - 1) & 1]
+            for ci in range(len(cands)):
+                for cj in range(ci + 1, len(cands)):
+                    cand1, cand2 = cands[ci], cands[cj]
+                    self._find_ur_for_pair(
+                        i11, cand1, cand2, seen_rects, [], target_type,
+                        collector=results,
+                    )
+        return results
+
     # ------------------------------------------------------------------
     # BUG+1
     # ------------------------------------------------------------------
@@ -146,6 +176,7 @@ class UniquenessSolver:
         seen_rects: set[tuple[int, int, int, int]],
         cached: list[SolutionStep],
         target_type: SolutionType,
+        collector: list[SolutionStep] | None = None,
     ) -> SolutionStep | None:
         """Search for URs starting at i11 with the given candidate pair."""
         grid = self.grid
@@ -191,9 +222,10 @@ class UniquenessSolver:
                 seen_rects.add(key)
 
                 step = self._check_ur(
-                    i11, i12, i21, i22, cand1, cand2, cached, target_type
+                    i11, i12, i21, i22, cand1, cand2, cached, target_type,
+                    collector=collector,
                 )
-                if step is not None:
+                if collector is None and step is not None:
                     return step
         return None
 
@@ -203,6 +235,7 @@ class UniquenessSolver:
         cand1: int, cand2: int,
         cached: list[SolutionStep],
         target_type: SolutionType,
+        collector: list[SolutionStep] | None = None,
     ) -> SolutionStep | None:
         """Evaluate all UR types for this rectangle."""
         grid = self.grid
@@ -222,6 +255,10 @@ class UniquenessSolver:
         twoSize = len(two_cands)
 
         def emit(step: SolutionStep) -> SolutionStep | None:
+            if collector is not None:
+                if step.type == target_type:
+                    collector.append(step)
+                return None
             if step.type == target_type:
                 return step
             cached.append(step)
@@ -309,9 +346,10 @@ class UniquenessSolver:
                 ]
                 step = self._check_ut3_recursive(
                     unit_type, unit_cells, u3_pool, u3_cands, list(additional),
-                    ur_mask, ur_all, 0, indexe, cand1, cand2, cached, target_type
+                    ur_mask, ur_all, 0, indexe, cand1, cand2, cached, target_type,
+                    collector=collector,
                 )
-                if step:
+                if collector is None and step:
                     return step
 
         # UT4: 2 additional-candidate cells in same row/col; one UR candidate is absent
@@ -383,17 +421,17 @@ class UniquenessSolver:
                     for corner in two_cands:
                         step = self._check_hidden_rect(
                             corner, additional, two_cands, cand1, cand2,
-                            indexe, cached, target_type
+                            indexe, cached, target_type, collector=collector,
                         )
-                        if step:
+                        if collector is None and step:
                             return step
             else:
                 corner = two_cands[0]
                 step = self._check_hidden_rect(
                     corner, additional, two_cands, cand1, cand2,
-                    indexe, cached, target_type
+                    indexe, cached, target_type, collector=collector,
                 )
-                if step:
+                if collector is None and step:
                     return step
 
         return None
@@ -412,6 +450,7 @@ class UniquenessSolver:
         cand1: int, cand2: int,
         cached: list[SolutionStep],
         target_type: SolutionType,
+        collector: list[SolutionStep] | None = None,
     ) -> SolutionStep | None:
         grid = self.grid
         for i in range(start, len(pool)):
@@ -457,15 +496,20 @@ class UniquenessSolver:
                                 if grid.candidates[cell] >> (d - 1) & 1:
                                     s.fins.append(Candidate(cell, d))
                     if s.candidates_to_delete:
-                        if s.type == target_type:
-                            return s
-                        cached.append(s)
+                        if collector is not None:
+                            if s.type == target_type:
+                                collector.append(s)
+                        else:
+                            if s.type == target_type:
+                                return s
+                            cached.append(s)
 
             step = self._check_ut3_recursive(
                 unit_type, unit_cells, pool, new_cands, new_indices,
-                ur_mask, ur_all, i + 1, indexe, cand1, cand2, cached, target_type
+                ur_mask, ur_all, i + 1, indexe, cand1, cand2, cached, target_type,
+                collector=collector,
             )
-            if step:
+            if collector is None and step:
                 return step
         return None
 
@@ -478,6 +522,7 @@ class UniquenessSolver:
         indexe: tuple[int, int, int, int],
         cached: list[SolutionStep],
         target_type: SolutionType,
+        collector: list[SolutionStep] | None = None,
     ) -> SolutionStep | None:
         """Check Hidden Rectangle from one corner cell."""
         grid = self.grid
@@ -508,9 +553,13 @@ class UniquenessSolver:
                 for c in indexe:
                     s.add_index(c)
                 s.add_candidate_to_delete(del_idx, del_cand)
-                if s.type == target_type:
-                    return s
-                cached.append(s)
+                if collector is not None:
+                    if s.type == target_type:
+                        collector.append(s)
+                else:
+                    if s.type == target_type:
+                        return s
+                    cached.append(s)
         return None
 
     def _line_mask(self, row: int) -> int:

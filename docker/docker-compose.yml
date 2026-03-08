@@ -9,7 +9,15 @@ services:
     stdin_open: true
     tty: true
     volumes:
+      # mount required .claude config files read-only
+      - ~/.claude/.credentials.json:/home/${USER}/.credentials.json:ro
+      - ~/.claude/settings.json:/home/${USER}/settings.json:ro
+
+      # known_hosts (for git)
+      - ~/.ssh/known_hosts:/home/${USER}/.ssh/known_hosts:ro
+
+      # workspace files (read-write)
       - ..:/workspace/hodoku-py
+
+      # additional files (read-only)
       - ../../HoDoKu:/workspace/HoDoKu:ro
-      - ~/.claude:/home/${USER}/.claude:ro
-      - ~/.claude.json:/home/${USER}/.claude.json

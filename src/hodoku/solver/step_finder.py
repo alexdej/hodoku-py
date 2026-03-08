@@ -114,13 +114,23 @@ class SudokuStepFinder:
         self._brute_force = BruteForceSolver(grid)
 
     def find_all(self, sol_type: SolutionType) -> list[SolutionStep]:
-        """Return ALL steps of the given type (for /bsa mode and reglib harness).
-
-        Solvers that implement find_all() natively return every instance.
-        All others fall back to get_step() and return 0 or 1 result.
-        """
+        """Return ALL steps of the given type (for /bsa mode and reglib harness)."""
         if sol_type in _SIMPLE_TYPES:
             return self._simple.find_all(sol_type)
+        if sol_type in _SINGLE_DIGIT_TYPES:
+            return self._single_digit.find_all(sol_type)
+        if sol_type in _WING_TYPES:
+            return self._wings.find_all(sol_type)
+        if sol_type in _COLORING_TYPES:
+            return self._coloring.find_all(sol_type)
+        if sol_type in _FISH_TYPES:
+            return self._fish.find_all(sol_type)
+        if sol_type in _UNIQUENESS_TYPES:
+            return self._uniqueness.find_all(sol_type)
+        if sol_type in _ALS_TYPES:
+            return self._als.find_all(sol_type)
+        if sol_type in _CHAIN_TYPES:
+            return self._chains.find_all(sol_type)
         step = self.get_step(sol_type)
         return [step] if step is not None else []
 

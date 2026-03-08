@@ -106,6 +106,12 @@ class SimpleSolver:
 
     def find_all(self, sol_type: SolutionType) -> list[SolutionStep]:
         """Return ALL steps of the given type (used by reglib harness and /bsa mode)."""
+        if sol_type == SolutionType.FULL_HOUSE:
+            return self._find_all_full_house()
+        if sol_type == SolutionType.NAKED_SINGLE:
+            return self._find_all_naked_singles()
+        if sol_type == SolutionType.HIDDEN_SINGLE:
+            return self._find_all_hidden_singles()
         if sol_type == SolutionType.LOCKED_CANDIDATES_1:
             return self._lc_in_units_all(18, BLOCKS)
         if sol_type == SolutionType.LOCKED_CANDIDATES_2:
@@ -129,6 +135,65 @@ class SimpleSolver:
         # For all other types, fall back to get_step (yields 0 or 1 result).
         step = self.get_step(sol_type)
         return [step] if step is not None else []
+
+    def _find_all_full_house(self) -> list[SolutionStep]:
+        """Return all Full House steps (one per unit with exactly one unsolved cell)."""
+        g = self.grid
+        results: list[SolutionStep] = []
+        seen: set[int] = set()
+        for unit_idx in range(27):
+            unsolved = [c for c in ALL_UNITS[unit_idx] if g.values[c] == 0]
+            if len(unsolved) != 1:
+                continue
+            cell = unsolved[0]
+            if cell in seen:
+                continue
+            seen.add(cell)
+            digit = next(
+                d for d in range(1, 10) if g.candidates[cell] & DIGIT_MASKS[d]
+            )
+            step = SolutionStep(SolutionType.FULL_HOUSE)
+            step.add_value(digit)
+            step.add_index(cell)
+            results.append(step)
+        return results
+
+    def _find_all_naked_singles(self) -> list[SolutionStep]:
+        """Return all Naked Single steps (one per cell with exactly one candidate)."""
+        g = self.grid
+        results: list[SolutionStep] = []
+        for cell in range(81):
+            if g.values[cell] != 0:
+                continue
+            mask = g.candidates[cell]
+            if not mask or (mask & (mask - 1)):  # not exactly one bit set
+                continue
+            digit = mask.bit_length()
+            step = SolutionStep(SolutionType.NAKED_SINGLE)
+            step.add_value(digit)
+            step.add_index(cell)
+            results.append(step)
+        return results
+
+    def _find_all_hidden_singles(self) -> list[SolutionStep]:
+        """Return all Hidden Single steps by scanning all 27 units x 9 digits."""
+        g = self.grid
+        results: list[SolutionStep] = []
+        seen: set[tuple[int, int]] = set()
+        for unit_idx in range(27):
+            for digit in range(1, 10):
+                if g.free[unit_idx][digit] != 1:
+                    continue
+                for cell in ALL_UNITS[unit_idx]:
+                    if g.values[cell] == 0 and (g.candidates[cell] & DIGIT_MASKS[digit]):
+                        if (cell, digit) not in seen:
+                            seen.add((cell, digit))
+                            step = SolutionStep(SolutionType.HIDDEN_SINGLE)
+                            step.add_value(digit)
+                            step.add_index(cell)
+                            results.append(step)
+                        break
+        return results
 
     def _find_locked_candidates(self, sol_type: SolutionType) -> SolutionStep | None:
         """Dispatch LC1 (blocks→row/col) and LC2 (row/col→block)."""

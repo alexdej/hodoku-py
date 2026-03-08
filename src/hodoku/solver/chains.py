@@ -320,6 +320,29 @@ class ChainSolver:
             return self._find_nice_loop(grouped=True)
         return None
 
+    def find_all(self, sol_type: SolutionType) -> list[SolutionStep]:
+        if sol_type == SolutionType.TURBOT_FISH:
+            return self._find_x_chain_impl_all(SolutionType.TURBOT_FISH, max_nodes=4)
+        if sol_type == SolutionType.X_CHAIN:
+            return self._find_x_chain_impl_all(SolutionType.X_CHAIN, max_nodes=_MAX_CHAIN)
+        if sol_type == SolutionType.XY_CHAIN:
+            return self._find_xy_type_all(SolutionType.XY_CHAIN)
+        if sol_type == SolutionType.REMOTE_PAIR:
+            return self._find_xy_type_all(SolutionType.REMOTE_PAIR)
+        if sol_type in (
+            SolutionType.CONTINUOUS_NICE_LOOP,
+            SolutionType.DISCONTINUOUS_NICE_LOOP,
+            SolutionType.AIC,
+        ):
+            return self._find_nice_loop_all(grouped=False, target_type=sol_type)
+        if sol_type in (
+            SolutionType.GROUPED_CONTINUOUS_NICE_LOOP,
+            SolutionType.GROUPED_DISCONTINUOUS_NICE_LOOP,
+            SolutionType.GROUPED_AIC,
+        ):
+            return self._find_nice_loop_all(grouped=True, target_type=sol_type)
+        return []
+
     # ------------------------------------------------------------------
     # Turbot Fish (X-Chain restricted to 3 links / 4 nodes)
     # ------------------------------------------------------------------
@@ -386,6 +409,43 @@ class ChainSolver:
         steps = [step for _, step in deletes_map.values()]
         steps.sort(key=_step_sort_key)
         return steps[0]
+
+    def _find_x_chain_impl_all(self, sol_type: SolutionType, max_nodes: int) -> list[SolutionStep]:
+        """Like _find_x_chain_impl but returns ALL steps (sorted by quality)."""
+        grid = self.grid
+        deletes_map: dict[tuple, tuple[int, SolutionStep]] = {}
+
+        for digit in range(1, 10):
+            cand_set = grid.candidate_sets[digit]
+            if not cand_set:
+                continue
+            links = _build_x_links(grid, digit)
+            tmp = cand_set
+            while tmp:
+                lsb = tmp & -tmp
+                start = lsb.bit_length() - 1
+                tmp ^= lsb
+                start_buddies = grid.candidate_sets[digit] & BUDDIES[start]
+                if not start_buddies:
+                    continue
+                for nb, is_strong in links[start]:
+                    if not is_strong:
+                        continue
+                    chain: list[int] = [start, nb]
+                    chain_set: set[int] = {nb}
+                    self._dfs_x(
+                        digit, links, chain, chain_set,
+                        strong_only=False,
+                        start=start,
+                        start_buddies=start_buddies,
+                        deletes_map=deletes_map,
+                        sol_type=sol_type,
+                        max_nodes=max_nodes,
+                    )
+
+        steps = [step for _, step in deletes_map.values()]
+        steps.sort(key=_step_sort_key)
+        return steps
 
     def _dfs_x(
         self,
@@ -508,6 +568,47 @@ class ChainSolver:
         steps = [step for _, step in deletes_map.values()]
         steps.sort(key=_step_sort_key)
         return steps[0]
+
+    def _find_xy_type_all(self, sol_type: SolutionType) -> list[SolutionStep]:
+        """Like _find_xy_type but returns ALL steps (sorted by quality)."""
+        grid = self.grid
+        is_rp = sol_type == SolutionType.REMOTE_PAIR
+        deletes_map: dict[tuple, tuple[int, SolutionStep]] = {}
+
+        for start in range(81):
+            if grid.values[start] != 0:
+                continue
+            cands = [d for d in range(1, 10) if grid.candidate_sets[d] >> start & 1]
+            if len(cands) != 2:
+                continue
+            start_mask = grid.candidates[start]
+            d1, d2 = cands[0], cands[1]
+
+            for start_cand, other_cand in ((d1, d2), (d2, d1)):
+                start_buddies = grid.candidate_sets[start_cand] & BUDDIES[start]
+                if not start_buddies:
+                    continue
+                if is_rp:
+                    start_buddies2 = grid.candidate_sets[other_cand] & BUDDIES[start]
+                else:
+                    start_buddies2 = 0
+                chain: list[tuple[int, int]] = [(start, start_cand), (start, other_cand)]
+                visited: set[int] = {start}
+                self._dfs_xy(
+                    grid, chain, visited,
+                    strong_only=False,
+                    start=start,
+                    start_cand=start_cand,
+                    start_buddies=start_buddies,
+                    start_buddies2=start_buddies2,
+                    start_mask=start_mask,
+                    sol_type=sol_type,
+                    deletes_map=deletes_map,
+                )
+
+        steps = [step for _, step in deletes_map.values()]
+        steps.sort(key=_step_sort_key)
+        return steps
 
     def _dfs_xy(
         self,
@@ -744,6 +845,62 @@ class ChainSolver:
             return None
         all_steps.sort(key=_step_sort_key)
         return all_steps[0]
+
+    def _find_nice_loop_all(
+        self, grouped: bool, target_type: SolutionType
+    ) -> list[SolutionStep]:
+        """Run full NL DFS and return all steps of target_type (sorted by quality)."""
+        grid = self.grid
+        if grouped:
+            group_nodes = _collect_group_nodes(grid)
+            links = _build_gnl_links(grid, group_nodes)
+        else:
+            group_nodes = []
+            links = _build_nl_links(grid)
+        deletes_dnl: dict[tuple, tuple[int, SolutionStep]] = {}
+        deletes_cnl: dict[tuple, tuple[int, SolutionStep]] = {}
+        deletes_aic: dict[tuple, tuple[int, SolutionStep]] = {}
+
+        for start_cell in range(81):
+            if grid.values[start_cell] != 0:
+                continue
+            for start_cand in range(1, 10):
+                if not (grid.candidate_sets[start_cand] >> start_cell & 1):
+                    continue
+                start_nid = start_cell * 9 + (start_cand - 1)
+                for first_end_nid, first_is_strong in links[start_nid]:
+                    if first_end_nid == start_nid:
+                        continue
+                    chain: list[int] = [start_nid, first_end_nid]
+                    link_strong: list[bool] = [first_is_strong]
+                    chain_occupied: int = 1 << start_cell
+                    self._dfs_nl(
+                        links, chain, link_strong, chain_occupied,
+                        strong_only=not first_is_strong,
+                        start_cell=start_cell,
+                        start_cand=start_cand,
+                        group_nodes=group_nodes,
+                        deletes_dnl=deletes_dnl,
+                        deletes_cnl=deletes_cnl,
+                        deletes_aic=deletes_aic,
+                    )
+
+        if target_type in (
+            SolutionType.CONTINUOUS_NICE_LOOP,
+            SolutionType.GROUPED_CONTINUOUS_NICE_LOOP,
+        ):
+            d = deletes_cnl
+        elif target_type in (
+            SolutionType.DISCONTINUOUS_NICE_LOOP,
+            SolutionType.GROUPED_DISCONTINUOUS_NICE_LOOP,
+        ):
+            d = deletes_dnl
+        else:  # AIC / GROUPED_AIC
+            d = deletes_aic
+
+        steps = [step for _, step in d.values()]
+        steps.sort(key=_step_sort_key)
+        return steps
 
     def _dfs_nl(
         self,
