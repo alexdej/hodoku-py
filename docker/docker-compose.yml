@@ -5,12 +5,11 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.claude
       args:
-        APP_USER: me
+        APP_USER: ${USER}
     stdin_open: true
     tty: true
     volumes:
       - ..:/workspace/hodoku-py
       - ../../HoDoKu:/workspace/HoDoKu:ro
-      - ~/.config/jj:/root/.config/jj:ro
-      - ~/.claude:/root/.claude
-      - ~/.claude.json:/root/.claude.json
+      - ~/.claude:/home/${USER}/.claude:ro
+      - ~/.claude.json:/home/${USER}/.claude.json
