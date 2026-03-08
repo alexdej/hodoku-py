@@ -18,7 +18,9 @@
       "Bash(git status:*)",
       "Bash(jj log:*)",
       "Bash(jj diff:*)",
-      "Bash(jj show:*)"
+      "Bash(jj show:*)",
+      "Bash(python:*)",
+      "Bash(git stash:*)"
     ]
   }
 }

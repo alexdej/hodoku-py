@@ -36,7 +36,7 @@ import pytest
 
 from hodoku.core.grid import Grid
 from hodoku.core.types import SolutionType
-from hodoku.solver.step_finder import SudokuStepFinder
+from hodoku.solver.step_finder import SudokuStepFinder, _ALS_TYPES
 from tests.reglib.reglib_parser import REGLIB_FILE, ReglibEntry
 
 # Technique codes with no implementation at all — skip rather than fail.
@@ -60,13 +60,21 @@ def _build_grid(entry: ReglibEntry) -> Grid:
     return grid
 
 
+_ALS_OVERLAP_CODES = frozenset({"0902", "0903", "0904"})
+
+
 def _find_all_steps(
-    finder: SudokuStepFinder, sol_types: frozenset[SolutionType]
+    finder: SudokuStepFinder,
+    sol_types: frozenset[SolutionType],
+    allow_overlap: bool = False,
 ) -> list:
     """Return all steps of any of the given SolutionTypes."""
     results = []
     for sol_type in sorted(sol_types, key=lambda t: t.value):
-        results.extend(finder.find_all(sol_type))
+        if allow_overlap and sol_type in _ALS_TYPES:
+            results.extend(finder._als.find_all(sol_type, allow_overlap=True))
+        else:
+            results.extend(finder.find_all(sol_type))
     return results
 
 
@@ -82,9 +90,13 @@ def test_reglib_technique(reglib_entry: ReglibEntry) -> None:
     if not entry.solution_types:
         pytest.skip(f"Unknown technique code {entry.technique_code!r}")
 
+    allow_overlap = (
+        entry.variant == 2 and entry.technique_code in _ALS_OVERLAP_CODES
+    )
+
     grid = _build_grid(entry)
     finder = SudokuStepFinder(grid)
-    steps = _find_all_steps(finder, entry.solution_types)
+    steps = _find_all_steps(finder, entry.solution_types, allow_overlap=allow_overlap)
 
     # --- Fail case: technique must NOT fire ---
     if entry.fail_case:

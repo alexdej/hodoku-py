@@ -212,11 +212,14 @@ def _check_als_recursive(
 
 def _collect_rcs(
     alses: list[Als],
+    allow_overlap: bool = False,
 ) -> tuple[list[RestrictedCommon], list[int], list[int]]:
     """Find all Restricted Commons between ALS pairs.
 
-    Forward-only (als2 index > als1 index) and no-overlap mode,
-    matching HoDoKu's defaults when solving.
+    Forward-only (als2 index > als1 index).
+    When allow_overlap is False (default), overlapping ALS pairs are skipped.
+    When allow_overlap is True, overlapping pairs are allowed provided the RC
+    candidate does not appear in the overlap region (mirrors Java withOverlap).
 
     Returns (rcs, start_indices, end_indices) where start_indices[i]..end_indices[i]
     is the slice of rcs whose als1 == i.
@@ -231,8 +234,8 @@ def _collect_rcs(
         start_indices[i] = len(rcs)
         for j in range(i + 1, n):
             als2 = alses[j]
-            # No overlap allowed
-            if als1.indices & als2.indices:
+            overlap = als1.indices & als2.indices
+            if overlap and not allow_overlap:
                 continue
             # Must share at least one candidate
             common = als1.candidates & als2.candidates
@@ -245,10 +248,11 @@ def _collect_rcs(
                 lsb = tmp & -tmp
                 cand = lsb.bit_length()  # digit
                 tmp ^= lsb
-                # RC check: all instances of cand in both ALSes must see each other.
-                # "See each other" means every cand-cell is in the intersection of
-                # buddies_als_per_cand of both ALSes.
                 all_cand_cells = als1.indices_per_cand[cand] | als2.indices_per_cand[cand]
+                # RC candidate must not appear in the overlap region
+                if overlap and all_cand_cells & overlap:
+                    continue
+                # RC check: all instances of cand in both ALSes must see each other.
                 common_buddies = (als1.buddies_als_per_cand[cand]
                                   & als2.buddies_als_per_cand[cand])
                 if all_cand_cells & ~common_buddies:
@@ -410,27 +414,30 @@ class AlsSolver:
     def __init__(self, grid: Grid) -> None:
         self.grid = grid
 
-    def get_step(self, sol_type: SolutionType) -> SolutionStep | None:
+    def get_step(
+        self, sol_type: SolutionType, allow_overlap: bool = False
+    ) -> SolutionStep | None:
         if sol_type == SolutionType.ALS_XZ:
             return self._find_als_xz()
         if sol_type == SolutionType.ALS_XY_WING:
-            return self._find_als_xy_wing()
+            return self._find_als_xy_wing(allow_overlap=allow_overlap)
         if sol_type == SolutionType.ALS_XY_CHAIN:
-            return self._find_als_xy_chain()
+            return self._find_als_xy_chain(allow_overlap=allow_overlap)
         if sol_type == SolutionType.DEATH_BLOSSOM:
-            return self._find_death_blossom()
+            return self._find_death_blossom(allow_overlap=allow_overlap)
         return None
 
-    def find_all(self, sol_type: SolutionType) -> list[SolutionStep]:
+    def find_all(
+        self, sol_type: SolutionType, allow_overlap: bool = False
+    ) -> list[SolutionStep]:
         if sol_type == SolutionType.ALS_XZ:
             return self._find_als_xz_all()
         if sol_type == SolutionType.ALS_XY_WING:
-            return self._find_als_xy_wing_all()
+            return self._find_als_xy_wing_all(allow_overlap=allow_overlap)
         if sol_type == SolutionType.ALS_XY_CHAIN:
-            return self._find_als_xy_chain_all()
+            return self._find_als_xy_chain_all(allow_overlap=allow_overlap)
         if sol_type == SolutionType.DEATH_BLOSSOM:
-            step = self._find_death_blossom()
-            return [step] if step is not None else []
+            return self._find_death_blossom_all(allow_overlap=allow_overlap)
         return []
 
     # ------------------------------------------------------------------
@@ -507,11 +514,11 @@ class AlsSolver:
     # ALS-XY-Wing
     # ------------------------------------------------------------------
 
-    def _find_als_xy_wing(self) -> SolutionStep | None:
+    def _find_als_xy_wing(self, allow_overlap: bool = False) -> SolutionStep | None:
         """Return the FIRST ALS-XY-Wing step found (mirrors Java's onlyOne=true mode)."""
         grid = self.grid
         alses = _collect_alses(grid)
-        rcs, _, _ = _collect_rcs(alses)
+        rcs, _, _ = _collect_rcs(alses, allow_overlap=allow_overlap)
         n_rcs = len(rcs)
 
         for i in range(n_rcs):
@@ -531,8 +538,8 @@ class AlsSolver:
                 als_a = alses[a_idx]
                 als_b = alses[b_idx]
 
-                # A and B must not overlap
-                if als_a.indices & als_b.indices:
+                # A and B must not overlap (skip when allow_overlap=True)
+                if not allow_overlap and (als_a.indices & als_b.indices):
                     continue
                 # A must not be subset/superset of B
                 union_ab = als_a.indices | als_b.indices
@@ -556,11 +563,11 @@ class AlsSolver:
 
         return None
 
-    def _find_als_xy_wing_all(self) -> list[SolutionStep]:
+    def _find_als_xy_wing_all(self, allow_overlap: bool = False) -> list[SolutionStep]:
         """Return ALL ALS-XY-Wing steps (collect all, deduplicate by elimination set)."""
         grid = self.grid
         alses = _collect_alses(grid)
-        rcs, _, _ = _collect_rcs(alses)
+        rcs, _, _ = _collect_rcs(alses, allow_overlap=allow_overlap)
         n_rcs = len(rcs)
         deletes_map: dict = {}
 
@@ -575,7 +582,7 @@ class AlsSolver:
                     continue
                 als_a = alses[a_idx]
                 als_b = alses[b_idx]
-                if als_a.indices & als_b.indices:
+                if not allow_overlap and (als_a.indices & als_b.indices):
                     continue
                 union_ab = als_a.indices | als_b.indices
                 if union_ab == als_a.indices or union_ab == als_b.indices:
@@ -600,10 +607,10 @@ class AlsSolver:
     # ALS-XY-Chain
     # ------------------------------------------------------------------
 
-    def _find_als_xy_chain(self) -> SolutionStep | None:
+    def _find_als_xy_chain(self, allow_overlap: bool = False) -> SolutionStep | None:
         grid = self.grid
         alses = _collect_alses(grid)
-        rcs, start_indices, end_indices = _collect_rcs(alses)
+        rcs, start_indices, end_indices = _collect_rcs(alses, allow_overlap=allow_overlap)
         deletes_map: dict = {}
 
         n_als = len(alses)
@@ -623,11 +630,11 @@ class AlsSolver:
 
         return _best_step(deletes_map)
 
-    def _find_als_xy_chain_all(self) -> list[SolutionStep]:
+    def _find_als_xy_chain_all(self, allow_overlap: bool = False) -> list[SolutionStep]:
         """Return ALL ALS-XY-Chain steps (all entries from the deduplication map)."""
         grid = self.grid
         alses = _collect_alses(grid)
-        rcs, start_indices, end_indices = _collect_rcs(alses)
+        rcs, start_indices, end_indices = _collect_rcs(alses, allow_overlap=allow_overlap)
         deletes_map: dict = {}
 
         n_als = len(alses)
@@ -745,7 +752,37 @@ class AlsSolver:
     # Death Blossom
     # ------------------------------------------------------------------
 
-    def _find_death_blossom(self) -> SolutionStep | None:
+    def _find_death_blossom_all(self, allow_overlap: bool = False) -> list[SolutionStep]:
+        """Return ALL Death Blossom steps."""
+        grid = self.grid
+        alses = _collect_alses(grid)
+        rcdb = self._collect_rcs_for_death_blossom(alses)
+        result: list[SolutionStep] = []
+
+        for stem in range(81):
+            if grid.values[stem] != 0:
+                continue
+            if rcdb[stem] is None:
+                continue
+            if rcdb[stem].cand_mask != grid.candidates[stem]:
+                continue
+
+            max_cand = 0
+            tmp = grid.candidates[stem]
+            while tmp:
+                lsb = tmp & -tmp
+                max_cand = lsb.bit_length()
+                tmp ^= lsb
+
+            state = _DBState(stem)
+            self._db_recursive(
+                1, max_cand, stem, rcdb[stem], alses, grid, state, result,
+                allow_overlap=allow_overlap, find_all=True,
+            )
+
+        return result
+
+    def _find_death_blossom(self, allow_overlap: bool = False) -> SolutionStep | None:
         """Return the FIRST Death Blossom step found (mirrors Java's onlyOne=true mode)."""
         grid = self.grid
         alses = _collect_alses(grid)
@@ -771,6 +808,7 @@ class AlsSolver:
             state = _DBState(stem)
             self._db_recursive(
                 1, max_cand, stem, rcdb[stem], alses, grid, state, result,
+                allow_overlap=allow_overlap, find_all=False,
             )
             if result:
                 return result[0]
@@ -812,18 +850,24 @@ class AlsSolver:
         grid: Grid,
         state: _DBState,
         result: list,
+        allow_overlap: bool = False,
+        find_all: bool = False,
     ) -> None:
         if cand > max_cand:
             return
 
         if rcdb_entry.als_per_candidate[cand]:
             for als_idx in rcdb_entry.als_per_candidate[cand]:
-                if result:
+                if not find_all and result:
                     return  # early exit
                 als = alses[als_idx]
 
-                # No overlap
-                if als.indices & state.db_indices:
+                # ALS must never contain the stem cell itself
+                if als.indices & (1 << stem):
+                    continue
+                # No petal-petal overlap unless allow_overlap=True
+                petal_indices = state.db_indices & ~(1 << stem)
+                if not allow_overlap and (als.indices & petal_indices):
                     continue
 
                 # Must share at least one common candidate
@@ -840,6 +884,7 @@ class AlsSolver:
                     self._db_recursive(
                         cand + 1, max_cand, stem, rcdb_entry,
                         alses, grid, state, result,
+                        allow_overlap=allow_overlap, find_all=find_all,
                     )
                 else:
                     self._db_check_eliminations(stem, alses, grid, state, result)
@@ -849,13 +894,14 @@ class AlsSolver:
                 state.db_indices &= ~als.indices
                 state.akt_db_als[cand] = -1
 
-                if result:
+                if not find_all and result:
                     return  # early exit after finding one
         else:
             state.akt_db_als[cand] = -1
             self._db_recursive(
                 cand + 1, max_cand, stem, rcdb_entry,
                 alses, grid, state, result,
+                allow_overlap=allow_overlap, find_all=find_all,
             )
 
     def _db_check_eliminations(
