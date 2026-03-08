@@ -119,12 +119,8 @@ Full details in `docs/ROADMAP.md` → "HoDoKu compatibility: elimination orderin
 
 ## Python environment
 
-- We are using `conda` to manage python environments and dependencies. the environment for this project is called `hodoku-py`
-- Before getting started check that you have access to the correct conda env. Do not attempt to run `python`, `pip`, `pytest` or 
-  any other python-related command outside the correct conda environment.
-- Inside the conda environment, all python commands should be available in the PATH. if you're not finding them, stop what you're 
-  doing and ask the user for help. Do not run `conda run` but rather run `python` directly.
-- Try to keep use of python commands consistent so that the user has the option to approve each tool once for the whole session. If 
+- Python is available directly in the PATH. Run `python` and `pytest` without any wrapper.
+- Try to keep use of python commands consistent so that the user has the option to approve each tool once for the whole session. If
   you switch between different python executables the user has to approve each time and that slows us down.
 
 ## Shell
@@ -139,7 +135,6 @@ Full details in `docs/ROADMAP.md` → "HoDoKu compatibility: elimination orderin
 
 ## Source control
 
-- jujutsu (jj) is configured for this project, backed by git.
-- jj will track working changes automatically. Once a task is complete and all tests pass, use `jj commit` with a descriptive message to clean up working state. When ready to move on, bookmark the commit as `main` so it can be pushed to github.
-- This is not a collaborative project; all work is being done on this one instance, and will be pushed to github once complete.
-- jj bookmarks can be used to iterate or try out experimental work with the possibility to revert.
+- jujutsu (jj) is configured for this project, backed by git, but jj is managed by the user outside the container.
+- **Git is read-only for Claude.** Use `git log`, `git status`, `git diff` freely to inspect state. Do NOT make commits, create branches, push, or run any git command that writes to the repository. Ask the user to commit when work is ready.
+- This is not a collaborative project; all work is being done on this one instance.
