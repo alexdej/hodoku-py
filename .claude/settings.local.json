@@ -13,7 +13,8 @@
       "Bash(xargs cat)",
       "Bash(MSYS_NO_PATHCONV=1 java:*)",
       "Bash(conda run:*)",
-      "Bash(C:/Users/adeja/miniconda3/envs/hodoku-py/python.exe:*)"
+      "Bash(C:/Users/adeja/miniconda3/envs/hodoku-py/python.exe:*)",
+      "Bash(xargs grep:*)"
     ]
   }
 }
