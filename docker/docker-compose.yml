@@ -10,8 +10,8 @@ services:
     tty: true
     volumes:
       # mount required .claude config files read-only
-      - ~/.claude/.credentials.json:/home/${USER}/.credentials.json:ro
-      - ~/.claude/settings.json:/home/${USER}/settings.json:ro
+      - ~/.claude/.credentials.json:/home/${USER}/.claude/.credentials.json:ro
+      - ~/.claude/settings.json:/home/${USER}/.claude/settings.json:ro
 
       # known_hosts (for git)
       - ~/.ssh/known_hosts:/home/${USER}/.ssh/known_hosts:ro

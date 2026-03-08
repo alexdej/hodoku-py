@@ -1,0 +1,11 @@
+{
+  "theme": "dark",
+  "hasCompletedOnboarding": "true",
+  "hasTrustDialogAccepted": "true",
+  "skipDangerousModePermissionPrompt": "true",
+  "projects": {
+    "/workspace/hodoku-py": {
+      "hasTrustDialogAccepted": "true"
+    }
+  }
+}
