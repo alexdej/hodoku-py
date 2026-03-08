@@ -9,14 +9,30 @@ from __future__ import annotations
 from itertools import combinations
 
 from hodoku.core.grid import (
-    BLOCK_MASKS,
+    BUDDIES,
     COL_MASKS,
     COLS,
-    CONSTRAINTS,
     Grid,
     LINE_MASKS,
     LINES,
 )
+
+# All 81 cells mask
+_ALL_CELLS = (1 << 81) - 1
+
+
+def _fin_buddies(fin_mask: int) -> int:
+    """Return the intersection of buddies of all fin cells.
+
+    A cell is in the result iff it can see every fin cell simultaneously.
+    """
+    common = _ALL_CELLS
+    tmp = fin_mask
+    while tmp:
+        lsb = tmp & -tmp
+        common &= BUDDIES[lsb.bit_length() - 1]
+        tmp ^= lsb
+    return common
 from hodoku.core.solution_step import Entity, SolutionStep
 from hodoku.core.types import SolutionType
 
@@ -52,6 +68,55 @@ _FINNED_TO_SASHIMI = {
 }
 
 
+def _apply_siamese(steps: list[SolutionStep]) -> None:
+    """Append siamese combinations to *steps* (modifies in place).
+
+    Two finned/sashimi fish are siamese when they share the same base
+    entities (same candidate, same rows/cols) but differ in their fin
+    configuration and eliminations.  HoDoKu merges them into a single
+    step with the combined cover + fin + elimination sets.
+    """
+    n = len(steps)
+    for i in range(n - 1):
+        s1 = steps[i]
+        if not s1.base_entities:
+            continue
+        # Entity is a frozen dataclass with fields .type and .number
+        base_key1 = tuple((e.type, e.number) for e in s1.base_entities)
+        cand1 = s1.values[0] if s1.values else None
+        elim1 = frozenset((c.index, c.value) for c in s1.candidates_to_delete)
+        for j in range(i + 1, n):
+            s2 = steps[j]
+            if not s2.base_entities:
+                continue
+            if (s2.values[0] if s2.values else None) != cand1:
+                continue
+            base_key2 = tuple((e.type, e.number) for e in s2.base_entities)
+            if base_key1 != base_key2:
+                continue
+            elim2 = frozenset((c.index, c.value) for c in s2.candidates_to_delete)
+            if elim1 == elim2:
+                continue
+            # Build siamese step: clone s1, add s2's covers/fins/elims
+            # Entity and Candidate are frozen dataclasses — safe to share refs
+            siam = SolutionStep(s1.type)
+            siam.add_value(cand1)
+            for idx in s1.indices:
+                siam.add_index(idx)
+            siam.base_entities.extend(s1.base_entities)
+            siam.cover_entities.extend(s1.cover_entities)
+            siam.fins.extend(s1.fins)
+            for c in s1.candidates_to_delete:
+                siam.add_candidate_to_delete(c.index, c.value)
+            # Add s2's additional covers, fins, elims
+            siam.cover_entities.extend(s2.cover_entities)
+            siam.fins.extend(s2.fins)
+            for c in s2.candidates_to_delete:
+                if (c.index, c.value) not in elim1:
+                    siam.add_candidate_to_delete(c.index, c.value)
+            steps.append(siam)
+
+
 class FishSolver:
     """X-Wing, Swordfish, Jellyfish — basic and finned/sashimi variants."""
 
@@ -71,9 +136,23 @@ class FishSolver:
         if sol_type in _FISH_SIZE:
             return self._find_basic_fish_all(sol_type)
         if sol_type in _FINNED_SIZE:
-            return self._find_finned_fish_all(sol_type, sashimi=False)
+            n = _FINNED_SIZE[sol_type]
+            steps = self._find_finned_fish_all(sol_type, sashimi=False)
+            if n >= 3:
+                # HoDoKu finds finned+sashimi together for siamese combinations
+                sashimi_type = _FINNED_TO_SASHIMI[sol_type]
+                steps = steps + self._find_finned_fish_all(sashimi_type, sashimi=True)
+                _apply_siamese(steps)
+            return steps
         if sol_type in _SASHIMI_SIZE:
-            return self._find_finned_fish_all(sol_type, sashimi=True)
+            n = _SASHIMI_SIZE[sol_type]
+            sashimi_steps = self._find_finned_fish_all(sol_type, sashimi=True)
+            if n >= 3:
+                finned_type = {v: k for k, v in _FINNED_TO_SASHIMI.items()}[sol_type]
+                steps = self._find_finned_fish_all(finned_type, sashimi=False) + sashimi_steps
+                _apply_siamese(steps)
+                return steps
+            return sashimi_steps
         return []
 
     def _find_basic_fish_all(self, sol_type: SolutionType) -> list[SolutionStep]:
@@ -184,30 +263,18 @@ class FishSolver:
                         fin_mask = base_mask & ~cover_mask
                         if not fin_mask:
                             continue
-
-                        fin_block = CONSTRAINTS[fin_mask.bit_length() - 1][2]
-                        tmp = fin_mask
-                        all_same_block = True
-                        while tmp:
-                            lsb = tmp & -tmp
-                            if CONSTRAINTS[lsb.bit_length() - 1][2] != fin_block:
-                                all_same_block = False
-                                break
-                            tmp ^= lsb
-                        if not all_same_block:
+                        if bin(fin_mask).count('1') > 5:
                             continue
 
-                        elim_mask = (
-                            cand_set & cover_mask
-                            & BLOCK_MASKS[fin_block]
-                            & ~base_mask
-                        )
+                        fin_common = _fin_buddies(fin_mask)
+                        elim_mask = cand_set & cover_mask & fin_common & ~base_mask
                         if not elim_mask:
                             continue
 
                         is_sashimi = False
                         for u in combo:
-                            if not (cand_set & unit_masks[u] & cover_mask):
+                            body = cand_set & unit_masks[u] & cover_mask
+                            if bin(body).count('1') <= 1:
                                 is_sashimi = True
                                 break
 
@@ -219,7 +286,7 @@ class FishSolver:
                             if is_sashimi else finned_type
                         )
 
-                        elim_key = (cand, elim_mask, fin_mask)
+                        elim_key = (cand, row_mode, elim_mask, fin_mask)
                         if elim_key in seen_elims:
                             continue
                         seen_elims.add(elim_key)
@@ -364,33 +431,20 @@ class FishSolver:
                         fin_mask = base_mask & ~cover_mask
                         if not fin_mask:
                             continue  # basic fish, handled elsewhere
-
-                        # All fin cells must share one block
-                        fin_block = CONSTRAINTS[fin_mask.bit_length() - 1][2]
-                        tmp = fin_mask
-                        all_same_block = True
-                        while tmp:
-                            lsb = tmp & -tmp
-                            if CONSTRAINTS[lsb.bit_length() - 1][2] != fin_block:
-                                all_same_block = False
-                                break
-                            tmp ^= lsb
-                        if not all_same_block:
+                        if bin(fin_mask).count('1') > 5:
                             continue
 
-                        # Eliminations: in cover units, in fin block, not in base
-                        elim_mask = (
-                            cand_set & cover_mask
-                            & BLOCK_MASKS[fin_block]
-                            & ~base_mask
-                        )
+                        # Eliminations: cover candidates that see ALL fin cells
+                        fin_common = _fin_buddies(fin_mask)
+                        elim_mask = cand_set & cover_mask & fin_common & ~base_mask
                         if not elim_mask:
                             continue
 
-                        # Sashimi: any base unit has zero body cells (all fins)?
+                        # Sashimi: any base unit has ≤1 body cell (HoDoKu definition)
                         is_sashimi = False
                         for u in combo:
-                            if not (cand_set & unit_masks[u] & cover_mask):
+                            body = cand_set & unit_masks[u] & cover_mask
+                            if bin(body).count('1') <= 1:
                                 is_sashimi = True
                                 break
 
