@@ -39,10 +39,10 @@ Each layer depends only on those above it in the list.
 | 13 | Basic fish | `solver/fish.py` | ✅ | X-Wing, Swordfish, Jellyfish (and larger) |
 | 14 | Finned/Sashimi fish | `solver/fish.py` | ✅ | Finned X-Wing/Swordfish/Jellyfish, Sashimi variants (Franken/Mutant not implemented) |
 | 15 | Chains | `solver/chains.py` | ✅ | X-Chain, XY-Chain, Remote Pair, Turbot Fish, DNL, CNL, AIC, GDNL, GCNL, GAIC |
-| 16 | ALS | `solver/als.py` | 🔧 | ALS-XZ ✅, ALS-XY-Wing ✅, ALS-XY-Chain ✅, Death Blossom ✅ — validation blocked pending GNL (now unblocked) |
+| 16 | ALS | `solver/als.py` | ✅ | ALS-XZ, ALS-XY-Wing, ALS-XY-Chain validated (`tests/test_validate_als.py`). Death Blossom implemented but unvalidatable: HoDoKu always finds a Forcing Chain first on any puzzle hard enough to need DB. |
 | 17 | Forcing chains/nets | `solver/tabling.py` | ⬜ | Forcing Chain/Net (Contradiction + Verity) |
 | 18 | Templates | `solver/templates.py` | ⬜ | Template Set, Template Delete — no puzzle-level validation test needed; `/s /sc ts` only works in GUI mode and examples are essentially unfindable headlessly. Test at unit level: verify AND/OR of 46,656 precomputed templates produces correct set/delete masks. |
-| 19 | Brute force | `solver/brute_force.py` | ⬜ | Last-resort guess |
+| 19 | Brute force | `solver/brute_force.py` | ✅ | Last-resort guess — `tests/test_brute_force.py` (pure unit tests, no HoDoKu needed) |
 
 ## Generator + public API
 
@@ -97,6 +97,10 @@ in the same order. Goal is 100% fidelity.
 
 9. **Chains** (`tests/test_validate_aic.py`) — X-Chain, XY-Chain, Remote Pair,
    DNL, CNL, and AIC all pass. Turbot Fish implemented.
+
+11. **ALS** (`tests/test_validate_als.py`) — ALS-XZ, ALS-XY-Wing, and ALS-XY-Chain
+    all pass on three clean puzzles. Death Blossom is implemented but no validation
+    puzzle found: HoDoKu always reaches a Forcing Chain before DB can fire.
 
 10. **Grouped Nice Loop** — GDNL, GCNL, and GAIC implemented and validated
     against HoDoKu on `...3.....6..724....2..6..73.4...796.............29..455.......1..8..6...274.1.8..`.

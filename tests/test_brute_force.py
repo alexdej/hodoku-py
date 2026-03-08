@@ -90,10 +90,17 @@ _EASY = "53007000060019500009800006080006000340080300170002000606000028000041900
 # Medium-hard puzzle where our current solver might exhaust known techniques
 _MEDIUM = "000000604000064000100800000078609050950003860000000007830095710000028000009000000"
 
+# Puzzles that require brute force even in HoDoKu (rated bf); our solver uses
+# brute force earlier (before tabling), but must still reach a valid solution.
+_BF_REDDIT_1 = "300000607000006512000000000000095300000000080007083209029300000710020006800001000"
+_BF_REDDIT_2 = "..9...2...8.5...1.7.......6..6.9.....5.8..3..4....7........4..9.3..1..8....2..5.."
+
 
 @pytest.mark.parametrize("label,puzzle", [
-    ("easy",   _EASY),
-    ("medium", _MEDIUM),
+    ("easy",      _EASY),
+    ("medium",    _MEDIUM),
+    ("bf_reddit_1", _BF_REDDIT_1),
+    ("bf_reddit_2", _BF_REDDIT_2),
 ])
 def test_solver_completes_with_brute_force_backstop(label: str, puzzle: str) -> None:
     """Solver always reaches solved=True with brute force as last resort."""

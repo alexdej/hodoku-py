@@ -10,7 +10,10 @@
       "Bash(ls:*)",
       "Bash(C:/Users/adeja/miniforge3/envs/hodoku-py/python.exe:*)",
       "Bash(wc:*)",
-      "Bash(xargs cat)"
+      "Bash(xargs cat)",
+      "Bash(MSYS_NO_PATHCONV=1 java:*)",
+      "Bash(conda run:*)",
+      "Bash(C:/Users/adeja/miniconda3/envs/hodoku-py/python.exe:*)"
     ]
   }
 }
