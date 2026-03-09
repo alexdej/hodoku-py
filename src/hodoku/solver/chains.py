@@ -812,9 +812,6 @@ class ChainSolver:
             step.add_candidate_to_delete(lsb.bit_length() - 1, other_cand)
             tmp ^= lsb
 
-        for cell, _ in chain:
-            step.add_index(cell)
-
         key = tuple(sorted((c.index, c.value) for c in step.candidates_to_delete))
         old = deletes_map.get(key)
         if old is None or old[0] > len(chain):
@@ -835,8 +832,6 @@ class ChainSolver:
             lsb = tmp & -tmp
             step.add_candidate_to_delete(lsb.bit_length() - 1, digit)
             tmp ^= lsb
-        for cell, _ in chain:
-            step.add_index(cell)
 
         key = tuple(sorted((c.index, c.value) for c in step.candidates_to_delete))
         old = deletes_map.get(key)
@@ -1229,17 +1224,6 @@ class ChainSolver:
             elif step.type == SolutionType.CONTINUOUS_NICE_LOOP:
                 step.type = SolutionType.GROUPED_CONTINUOUS_NICE_LOOP
 
-        # Record chain nodes as cell indices.
-        for nid in chain:
-            if nid < 729:
-                step.add_index(nid // 9)
-            else:
-                gn = group_nodes[nid - 729]
-                step.add_index(gn.index1)
-                step.add_index(gn.index2)
-                if gn.index3 >= 0:
-                    step.add_index(gn.index3)
-
         key = tuple(sorted((c.index, c.value) for c in step.candidates_to_delete))
         dmap = (
             deletes_dnl
@@ -1304,18 +1288,6 @@ class ChainSolver:
         if group_nodes and any(nid >= 729 for nid in chain):
             step.type = SolutionType.GROUPED_AIC
 
-        # Chain indices: all nodes in chain plus the AIC endpoint.
-        for nid in chain:
-            if nid < 729:
-                step.add_index(nid // 9)
-            else:
-                gn = group_nodes[nid - 729]
-                step.add_index(gn.index1)
-                step.add_index(gn.index2)
-                if gn.index3 >= 0:
-                    step.add_index(gn.index3)
-        step.add_index(end_cell)
-
         key = tuple(sorted((c.index, c.value) for c in step.candidates_to_delete))
         old = deletes_aic.get(key)
         if old is None or old[0] > len(chain):
@@ -1341,9 +1313,6 @@ class ChainSolver:
             lsb = tmp & -tmp
             step.add_candidate_to_delete(lsb.bit_length() - 1, digit)
             tmp ^= lsb
-        for cell in chain:
-            step.add_index(cell)
-
         key = tuple(sorted((c.index, c.value) for c in step.candidates_to_delete))
         old = deletes_map.get(key)
         if old is None or old[0] > len(chain):
