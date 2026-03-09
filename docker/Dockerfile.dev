@@ -1,0 +1,30 @@
+FROM python:3.12-slim
+
+# Java is needed only to run hodoku.jar for regression validation.
+# default-jre-headless pulls the latest OpenJDK available in Debian (17 or 21).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends default-jre-headless \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+# Install Python deps in their own layer so they're cached across source changes.
+# A minimal src/hodoku stub is created so hatchling's editable install succeeds
+# before the real source is mounted at runtime.
+COPY pyproject.toml .
+RUN mkdir -p src/hodoku \
+    && touch src/hodoku/__init__.py \
+    && pip install --no-cache-dir -e ".[dev]"
+
+# Source is mounted at runtime (see usage below), so the editable install
+# automatically picks up live changes without rebuilding the image.
+#
+# Usage:
+#   docker build -f Dockerfile.dev -t hodoku-dev:693f55f2-e0e7-4624-8f8f-5f0bf01e51dd .
+#   docker run -it --rm -v "/$(pwd)":/workspace hodoku-dev:693f55f2-e0e7-4624-8f8f-5f0bf01e51dd
+#
+# Inside the container, run tests as normal:
+#   pytest tests/
+#   pytest tests/regression/ --exemplar-count 670 -q
+
+CMD ["bash"]

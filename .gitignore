@@ -71,8 +71,3 @@ hodoku/*
 .claude/
 CLAUDE.local.md
 
-# Docker dev environment (personal workflow, not for sharing)
-Dockerfile.dev
-Dockerfile.claude
-Makefile
-claude.sh

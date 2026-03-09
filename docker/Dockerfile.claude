@@ -1,0 +1,57 @@
+# Self-contained image for running Claude Code in the hodoku-py dev environment.
+# Layers are ordered slowest-to-change first so pyproject.toml edits don't
+# invalidate the expensive Rust/Node/jj build steps.
+FROM python:3.12-slim
+
+# ── Layer 1: system packages ─────────────────────────────────────────────────
+# Includes Java for hodoku.jar and build-essential for Rust compilation.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       curl git ca-certificates unzip build-essential default-jre-headless \
+       vim-tiny less subversion \
+    && curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# Block git push and jj git push — Claude should never push to remote.
+RUN printf '#!/bin/bash\nif [ "$1" = "push" ]; then\n  echo "git push is disabled in this container" >&2; exit 1\nfi\nexec /usr/bin/git "$@"\n' > /usr/local/bin/git \
+    && chmod +x /usr/local/bin/git
+
+RUN git config --global --add safe.directory "/workspace"
+
+ARG APP_USER=me
+
+# Switch to low-privilege user
+RUN echo "APP_USER is ${APP_USER}"
+RUN useradd -m "${APP_USER}"
+USER ${APP_USER}
+
+# ── Layer 2: Rust + jujutsu ───────────────────────────────────────────────────
+# Expensive; only rebuilds when the rustup/jj versions change.
+ENV PATH="/home/${APP_USER}/.cargo/bin:${PATH}"
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+RUN cargo install cargo-binstall
+RUN cargo binstall --strategies crate-meta-data jj-cli
+
+# verify
+RUN jj --version
+
+# ── Layer 3: Claude Code ──────────────────────────────────────────────────────
+ENV PATH="/home/${APP_USER}/.local/bin:${PATH}"
+RUN curl -fsSL https://claude.ai/install.sh | bash
+
+# ── Layer 4: User Environment ─────────────────────────────────────────────────
+RUN echo "alias clauded='claude --dangerously-skip-permissions'" >> "/home/${APP_USER}/.bashrc"
+COPY ./docker/claude.json /home/${APP_USER}/.claude.json
+
+# ── Layer 5: Python deps ──────────────────────────────────────────────────────
+# Placed last so pyproject.toml changes only invalidate this layer.
+WORKDIR /tmp
+RUN pip install --upgrade pip
+COPY pyproject.toml .
+RUN mkdir -p src/hodoku \
+    && pip install --no-cache-dir -e ".[dev]"
+
+WORKDIR /workspace/hodoku-py
+
+ENTRYPOINT ["claude"]
