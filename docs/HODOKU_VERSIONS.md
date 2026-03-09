@@ -51,8 +51,57 @@ r146   2013-09-03   TablingSolver
 r147   2013-09-06   TableEntry, TablingSolver, Chain, SolutionStep   ← last commit
 ```
 
-The work was almost entirely in `TablingSolver` (grouped/forcing chains) with
-some ALS-related changes. The GUI and most solver logic was unchanged from 2.2.0.
+The work was almost entirely in `TablingSolver` (grouped/forcing chains/nets).
+**No algorithmic changes to the standalone ALS solver** (ALS-XZ, XY-Wing,
+XY-Chain, Death Blossom) were made between 2.2.0 and the last commit.
+
+### Commit-by-commit analysis
+
+**r119-r121** (Jul-Aug 2012): GUI changes, rename release notes file to 2.3.
+
+**r122-r124** (Aug 2012): All `TablingSolver`. Added `createAllNets()` pass
+after `checkForcingChains()` — the start of the forcing nets feature. Added
+`Comparable<SudokuSetBase>` to support `TreeMap<SudokuSet>` in the net code.
+
+**r125-r131** (Aug 2013, after year gap): More `TablingSolver`/`GroupNode`
+work. Build file updates. `Sudoku2.java` minor changes.
+
+**r132** (Aug 2013): Rename `getAllAlses()` → `getAllAlsSteps()` in
+`SudokuStepFinder` and callers. Javadoc on `Als.java`. `RegressionTester`
+updated to call renamed method.
+
+**r133** (Aug 2013): `Als.java` — pure javadoc. `TablingSolver` —
+`fillTablesWithAls()` had a variable shadowing bug: outer loop variables `i`
+and `j` were reused in inner contexts; renamed to `alsIndex`/`entryCand`. Also
+a comment correction: "offEntry triggers the **off**Entry" → "triggers the
+**on**Entry". This is in the forcing chains path only, not the standalone ALS
+solver.
+
+**r134**: `TablingSolver` only.
+
+**r135** (Aug 2013): `SudokuStepFinder` — added `groupNodes` cache (same
+pattern as existing ALS cache). Performance optimization, no algorithm change.
+`TablingSolver` work.
+
+**r136-r138**: `TablingSolver` only.
+
+**r139** (Aug 2013): `reglib-1.3.txt` → `reglib-1.4.txt` (5 chain length
+corrections in 0711-4 entries, see above). `TablingSolver`.
+
+**r140** (Aug 2013): `RegressionTester` — added `setAllStepsAlsChainForwardOnly(false)`
+and `setAllStepsAlsChainLength(6)` to the ALS reglib test harness (see above).
+Otherwise cosmetic whitespace.
+
+**r141** (Aug 2013): `RestrictedCommon`, `AlsInSolutionStep`, `Candidate`,
+`SolutionStep` — all just added `Serializable`/`serialVersionUID` so he could
+write ALS chain results to disk for offline analysis. `AlsSolver` — added
+serialization debugging code (marked "TODO remove!") and a brute-force
+`AlsComparator` consistency checker. Pure debugging infrastructure.
+
+**r142-r147** (Aug-Sep 2013, last commits): `TableEntry` got a new `addEntry`
+overload taking an `alsIndex` parameter and `containsEntry()` helper. More
+`TablingSolver`/`Chain`/`SolutionStep` work on the forcing nets feature. Last
+commit: 2013-09-06.
 
 ## reglib-1.3 vs reglib-1.4
 
