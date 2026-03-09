@@ -17,10 +17,10 @@ technique in isolation on a fixed board.
 ## Results (as of 2026-03-09)
 
 ```
-1112 total   1004 passed   103 failed   5 xfail
+1112 total   1062 passed   44 failed   6 xfailed
 ```
 
-**~91% passing** (1004/1107 excluding xfail).
+**~96% passing** (1062/1106 excluding xfail).
 
 ---
 
@@ -59,17 +59,9 @@ infrastructure (as Java does in `doGetNiceLoops()`).
 `_has_als_link()` were written and are present in `chains.py` but not called. The right
 fix is implementing `TablingSolver.fillTablesWithAls()` in `tabling.py`.
 
-### Franken/Mutant fish (41 failures)
+### Franken/Mutant fish (0 failures — all passing ✅)
 
-| Code | Technique | Count |
-|------|-----------|-------|
-| 0330–0332 | Franken X-Wing/Swordfish/Jellyfish | 11 |
-| 0340–0342 | Finned Franken X-Wing/Swordfish/Jellyfish | 29 |
-| 0350–0352 | Mutant X-Wing/Swordfish/Jellyfish | (not yet counted) |
-| 0360–0364 | Finned Mutant variants | (not yet counted) |
-
-Franken fish allow mixed base/cover sets (rows + blocks, cols + blocks). Mutant fish
-allow fully mixed bases and covers. Not implemented in `fish.py`.
+Implemented in `fish.py` via `_find_generalized_fish_all()`. All 0330–0364 variants pass.
 
 **Note on test 724 (0342 Finned Franken Jellyfish, line 724):** This test was
 investigated separately. Java's `/bsa` output does not find the expected step either.
