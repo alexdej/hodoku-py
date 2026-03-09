@@ -40,7 +40,7 @@ Every technique implementation must be validated against HoDoKu output on the sa
 ## Project structure
 
 ```
-docs/               # ARCHITECTURE.md, ROADMAP.md, REGLIB_STATUS.md, specs
+docs/               # ARCHITECTURE.md, ROADMAP.md, specs
 hodoku/             # HoDoKu JAR + shell wrapper
 src/hodoku/
   core/             # Grid, CellSet, SolutionStep, types, scoring
@@ -58,7 +58,7 @@ pyproject.toml
 
 ## Implementation status
 
-Done (all validated against HoDoKu):
+Done (all validated against HoDoKu — 1106/1112 reglib tests passing, 6 xfail):
 - core/ — Grid, CellSet, SolutionStep, types, scoring
 - solver/simple.py — Full House, Naked/Hidden Single, Locked Candidates, Subsets
 - solver/single_digit.py — Skyscraper, 2-String Kite, Empty Rectangle, Dual variants
@@ -67,17 +67,17 @@ Done (all validated against HoDoKu):
 - solver/fish.py — Basic fish, Finned, Sashimi, Franken, Mutant (all sizes through Whale)
 - solver/uniqueness.py — Uniqueness 1-6, Hidden Rectangle, Avoidable Rectangle 1-2, BUG+1
 - solver/chains.py — X-Chain, XY-Chain, Remote Pair, Nice Loops, AIC, Grouped variants
-- solver/tabling.py — Forcing Chains/Nets, Grouped chains
+- solver/tabling.py — Forcing Chains/Nets, Grouped chains with ALS nodes
 - solver/als.py — ALS-XZ, ALS-XY-Wing, ALS-XY-Chain, Death Blossom
 - solver/misc.py — Sue de Coq
+- solver/templates.py — Template Set, Template Delete
 - solver/brute_force.py — last-resort guess
 - solver/solver.py — full solve loop, scoring, level computation
-- api.py — public Solver API
+- api.py — public Solver API (stub — methods defined but raise NotImplementedError)
 
 Not yet implemented:
-- solver/templates.py — Template Set/Delete (18 reglib failures)
-- ALS nodes in tabling chains (44 reglib failures)
 - generator/ — puzzle generation
+- api.py — wire up Solver/Generator classes to actual implementations
 
 ## Key design decisions
 
@@ -115,7 +115,7 @@ Full details in `docs/ROADMAP.md` → "HoDoKu compatibility: elimination orderin
 
 - **reglib suite** (`tests/reglib/`): Primary validation. 1112 technique-isolation tests from
   HoDoKu's reglib-1.3.txt. Each reconstructs a PM board and checks that `find_all()` returns
-  the expected eliminations. Current: 1062 passed / 44 failed / 6 xfail.
+  the expected eliminations. Current: 1106 passed / 0 failed / 6 xfail.
 - **exemplar regression** (`tests/regression/`): Full solve-path comparison against HoDoKu CLI output.
 - The goal is 100% fidelity with HoDoKu, down to the precise step-by-step solve path. This is a
   strict port, not an attempt to improve or optimize. Maintaining fidelity simplifies validation.

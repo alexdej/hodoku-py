@@ -150,6 +150,11 @@ def _parse_step_line(line: str) -> HodokuStep | None:
 
     solution_type = _NAME_MAP.get(technique)
     if solution_type is None:
+        # Strip " in <house/cell>" qualifier (e.g. "Forcing Chain Contradiction in r1")
+        bare = re.sub(r"\s+in\s+[rcb]\S*$", "", technique)
+        if bare != technique:
+            solution_type = _NAME_MAP.get(bare)
+    if solution_type is None:
         warnings.warn(f"Unknown technique name: {technique!r}", stacklevel=2)
 
     step = HodokuStep(technique=technique, solution_type=solution_type)
@@ -310,19 +315,27 @@ def run_hodoku_batch(
     if not hodoku_jar.exists():
         raise FileNotFoundError(f"hodoku.jar not found at {hodoku_jar}")
 
+    # HoDoKu treats paths starting with / as option flags (Java CLI parser
+    # quirk — author was on Windows). Write temp file above the project root
+    # and pass a relative path from cwd.
+    tmp_dir = PROJECT_ROOT / ".." / "tmp"
+    tmp_dir.mkdir(exist_ok=True)
     with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".txt", delete=False, encoding="utf-8"
+        mode="w", suffix=".txt", delete=False, encoding="utf-8",
+        dir=str(tmp_dir),
     ) as tmp:
         for p in puzzles:
             tmp.write(p + "\n")
         tmpfile = tmp.name
+        tmprel = os.path.relpath(tmpfile, PROJECT_ROOT)
 
     cmd = [
         "java", "-Xmx512m",
         "-Djava.util.logging.config.file=/dev/null",
         "-jar", str(hodoku_jar),
-        "/vp", "/o", "stdout", "/bs", tmpfile,
+        "/vp", "/o", "stdout", "/bs", tmprel,
     ]
+    print(f"[hodoku] {' '.join(cmd)}")
     try:
         result = subprocess.run(
             cmd,

@@ -35,13 +35,13 @@ Each layer depends only on those above it in the list.
 | 9 | Single-digit patterns | `solver/single_digit.py` | ✅ | Skyscraper, 2-String Kite, Empty Rectangle |
 | 10 | Wings | `solver/wings.py` | ✅ | W-Wing, XY-Wing, XYZ-Wing |
 | 11 | Coloring | `solver/coloring.py` | ✅ | Simple Colors (Trap/Wrap), Multi-Colors 1&2 |
-| 12 | Uniqueness | `solver/uniqueness.py` | ✅ | Uniqueness Tests 1–6, Hidden Rectangle, BUG+1 (AR1/AR2 skipped — require givens tracking) |
+| 12 | Uniqueness | `solver/uniqueness.py` | ✅ | Uniqueness Tests 1–6, Hidden Rectangle, BUG+1, Avoidable Rectangle 1–2 |
 | 13 | Basic fish | `solver/fish.py` | ✅ | X-Wing, Swordfish, Jellyfish (and larger) |
 | 14 | Finned/Sashimi/Franken/Mutant fish | `solver/fish.py` | ✅ | Finned, Sashimi, Franken, Mutant — all sizes through Whale. Mutant Squirmbag/Whale use C accelerator (`_fish_accel.c`) for cover search performance. |
 | 15 | Chains | `solver/chains.py` | ✅ | X-Chain, XY-Chain, Remote Pair, Turbot Fish, DNL, CNL, AIC, GDNL, GCNL, GAIC |
 | 16 | ALS | `solver/als.py` | ✅ | ALS-XZ, ALS-XY-Wing, ALS-XY-Chain validated (`tests/test_validate_als.py`). Death Blossom implemented but unvalidatable: HoDoKu always finds a Forcing Chain first on any puzzle hard enough to need DB. |
-| 17 | Forcing chains/nets | `solver/tabling.py` | ⬜ | Forcing Chain/Net (Contradiction + Verity) |
-| 18 | Templates | `solver/templates.py` | ⬜ | Template Set, Template Delete — no puzzle-level validation test needed; `/s /sc ts` only works in GUI mode and examples are essentially unfindable headlessly. Test at unit level: verify AND/OR of 46,656 precomputed templates produces correct set/delete masks. |
+| 17 | Forcing chains/nets | `solver/tabling.py` | ✅ | Forcing Chain/Net (Contradiction + Verity), Grouped Nice Loop/AIC with ALS nodes |
+| 18 | Templates | `solver/templates.py` | ✅ | Template Set, Template Delete — AND/OR of 46,656 precomputed templates with iterative refinement. All 18 reglib tests passing. |
 | 19 | Brute force | `solver/brute_force.py` | ✅ | Last-resort guess — `tests/test_brute_force.py` (pure unit tests, no HoDoKu needed) |
 
 ## Generator + public API
@@ -198,19 +198,10 @@ dispatches to them. The reglib harness uses this for technique-isolation tests.
 |-----------|------|-------|
 | ALS nodes in grouped chains | 0709-2/0710-3,4/0711-3,4 | **Done.** Implemented via `tabling.py` `fillTablesWithAls()`. All reglib tests passing. |
 | Sue de Coq | 1101 | **Done.** Implemented in `solver/misc.py`. All reglib tests passing. |
-| Template Set/Delete | 1201/1202 | `solver/templates.py` placeholder exists (row 18). Not yet implemented. |
+| Template Set/Delete | 1201/1202 | **Done.** Implemented in `solver/templates.py`. All 18 reglib tests passing. |
 | Forcing Chain/Net | 1301-1304 | **Done.** Implemented in `solver/tabling.py`. All reglib tests passing. |
 
 ---
-
-## Parking lot
-
-Techniques that are implemented in HoDoKu but not currently on the roadmap.
-Revisit if needed, but don't block progress on them.
-
-| Technique | Notes |
-|-----------|-------|
-| Avoidable Rectangles (AR1/AR2) | Like Unique Rectangles but require tracking which cells were given vs. solved. Our Grid doesn't record givens. |
 
 ---
 
