@@ -1,13 +1,17 @@
-name: Parity (manual)
+name: Parity (ad-hoc)
 
 on:
   workflow_dispatch:
     inputs:
       puzzle-file:
-        description: "Puzzle file stem (e.g. exemplars-1.0)"
+        description: "Puzzle file stem (e.g. exemplars-1.0, sudoku17)"
         required: true
       puzzle-count:
         description: "Max puzzles (0 = all)"
+        required: false
+        default: "0"
+      puzzle-seed:
+        description: "Random seed for sampling (only used with puzzle-count)"
         required: false
         default: "0"
 
@@ -28,10 +32,12 @@ jobs:
 
       - name: Run parity tests
         run: |
-          COUNT="${{ github.event.inputs.puzzle-count }}"
           ARGS="tests/parity/ --puzzle-file ${{ github.event.inputs.puzzle-file }} -v --tb=short"
-          if [ "$COUNT" != "0" ]; then
-            ARGS="$ARGS --puzzle-count $COUNT"
+          if [ "${{ github.event.inputs.puzzle-count }}" != "0" ]; then
+            ARGS="$ARGS --puzzle-count ${{ github.event.inputs.puzzle-count }}"
+          fi
+          if [ "${{ github.event.inputs.puzzle-seed }}" != "0" ]; then
+            ARGS="$ARGS --puzzle-seed ${{ github.event.inputs.puzzle-seed }}"
           fi
           pytest $ARGS --junitxml=parity-results.xml
 

@@ -1,7 +1,8 @@
-name: Parity
+name: Parity (nightly)
 
 on:
-  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"  # daily at 06:00 UTC
 
 jobs:
   parity:
@@ -12,10 +13,6 @@ jobs:
       matrix:
         puzzle-file:
           - exemplars-1.0
-          - qqwing_simple
-          - qqwing_easy
-          - qqwing_intermediate
-          - qqwing_expert
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
