@@ -3,12 +3,8 @@ name: Parity
 on:
   workflow_dispatch:
     inputs:
-      puzzle-file:
-        description: "Puzzle file stem (e.g. exemplars-1.0)"
-        required: true
-        default: "exemplars-1.0"
       puzzle-count:
-        description: "Max puzzles to run (0 = all)"
+        description: "Max puzzles per file (0 = all)"
         required: false
         default: "0"
   schedule:
@@ -16,8 +12,17 @@ on:
 
 jobs:
   parity:
-    name: Parity – ${{ github.event.inputs.puzzle-file || 'exemplars-1.0' }}
+    name: ${{ matrix.puzzle-file }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        puzzle-file:
+          - exemplars-1.0
+          - qqwing_simple
+          - qqwing_easy
+          - qqwing_intermediate
+          - qqwing_expert
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -31,9 +36,8 @@ jobs:
 
       - name: Run parity tests
         run: |
-          PUZZLE_FILE="${{ github.event.inputs.puzzle-file || 'exemplars-1.0' }}"
           COUNT="${{ github.event.inputs.puzzle-count || '0' }}"
-          ARGS="tests/parity/ --puzzle-file $PUZZLE_FILE -v --tb=short"
+          ARGS="tests/parity/ --puzzle-file ${{ matrix.puzzle-file }} -v --tb=short"
           if [ "$COUNT" != "0" ]; then
             ARGS="$ARGS --puzzle-count $COUNT"
           fi
@@ -43,5 +47,5 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: parity-results
+          name: parity-${{ matrix.puzzle-file }}
           path: parity-results.xml

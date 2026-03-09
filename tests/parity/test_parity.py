@@ -12,7 +12,7 @@ Run (requires Java and --puzzle-file):
 
 from __future__ import annotations
 
-import signal
+import sys
 
 import pytest
 
@@ -51,16 +51,21 @@ def test_matches_hodoku(
 
     solver = SudokuSolver()
 
-    def _timeout_handler(signum, frame):
-        raise TimeoutError(f"Solver exceeded {SOLVE_TIMEOUT}s timeout")
+    if sys.platform != "win32":
+        import signal
 
-    old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
-    signal.alarm(SOLVE_TIMEOUT)
-    try:
+        def _timeout_handler(signum, frame):
+            raise TimeoutError(f"Solver exceeded {SOLVE_TIMEOUT}s timeout")
+
+        old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
+        signal.alarm(SOLVE_TIMEOUT)
+        try:
+            our_result = solver.solve(entry.puzzle)
+        finally:
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, old_handler)
+    else:
         our_result = solver.solve(entry.puzzle)
-    finally:
-        signal.alarm(0)
-        signal.signal(signal.SIGALRM, old_handler)
 
     ours = our_steps(our_result)
     theirs = hodoku_steps(hodoku_result)
