@@ -23,6 +23,7 @@ jobs:
 
   reglib:
     name: Reglib regression suite
+    needs: unit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

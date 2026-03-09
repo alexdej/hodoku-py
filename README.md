@@ -2,6 +2,7 @@
 
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)
 ![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)
+![CI](https://github.com/alexdej/hodoku-py/actions/workflows/ci.yml/badge.svg)
 
 A Python port of [HoDoKu](https://hodoku.sourceforge.net/)'s Sudoku solver, hint engine, and difficulty rater — no GUI, no dependencies.
 
@@ -9,7 +10,7 @@ The goal is bit-for-bit fidelity with HoDoKu 2.2.0: same techniques, same tie-br
 
 ## Status
 
-Core solver complete through ALS techniques. Generator and public API not yet implemented.
+Core solver complete through all techniques. Generator and public API not yet implemented.
 
 | Layer | Techniques | Status |
 |-------|-----------|--------|
@@ -22,8 +23,9 @@ Core solver complete through ALS techniques. Generator and public API not yet im
 | Fish | X-Wing through Whale; Finned/Sashimi, Franken, Mutant variants | ✅ |
 | Chains | X-Chain, XY-Chain, Remote Pair, DNL, CNL, AIC, Grouped Nice Loops/AIC | ✅ |
 | ALS | ALS-XZ, ALS-XY-Wing, ALS-XY-Chain, Death Blossom | ✅ |
-| Forcing chains/nets | Contradiction + Verity | ⬜ |
-| Templates | Template Set/Delete | ⬜ |
+| Forcing chains/nets | Contradiction + Verity | ✅ |
+| Misc | Sue de Coq | ✅ |
+| Templates | Template Set/Delete | ✅ |
 | Generator + public API | Puzzle generation, `Solver`/`Generator` classes | ⬜ |
 
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) for full details and known gaps.
@@ -33,23 +35,21 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for full details and known gaps.
 - Python 3.11+
 - C compiler (optional) — auto-detected at runtime for Mutant fish acceleration. Without it, Mutant Whale (size 6) tests are skipped; everything else works in pure Python.
 
-## Test requirements
-
-The `reglib` suite is pure Python and has no extra requirements. The `regression` and `sdm` suites compare against the bundled HoDoKu JAR and require:
-
-- Java (OpenJDK 17+)
-
 ## Installation
 
 ```bash
 pip install -e ".[dev]"
 ```
 
-## Running tests
+## Testing
 
-There are three test suites:
+### Unit tests (fast, pure Python)
 
-### [reglib](tests/reglib/) — technique-isolation suite (pure Python, ~2 min, ~1100 tests)
+```bash
+pytest -m unit -v
+```
+
+### [reglib](tests/reglib/) — technique-isolation suite (~2 min, ~1100 tests, pure Python)
 
 Ports HoDoKu's built-in regression library. Each test reconstructs a fixed pencilmark board and asserts that one specific technique fires with the expected eliminations. No Java required.
 
@@ -63,28 +63,16 @@ pytest tests/reglib/ -k "0901" -v
 pytest tests/reglib/ --reglib-section 09 -v
 ```
 
-### [regression](tests/regression/) — exemplar suite (requires Java)
+### [parity](tests/parity/) — head-to-head HoDoKu comparison (requires Java)
 
-Full head-to-head solve-path comparison against the HoDoKu JAR on curated exemplar puzzles.
-
-```bash
-pytest tests/regression/ -v
-
-# More puzzles per section
-pytest tests/regression/ --exemplar-count 50 -v
-
-# One technique section
-pytest tests/regression/ --exemplar-section 0901 -v
-```
-
-### [sdm](tests/sdm/) — broad-variety suite (requires Java)
-
-Volume testing against `.sdm` puzzle files (one puzzle per line). Puzzle files are not included; place them in `tests/testdata/`.
+Full solve-path comparison against HoDoKu via [Py4J](https://www.py4j.org/). Runs any puzzle file and compares our solver's output step-for-step against HoDoKu's.
 
 ```bash
-pytest tests/sdm/ --sdm-file top1465 -v
-pytest tests/sdm/ --sdm-file top1465 --sdm-count 50 --sdm-seed 7 -v
+pytest tests/parity/ --puzzle-file exemplars-1.0 -v
+pytest tests/parity/ --puzzle-file top1465 --puzzle-count 50 --puzzle-seed 7 -v
 ```
+
+Puzzle files are plain text (one puzzle per line) placed in `tests/testdata/`.
 
 ### Skipping Java-dependent tests
 
@@ -92,28 +80,13 @@ pytest tests/sdm/ --sdm-file top1465 --sdm-count 50 --sdm-seed 7 -v
 pytest tests/ -m "not java"   # pure-Python tests only
 ```
 
-## Docker
+## CI
 
-A development image with Python and Java pre-installed:
-
-```bash
-docker build -f docker/Dockerfile.dev -t hodoku-dev .
-docker run -it --rm -v "$(pwd)":/workspace hodoku-dev
-
-# Inside the container:
-pytest tests/reglib/ -q
-pytest tests/regression/ --exemplar-count 50 -q
-```
-
-## Development scripts
-
-```bash
-# Find a "clean" puzzle for validating a new technique
-python scripts/find_clean_puzzle.py --tech XY_WING --seeds 0-1000
-
-# Regenerate known_failures.txt after fixing bugs
-python scripts/update_known_failures.py
-```
+| Workflow | Trigger | What it does |
+|----------|---------|-------------|
+| **CI** | push/PR to main | Unit tests (Python 3.11–3.13) → Reglib suite |
+| **Parity** | manual / nightly | Full solve-path comparison per puzzle file |
+| **Parity (ad-hoc)** | manual | Single puzzle file with optional count/seed |
 
 ## Project structure
 
@@ -131,20 +104,23 @@ src/hodoku/
 │   ├── wings.py         # XY-Wing, XYZ-Wing, W-Wing
 │   ├── coloring.py      # Simple Colors, Multi-Colors
 │   ├── chains.py        # X-Chain, XY-Chain, Nice Loop / AIC families
-│   └── als.py           # ALS-XZ, ALS-XY-Wing, ALS-XY-Chain, Death Blossom
-└── generator/     # Backtracking solver (puzzle generation not yet wired)
+│   ├── tabling.py       # Forcing Chains/Nets
+│   ├── als.py           # ALS-XZ, ALS-XY-Wing, ALS-XY-Chain, Death Blossom
+│   ├── misc.py          # Sue de Coq
+│   └── templates.py     # Template Set/Delete
+└── generator/     # Not yet implemented
 
-hodoku/            # Bundled HoDoKu 2.2.0 JAR + launch wrapper (validation only)
-docs/              # Architecture, roadmap, reglib status, specs
+hodoku/            # Bundled HoDoKu 2.2.0 JAR (validation only)
+docs/              # Architecture, roadmap, specs
 tests/
-├── reglib/        # Technique-isolation regression suite
-├── regression/    # Exemplar solve-path suite (requires Java)
-└── sdm/           # Broad-variety puzzle suite (requires Java)
+├── reglib/        # Technique-isolation regression suite (pure Python)
+├── parity/        # Head-to-head parity suite (requires Java + py4j)
+└── testdata/      # Puzzle files for parity testing
 ```
 
 ## Validation approach
 
-Every technique is validated by comparing solve paths against HoDoKu's `/vp` output — same technique type, same cell, same digit, in the same order. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for internals and porting notes.
+Every technique is validated by comparing solve paths against HoDoKu — same technique type, same cell, same digit, in the same order. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for internals and porting notes.
 
 ## License
 

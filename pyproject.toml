@@ -17,10 +17,8 @@ packages = ["src/hodoku"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-norecursedirs = ["regression"]
 markers = [
     "unit: fast unit tests (no solver, no Java)",
     "java: requires hodoku.jar and Java (skipped automatically if unavailable)",
     "parity: head-to-head parity suite (opt-in; run with pytest tests/parity/)",
-    "regression: (deprecated) old exemplars regression suite",
 ]
