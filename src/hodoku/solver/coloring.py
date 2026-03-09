@@ -209,21 +209,25 @@ class ColoringSolver:
     # ------------------------------------------------------------------
 
     def _find_simple_colors(self) -> SolutionStep | None:
-        """Return the first Simple Colors step (Wrap preferred over Trap)."""
-        best: SolutionStep | None = None
+        """Return the first Simple Colors step found.
+
+        Mirrors Java's findSimpleColorSteps(onlyOne=true): for each candidate
+        1-9, check wrap first then trap for each coloring pair.  Return the
+        very first step found (wrap or trap) immediately.
+        """
         for cand in range(1, 10):
             pairs = self._do_coloring(cand)
             for c1, c2 in pairs:
                 # Wrap: two same-color cells see each other → eliminate that color
                 step = self._check_wrap(cand, c1, c2)
                 if step:
-                    return step  # wrap is strong; return immediately
+                    return step
 
                 # Trap: any cell that sees both a c1 and a c2 cell
                 step = self._check_trap(cand, c1, c2)
-                if step and best is None:
-                    best = step
-        return best
+                if step:
+                    return step
+        return None
 
     def _check_wrap(
         self, cand: int, c1: frozenset[int], c2: frozenset[int]

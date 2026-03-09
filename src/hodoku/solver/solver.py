@@ -31,6 +31,11 @@ _PLACEMENT_TYPES: frozenset[SolutionType] = frozenset({
     SolutionType.NAKED_SINGLE,
     SolutionType.HIDDEN_SINGLE,
     SolutionType.BRUTE_FORCE,
+    # Forcing chains/nets can set values via contradiction/verity
+    SolutionType.FORCING_CHAIN_CONTRADICTION,
+    SolutionType.FORCING_CHAIN_VERITY,
+    SolutionType.FORCING_NET_CONTRADICTION,
+    SolutionType.FORCING_NET_VERITY,
 })
 
 

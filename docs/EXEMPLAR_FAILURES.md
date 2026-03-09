@@ -1,54 +1,63 @@
 # Exemplar Parity Failures
 
-Baseline run: 570 passed, 99 failed (669 total)
+Third run (after wiring TablingSolver + FC placement fix): **577 passed, 92 failed** (669 total)
 
-## Failure Groups
+## Changes since last run
+- Wired TablingSolver into step_finder.py for Nice Loop/AIC/Forcing Chain types
+  (was using chains.py DFS which found different/spurious chains)
+- Fixed FORCING_CHAIN/NET steps not applying cell placements in solver.py
+  (was causing infinite loop where same FC step was found repeatedly)
+- Added grid fingerprint cache to avoid redundant table rebuilds
+- Previous SPURIOUS_CHAIN failures (10) eliminated by routing NL through tabling
+- Previous TIMEOUT failures (3) eliminated by FC placement fix
+- Previous BRUTE_FORCE count reduced from 61 to ~1
 
-### Group 1: Fish ordering (45 failures)
-Sections: Franken Jellyfish (4), Finned Franken Swordfish (10), Finned Franken Jellyfish (11),
-endo_fins (15), Finned Mutant Jellyfish (5)
+## Failure Categories
 
-**Symptom**: We find a different fish type/size than HoDoKu. E.g., we find FINNED_FRANKEN_X_WING
-where HoDoKu finds FINNED_FRANKEN_SWORDFISH. Paths diverge from there.
+### 1. DIFFERENT_CHAIN (~80 failures)
+Same technique type found, but different eliminations — our tabling solver finds
+a different (but equally valid) chain/loop at the same priority level.
 
-**Root cause**: TBD — fish search ordering within Franken/Finned Franken solver.
+Affects: endo_fins (14), Finned Franken Jellyfish (10), ALS-XZ (10), ALS-XY-Wing (9),
+         ALS-XY-Chain (9), Finned Franken Swordfish (5), Finned Mutant Jellyfish (5),
+         Franken Jellyfish (4), Type_1 (5), Type_2 (2), Grouped_Type_1 (2),
+         set_value (5), AR2 (2), Grouped_Type_2 (1), GCNL (1), delete_candidate (1)
 
-### Group 2: ALS vs chains (27 failures)
-Sections: ALS-XZ (11), ALS-XY-Wing (7), ALS-XY-Chain (9)
+**Root cause**: Search ordering in TablingSolver table expansion and nice loop/AIC
+detection. When multiple valid chains exist at the same priority level, our code
+picks a different one than Java. This cascades — a different elimination changes
+the grid state, which causes subsequent steps to diverge.
 
-**Symptom**: We find GROUPED_DISCONTINUOUS_NICE_LOOP (index 5650) instead of ALS_XZ (index 5700).
-Since GROUPED_DNL has lower priority index, our solver correctly tries it first. HoDoKu somehow
-doesn't find the same chain at that point.
+This is the dominant failure mode and the hardest to fix. Requires matching Java's
+exact table expansion ordering, which depends on entry iteration order in TableEntry.
 
-**Root cause**: TBD — possibly our chain solver finds spurious chains that HoDoKu doesn't,
-or there's a difference in the chain search that makes us find different things.
+### 2. BRUTE_FORCE (1 failure)
+ALS-XZ/p0: We fall through to brute force where HoDoKu finds FORCING_NET_CONTRADICTION.
 
-### Group 3: Chain detail mismatches (22 failures)
-Sections: CNL (4), set_value (10), delete_candidate (1), Type_1 (3), Grouped_Type_1 (2),
-Grouped CNL (2)
+**Root cause**: Forcing nets not implemented. Our `_get_forcing_nets()` falls back
+to `_check_forcing_chains()`. Real forcing nets require net-mode table filling with
+`chainsOnly=false` (recursive implication following in `fillTables`).
 
-**Symptom**: Same technique type but different eliminations or different chain found.
-Some show AIC vs DNL type mismatch.
+### 3. VALUES_ONLY (4 failures)
+Same technique, same elims, but values field has different ordering.
+- UT3/p9: Remote Pair values (6,8) vs (8,6)
+- UT3/p25: different chain → different elims (reclassified as DIFFERENT_CHAIN)
+- Remote Pairs/p13: values (4,5) vs (5,4)
+- Remote Pairs/p15: values (2,3) vs (3,2)
 
-**Root cause**: TBD — chain elimination ordering or chain search differences.
+**Root cause**: Remote Pair start candidate ordering. DFS explores chains in
+different order than Java's stack-based search, picking a different start digit.
 
-### Group 4: Values ordering (4 failures)
-Sections: Uniqueness Test Type 3 (2), Remote Pairs (2)
+### 4. TYPE_MISMATCH (2 failures)
+- set_value/p8: We find GROUPED_DNL, HoDoKu finds GROUPED_AIC
+- endo_fins/p7: We find Grouped DNL, HoDoKu finds ALS-XY-Wing
 
-**Symptom**: Values tuple has wrong order: ours=(6,8) vs hodoku=(8,6).
-Eliminations and technique type match perfectly.
+**Root cause**: Chain type classification. GDNL and GAIC are closely related;
+the classification depends on which chain is found first.
 
-**Root cause**: Values field ordering in step construction. Easy fix.
+## Priority by ROI
 
-### Group 5: AR2 (1 failure)
-Section: Avoidable Rectangle Type 2/p15
-
-**Symptom**: We find DISCONTINUOUS_NICE_LOOP, HoDoKu finds AIC. Different elims entirely.
-
-**Root cause**: Likely same as Group 3 — chain type/search difference.
-
-## Priority
-
-1. **Values ordering** (4 failures) — trivial fix
-2. **Fish ordering** (45 failures) — investigate fish search order
-3. **Chain/ALS divergence** (50 failures) — deeper investigation needed
+1. **Chain ordering** (~80 failures) — dominant issue, very hard to fix
+2. **Forcing nets** (1 failure) — implement `_check_forcing_nets()` properly
+3. **Values ordering** (2 failures) — cosmetic fix for Remote Pair values
+4. **Type mismatch** (2 failures) — chain classification

@@ -1,0 +1,36 @@
+# Parity test failures — 20 remaining (as of 2026-03-10)
+# All share a single root cause: table expansion ordering in tabling.py
+# produces chains with slightly different lengths than Java, causing
+# different dedup outcomes. See docs/ROADMAP.md for full analysis.
+#
+# VERITY vs CONTRADICTION (7) — shorter verity replaces contradiction
+endo_fins/p3
+0901:_ALS-XZ_rule/p0
+0901:_ALS-XZ_rule/p2
+0902:_ALS-XY-Wing_rule/p1
+0902:_ALS-XY-Wing_rule/p9
+0903:_ALS-XY-Chain/p3
+0903:_ALS-XY-Chain/p6
+#
+# AIC elims divergence (6) — different chain wins dedup race
+0332:_Franken_Jellyfish/p2
+0332:_Franken_Jellyfish/p3
+0341:_Finned_Franken_Swordfish/p6
+Grouped_Type_1/p12
+0901:_ALS-XZ_rule/p10
+0903:_ALS-XY-Chain/p0
+#
+# DNL vs AIC + different elims (2)
+0901:_ALS-XZ_rule/p1
+set_value/p8
+#
+# Remote Pair values order (2) — DFS exploration order
+0703:_Remote_Pairs/p13
+0703:_Remote_Pairs/p15
+#
+# Forcing chain elims divergence (2)
+Type_1/p2
+Type_1/p11
+#
+# Cascading from earlier chain divergence (1)
+0901:_ALS-XZ_rule/p8

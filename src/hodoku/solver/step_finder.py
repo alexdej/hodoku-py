@@ -17,6 +17,7 @@ from hodoku.solver.fish import FishSolver
 from hodoku.solver.misc import MiscSolver
 from hodoku.solver.simple import SimpleSolver
 from hodoku.solver.single_digit import SingleDigitSolver
+from hodoku.solver.tabling import TablingSolver
 from hodoku.solver.templates import TemplateSolver
 from hodoku.solver.uniqueness import UniquenessSolver
 from hodoku.solver.wings import WingSolver
@@ -100,12 +101,21 @@ _CHAIN_TYPES = frozenset({
     SolutionType.X_CHAIN,
     SolutionType.XY_CHAIN,
     SolutionType.REMOTE_PAIR,
-    SolutionType.CONTINUOUS_NICE_LOOP,          # trigger for all NL types (DNL + CNL)
-    SolutionType.DISCONTINUOUS_NICE_LOOP,        # aliased to same score; dispatched here too
-    SolutionType.GROUPED_CONTINUOUS_NICE_LOOP,   # trigger for all GNL types
+})
+
+# Nice Loops, AICs, and Forcing Chains/Nets — all handled by TablingSolver
+# (mirrors Java where TablingSolver.getStep() handles these types)
+_TABLING_TYPES = frozenset({
+    SolutionType.CONTINUOUS_NICE_LOOP,
+    SolutionType.DISCONTINUOUS_NICE_LOOP,
+    SolutionType.AIC,
+    SolutionType.GROUPED_CONTINUOUS_NICE_LOOP,
     SolutionType.GROUPED_DISCONTINUOUS_NICE_LOOP,
     SolutionType.GROUPED_AIC,
-    SolutionType.AIC,
+    SolutionType.FORCING_CHAIN_CONTRADICTION,
+    SolutionType.FORCING_CHAIN_VERITY,
+    SolutionType.FORCING_NET_CONTRADICTION,
+    SolutionType.FORCING_NET_VERITY,
 })
 
 _MISC_TYPES = frozenset({
@@ -143,6 +153,7 @@ class SudokuStepFinder:
         self._fish = FishSolver(grid)
         self._uniqueness = UniquenessSolver(grid)
         self._chains = ChainSolver(grid)
+        self._tabling = TablingSolver(grid)
         self._als = AlsSolver(grid)
         self._misc = MiscSolver(grid)
         self._templates = TemplateSolver(grid)
@@ -169,6 +180,8 @@ class SudokuStepFinder:
             return self._als.find_all(sol_type)
         if sol_type in _CHAIN_TYPES:
             return self._chains.find_all(sol_type)
+        if sol_type in _TABLING_TYPES:
+            return self._tabling.find_all(sol_type)
         if sol_type in _MISC_TYPES:
             return self._misc.find_all(sol_type)
         if sol_type in _TEMPLATE_TYPES:
@@ -194,6 +207,8 @@ class SudokuStepFinder:
             return self._als.get_step(sol_type)
         if sol_type in _CHAIN_TYPES:
             return self._chains.get_step(sol_type)
+        if sol_type in _TABLING_TYPES:
+            return self._tabling.get_step(sol_type)
         if sol_type in _MISC_TYPES:
             return self._misc.get_step(sol_type)
         if sol_type in _TEMPLATE_TYPES:

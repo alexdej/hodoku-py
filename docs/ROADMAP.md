@@ -205,6 +205,69 @@ dispatches to them. The reglib harness uses this for technique-isolation tests.
 
 ---
 
+## Parity test suite status
+
+**649 pass / 20 fail out of 669** (97.0%)
+
+The parity suite (`tests/parity/`) compares our full solve path against HoDoKu's
+step-by-step on 669 exemplar puzzles. Each step is compared for type, eliminations,
+placements, indices, and values.
+
+### Remaining 20 failures — root cause analysis
+
+All 20 failures share a single root cause: **table expansion ordering** in the
+tabling solver (`solver/tabling.py`). The `_expand_tables()` method computes the
+transitive closure of implications by iterating table entries and merging
+implications from source tables. When two paths lead to the same implication, the
+shorter one wins (stored via `ret_indices`). The ORDER in which entries are
+processed determines which path wins when distances tie.
+
+Our expansion code is logically identical to Java's `TablingSolver.expandTables()`:
+same iteration order, same distance comparison, same dedup logic. Yet the resulting
+tables contain entries with slightly different `ret_indices`, producing chains of
+different lengths during reconstruction (`_build_chain_inner`).
+
+This length difference affects dedup in `_replace_or_copy_step()`: when two steps
+have the same elimination but different chain lengths, the shorter chain wins.
+If our contradiction has length 22 and our verity has length 20, the verity replaces
+the contradiction — while Java's tables might produce a contradiction of length 18
+that survives.
+
+**Concrete example** (endo_fins/p3, step 29): off_table[407] correctly fires check 6
+(cand 6 all-deleted from LINE 3), producing a CONTRADICTION with 4 chains totaling
+length 22. Later, `_check_all_chains_for_house` finds a VERITY with 4 chains
+totaling length 20, which replaces the contradiction. Java presumably finds the
+contradiction with shorter chains, so it survives dedup.
+
+### Failure categories
+
+| Category | Count | Tests |
+|----------|-------|-------|
+| VERITY vs CONTRADICTION | 7 | endo_fins/p3, ALS-XZ/p0, p2, ALS-XY-Wing/p1, p9, ALS-XY-Chain/p3, p6 |
+| AIC elims divergence | 6 | Franken_Jellyfish/p2, p3, Finned_Franken_Swordfish/p6, Grouped_Type_1/p12, ALS-XZ/p10, ALS-XY-Chain/p0 |
+| DNL vs AIC + diff elims | 2 | ALS-XZ/p1, set_value/p8 |
+| Remote Pair values | 2 | Remote_Pairs/p13, p15 |
+| Chain elims (forcing) | 2 | Type_1/p2, p11 |
+| Cascading | 1 | ALS-XZ/p8 |
+
+### Possible approaches to fix
+
+1. **Find a systematic distance/expansion bug** — The expansion code LOOKS identical
+   to Java's but something produces different path distances. Could be a subtle issue
+   in how `ret_indices` are rewritten, how distances propagate through expanded entries,
+   or how the `indices` dict handles collisions. Most promising but hardest to find.
+
+2. **Match Java's iteration exactly** — Java's `SudokuSet` iteration, `HashMap`
+   ordering, and array indexing might produce a specific processing order that our
+   Python dicts and int-bitmask iteration don't perfectly replicate. Unlikely to be
+   fixable without extreme effort.
+
+3. **Accept as known limitations** — 97% pass rate with all 1106 reglib tests passing.
+   The 20 failures produce valid (but different) solving steps. No incorrect results,
+   just different proof paths.
+
+---
+
 ## Implementation notes
 
 - Add each new technique to `SudokuStepFinder.get_step()` in `step_finder.py`

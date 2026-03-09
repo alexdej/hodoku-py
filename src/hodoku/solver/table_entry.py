@@ -34,7 +34,7 @@ _EXTENDED_TABLE: int = 1 << 63
 # clearing only the 9 distance bits (52-60).
 _DIST_CLEAR_MASK: int = 0xE00FFFFFFFFFFFFF
 
-MAX_TABLE_ENTRY_LENGTH: int = 500
+MAX_TABLE_ENTRY_LENGTH: int = 1000
 
 
 class TableEntry:
