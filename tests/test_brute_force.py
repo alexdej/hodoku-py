@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import pytest
 
+pytestmark = pytest.mark.unit
+
 from hodoku.core.grid import Grid
 from hodoku.core.types import SolutionType
 from hodoku.solver.brute_force import BruteForceSolver

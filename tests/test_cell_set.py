@@ -1,4 +1,8 @@
+import pytest
+
 from hodoku.core.cell_set import CellSet
+
+pytestmark = pytest.mark.unit
 
 
 def test_empty_on_init():
