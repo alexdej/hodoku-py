@@ -69,7 +69,7 @@ handle gracefully. Cases to cover:
 | Single given (hardest valid starting point) | Solver runs; terminates correctly |
 
 These tests do not require HoDoKu. They belong in `tests/test_bad_inputs.py`
-and should run in the default (non-`hodoku`) pytest target. Implement
+and should run in the default (non-`java`) pytest target. Implement
 alongside or just after the public API (row 21).
 
 ---
@@ -80,8 +80,8 @@ Every technique is validated by comparing our step sequence against HoDoKu's
 `/vp` output on the same puzzle — same technique type, same cell, same digit,
 in the same order. Goal is 100% fidelity.
 
-- **Pure Python tests** — no HoDoKu needed, run instantly: `pytest -m "not hodoku"`
-- **HoDoKu validation tests** — require `hodoku.jar` + Java: `pytest -m hodoku`
+- **Pure Python tests** — no HoDoKu needed, run instantly: `pytest -m "not java"`
+- **HoDoKu validation tests** — require `hodoku.jar` + Java: `pytest -m java`
 - Test corpus lives in `tests/puzzles/` (to be populated as techniques are added)
 
 ### Validation checkpoints reached
@@ -253,7 +253,7 @@ Revisit if needed, but don't block progress on them.
 ## Implementation notes
 
 - Add each new technique to `SudokuStepFinder.get_step()` in `step_finder.py`
-- Add a `pytestmark = pytest.mark.hodoku` line to every validation test module
+- Add a `pytestmark = pytest.mark.java` line to every validation test module
 - Techniques within a file can be added incrementally; re-run validation after each
 
 ### HoDoKu compatibility: elimination ordering

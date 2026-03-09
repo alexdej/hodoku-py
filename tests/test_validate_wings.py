@@ -8,7 +8,7 @@ from hodoku.core.types import SolutionType
 from hodoku.solver.solver import SudokuSolver
 from tests.hodoku_harness import HodokuResult
 
-pytestmark = pytest.mark.hodoku
+pytestmark = pytest.mark.java
 
 _WING_TYPES = frozenset({
     SolutionType.W_WING,

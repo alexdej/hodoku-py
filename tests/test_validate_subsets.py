@@ -8,7 +8,7 @@ from hodoku.core.types import SolutionType
 from hodoku.solver.solver import SudokuSolver
 from tests.hodoku_harness import HodokuResult
 
-pytestmark = pytest.mark.hodoku
+pytestmark = pytest.mark.java
 
 # Techniques covered by row 8
 _ROW8_TYPES = frozenset({

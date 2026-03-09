@@ -33,7 +33,7 @@ _KNOWN_FAILURES: frozenset[str] = (
     else frozenset()
 )
 
-pytestmark = [pytest.mark.regression, pytest.mark.hodoku]
+pytestmark = [pytest.mark.regression, pytest.mark.java]
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:

@@ -19,7 +19,7 @@ from tests.compare import first_divergence, hodoku_path, solution_path
 from tests.hodoku_harness import HodokuResult
 from tests.sdm.conftest import SdmEntry, _load_sdm, _resolve_sdm_path
 
-pytestmark = [pytest.mark.sdm, pytest.mark.hodoku]
+pytestmark = [pytest.mark.sdm, pytest.mark.java]
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
