@@ -116,11 +116,15 @@ Full details in `docs/ROADMAP.md` → "HoDoKu compatibility: elimination orderin
 - **reglib suite** (`tests/reglib/`): Primary validation. 1112 technique-isolation tests from
   HoDoKu's reglib-1.3.txt. Each reconstructs a PM board and checks that `find_all()` returns
   the expected eliminations. Current: 1106 passed / 0 failed / 6 xfail.
-- **exemplar regression** (`tests/regression/`): Full solve-path comparison against HoDoKu CLI output.
-- **parity suite** (`tests/parity/`): Step-by-step solve-path comparison on 669 exemplar puzzles
-  via Py4J gateway to HoDoKu. Current: 669/669 passed (100% parity).
-- The goal is 100% fidelity with HoDoKu, down to the precise step-by-step solve path. This is a
-  strict port, not an attempt to improve or optimize. Maintaining fidelity simplifies validation.
+- **parity suite** (`tests/parity/`): Secondary validation. Runs each test in the given text file 
+  through our solver and HoDoKu.jar and compares the results in detail. Solution must match precisely
+  step-by-step
+- **exemplar-1.3.txt** (`tests/parity/`): High-priority test from the parity suite. 669 example puzzles
+  that exercise all the solution rules. Must match our output exactly.
+- **IMPORTANT**: both reglib and exemplar-1.3.txt are long-running test suites. Avoid running the whole
+  suite except as necessary to confirm no regressions. Always capture the output for later analysis, and on 
+  subsequent runs, run a subset by name using `-k`.
+
 
 ## Python environment
 

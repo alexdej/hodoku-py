@@ -4,13 +4,13 @@
 ![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![CI](https://github.com/alexdej/hodoku-py/actions/workflows/ci.yml/badge.svg)
 
-A Python port of [HoDoKu](https://hodoku.sourceforge.net/)'s Sudoku solver, hint engine, and difficulty rater — no GUI, no dependencies.
+A pure Python port of [HoDoKu](https://hodoku.sourceforge.net/) — Sudoku solver, hint engine, and difficulty rater minus the GUI.
 
-The goal is bit-for-bit fidelity with HoDoKu 2.2.0: same techniques, same tie-breaking, same elimination order, same difficulty scores. This makes the library useful as a headless solver backend and as a reference implementation for Sudoku logic.
+hodoku-py has full fidelity with HoDoKu 2.2.0: exact same solution path and score across all tested puzzles, in pure python (well, one small bit in c).
 
 ## Status
 
-Core solver complete through all techniques. Generator and public API not yet implemented.
+Core solver complete through all techniques. Puzzle generator and public API not yet implemented.
 
 | Layer | Techniques | Status |
 |-------|-----------|--------|
@@ -33,7 +33,8 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for full details and known gaps.
 ## Requirements
 
 - Python 3.11+
-- C compiler (optional) — auto-detected at runtime for Mutant fish acceleration. Without it, Mutant Whale (size 6) tests are skipped; everything else works in pure Python.
+- C compiler (optional) — auto-detected at runtime for Mutant fish acceleration. Without it, large Mutant Fish take a long time to find. The Mutant Whale (size 6) tests are automatically skipped unless
+the c optimization is detected; everything else works in pure Python.
 
 ## Installation
 
@@ -49,9 +50,9 @@ pip install -e ".[dev]"
 pytest -m unit -v
 ```
 
-### [reglib](tests/reglib/) — technique-isolation suite (~2 min, ~1100 tests, pure Python)
+### [reglib](tests/reglib/) — HoDoKu's built-in regression suite (~2 min, ~1100 tests, pure Python)
 
-Ports HoDoKu's built-in regression library. Each test reconstructs a fixed pencilmark board and asserts that one specific technique fires with the expected eliminations. No Java required.
+Each test reconstructs a fixed pencilmark board and asserts that one specific technique fires with the expected eliminations.
 
 ```bash
 pytest tests/reglib/ -q
@@ -63,18 +64,18 @@ pytest tests/reglib/ -k "0901" -v
 pytest tests/reglib/ --reglib-section 09 -v
 ```
 
-### [parity](tests/parity/) — head-to-head HoDoKu comparison (requires Java)
+### [parity](tests/parity/) — head-to-head HoDoKu comparison (requires Java JRE installation)
 
-Full solve-path comparison against HoDoKu via [Py4J](https://www.py4j.org/). Runs any puzzle file and compares our solver's output step-for-step against HoDoKu's.
+Comparison of full solution solve path against HoDoKu.jar via [Py4J](https://www.py4j.org/).
 
 ```bash
 pytest tests/parity/ --puzzle-file exemplars-1.0 -v
 pytest tests/parity/ --puzzle-file top1465 --puzzle-count 50 --puzzle-seed 7 -v
 ```
 
-Puzzle files are plain text (one puzzle per line) placed in `tests/testdata/`.
+Puzzle files are plain text (one puzzle per line) sourced from `tests/testdata/`.
 
-### Skipping Java-dependent tests
+### Skip the tests that require Java
 
 ```bash
 pytest tests/ -m "not java"   # pure-Python tests only
@@ -120,7 +121,12 @@ tests/
 
 ## Validation approach
 
-Every technique is validated by comparing solve paths against HoDoKu — same technique type, same cell, same digit, in the same order. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for internals and porting notes.
+Every technique is validated by solving the puzzle and comparing the solution with HoDoKu's in detail — same list of techniques, eliminations, and placements, in the same order. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for internals and porting notes.
+
+
+## Why?
+
+Good question. I was curious whether one could use Claude Code to port a complex code base from java to python. Turns out one could. 
 
 ## License
 
