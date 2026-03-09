@@ -113,6 +113,7 @@ def _load_accel():
             ctypes.c_uint64, ctypes.c_uint64,  # cand_lo, cand_hi
             ctypes.c_int,                      # with_fins
             ctypes.c_int,                      # max_fins
+            ctypes.c_uint64, ctypes.c_uint64,  # endo_lo, endo_hi
             ctypes.POINTER(_FishResult),       # out
             ctypes.c_int,                      # max_out
         ]
@@ -816,6 +817,7 @@ class FishSolver:
                             base_cand & _LO_MASK, base_cand >> _HI_SHIFT,
                             cand_set & _LO_MASK, cand_set >> _HI_SHIFT,
                             1 if with_fins else 0, _MAX_FINS,
+                            endo_fins & _LO_MASK, endo_fins >> _HI_SHIFT,
                             _out, _max_out,
                         )
                         for ri in range(min(nfound, _max_out)):
@@ -875,8 +877,12 @@ class FishSolver:
                                 _ni[level] = ci + 1
                             else:
                                 fins = base_cand & ~new_cand
+                                # Java includes endo fins in the fin set for
+                                # both the finnless/finned decision and the
+                                # fin_buddies elimination check.
+                                all_fins = fins | endo_fins
                                 if not with_fins:
-                                    if fins:
+                                    if all_fins:
                                         continue
                                     elim = cand_set & new_cand & ~base_cand
                                     if new_cannibal:
@@ -884,12 +890,12 @@ class FishSolver:
                                     if not elim:
                                         continue
                                 else:
-                                    fin_count = fins.bit_count()
+                                    fin_count = all_fins.bit_count()
                                     if fin_count == 0:
                                         continue
                                     if fin_count > _MAX_FINS:
                                         continue
-                                    fin_buddies = _fin_buddies(fins)
+                                    fin_buddies = _fin_buddies(all_fins)
                                     elim = cand_set & new_cand & fin_buddies & ~base_cand
                                     if new_cannibal:
                                         elim |= cand_set & new_cannibal & fin_buddies

@@ -77,11 +77,14 @@ int fish_find_covers(
     uint64_t cand_hi,
     int with_fins,
     int max_fins,
+    uint64_t endo_lo,           /* endo fin mask (cells in >1 base unit) */
+    uint64_t endo_hi,
     FishResult *out,
     int max_out
 ) {
     M81 base = {base_lo, base_hi & HI_MASK};
     M81 cand = {cand_lo, cand_hi & HI_MASK};
+    M81 endo = {endo_lo, endo_hi & HI_MASK};
     int count = 0;
 
     /* DFS stack (level 0 = sentinel, levels 1..n = active) */
@@ -124,8 +127,11 @@ int fish_find_covers(
         /* --- Leaf: complete combination --- */
         M81 fins = m_andnot(base, new_cand);
 
+        /* Combine external fins with endo fins (Java: finsM1 |= endoFinSetM1) */
+        M81 all_fins = m_or(fins, endo);
+
         if (!with_fins) {
-            if (!m_zero(fins)) continue;
+            if (!m_zero(all_fins)) continue;
             M81 elim = m_andnot(m_and(cand, new_cand), base);
             if (!m_zero(new_cannibal))
                 elim = m_or(elim, m_and(cand, new_cannibal));
@@ -141,10 +147,10 @@ int fish_find_covers(
             }
             count++;
         } else {
-            int fc = m_popcnt(fins);
+            int fc = m_popcnt(all_fins);
             if (fc == 0 || fc > max_fins) continue;
 
-            M81 fb = fin_buddies(fins);
+            M81 fb = fin_buddies(all_fins);
             M81 elim = m_andnot(m_and(m_and(cand, new_cand), fb), base);
             if (!m_zero(new_cannibal))
                 elim = m_or(elim, m_and(m_and(cand, new_cannibal), fb));
