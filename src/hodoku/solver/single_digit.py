@@ -82,6 +82,12 @@ class SingleDigitSolver:
             return self._find_two_string_kite()
         if sol_type == SolutionType.EMPTY_RECTANGLE:
             return self._find_empty_rectangle()
+        if sol_type == SolutionType.DUAL_TWO_STRING_KITE:
+            steps = self._find_dual_two_string_kites()
+            return steps[0] if steps else None
+        if sol_type == SolutionType.DUAL_EMPTY_RECTANGLE:
+            steps = self._find_dual_empty_rectangles()
+            return steps[0] if steps else None
         return None
 
     def find_all(self, sol_type: SolutionType) -> list[SolutionStep]:
@@ -91,6 +97,10 @@ class SingleDigitSolver:
             return self._find_two_string_kite_all()
         if sol_type == SolutionType.EMPTY_RECTANGLE:
             return self._find_empty_rectangle_all()
+        if sol_type == SolutionType.DUAL_TWO_STRING_KITE:
+            return self._find_dual_two_string_kites()
+        if sol_type == SolutionType.DUAL_EMPTY_RECTANGLE:
+            return self._find_dual_empty_rectangles()
         return []
 
     def _find_skyscraper_all(self) -> list[SolutionStep]:
@@ -249,6 +259,87 @@ class SingleDigitSolver:
                                 seen_elims.add(key)
                                 results.append(step)
         return results
+
+    # ------------------------------------------------------------------
+    # Dual patterns
+    # ------------------------------------------------------------------
+
+    def _find_dual_two_string_kites(self) -> list[SolutionStep]:
+        """Find Dual 2-String Kites.
+
+        A dual 2SK combines two 2SKs that share the same block connection
+        (indices[2] and indices[3]) but produce different eliminations.
+        """
+        kites = self._find_two_string_kite_all()
+        duals: list[SolutionStep] = []
+        n = len(kites)
+        for i in range(n - 1):
+            s1 = kites[i]
+            b11 = s1.indices[2]
+            b12 = s1.indices[3]
+            for j in range(i + 1, n):
+                s2 = kites[j]
+                b21 = s2.indices[2]
+                b22 = s2.indices[3]
+                if not ((b11 == b21 and b12 == b22) or (b12 == b21 and b11 == b22)):
+                    continue
+                if s1.candidates_to_delete[0] == s2.candidates_to_delete[0]:
+                    continue  # same elimination
+                dual = SolutionStep(SolutionType.DUAL_TWO_STRING_KITE)
+                dual.values = list(s1.values)
+                for idx in s1.indices:
+                    dual.add_index(idx)
+                for idx in s2.indices:
+                    dual.add_index(idx)
+                dual.fins = list(s1.fins)
+                dual.candidates_to_delete = list(s1.candidates_to_delete)
+                dual.add_candidate_to_delete(
+                    s2.candidates_to_delete[0].index,
+                    s2.candidates_to_delete[0].value,
+                )
+                duals.append(dual)
+        return duals
+
+    def _find_dual_empty_rectangles(self) -> list[SolutionStep]:
+        """Find Dual Empty Rectangles.
+
+        A dual ER combines two ERs from the same box with the same ER
+        candidates (fins) but different eliminations.
+        """
+        ers = self._find_empty_rectangle_all()
+        duals: list[SolutionStep] = []
+        n = len(ers)
+        for i in range(n - 1):
+            s1 = ers[i]
+            for j in range(i + 1, n):
+                s2 = ers[j]
+                # Same box (entity/entityNumber)
+                if s1.entity != s2.entity or s1.entity_number != s2.entity_number:
+                    continue
+                # Same fins (box candidates)
+                if len(s1.fins) != len(s2.fins):
+                    continue
+                if s1.fins != s2.fins:
+                    continue
+                # Different elimination
+                if s1.candidates_to_delete[0] == s2.candidates_to_delete[0]:
+                    continue
+                dual = SolutionStep(SolutionType.DUAL_EMPTY_RECTANGLE)
+                dual.values = list(s1.values)
+                dual.entity = s1.entity
+                dual.entity_number = s1.entity_number
+                for idx in s1.indices:
+                    dual.add_index(idx)
+                for idx in s2.indices:
+                    dual.add_index(idx)
+                dual.fins = list(s1.fins)
+                dual.candidates_to_delete = list(s1.candidates_to_delete)
+                dual.add_candidate_to_delete(
+                    s2.candidates_to_delete[0].index,
+                    s2.candidates_to_delete[0].value,
+                )
+                duals.append(dual)
+        return duals
 
     # ------------------------------------------------------------------
     # Shared helper

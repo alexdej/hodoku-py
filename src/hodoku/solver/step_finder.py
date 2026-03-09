@@ -17,6 +17,7 @@ from hodoku.solver.fish import FishSolver
 from hodoku.solver.misc import MiscSolver
 from hodoku.solver.simple import SimpleSolver
 from hodoku.solver.single_digit import SingleDigitSolver
+from hodoku.solver.templates import TemplateSolver
 from hodoku.solver.uniqueness import UniquenessSolver
 from hodoku.solver.wings import WingSolver
 
@@ -40,7 +41,9 @@ _SIMPLE_TYPES = frozenset({
 _SINGLE_DIGIT_TYPES = frozenset({
     SolutionType.SKYSCRAPER,
     SolutionType.TWO_STRING_KITE,
+    SolutionType.DUAL_TWO_STRING_KITE,
     SolutionType.EMPTY_RECTANGLE,
+    SolutionType.DUAL_EMPTY_RECTANGLE,
 })
 
 _WING_TYPES = frozenset({
@@ -66,6 +69,23 @@ _FISH_TYPES = frozenset({
     SolutionType.SASHIMI_X_WING,
     SolutionType.SASHIMI_SWORDFISH,
     SolutionType.SASHIMI_JELLYFISH,
+    # Franken fish
+    SolutionType.FRANKEN_X_WING,
+    SolutionType.FRANKEN_SWORDFISH,
+    SolutionType.FRANKEN_JELLYFISH,
+    SolutionType.FINNED_FRANKEN_X_WING,
+    SolutionType.FINNED_FRANKEN_SWORDFISH,
+    SolutionType.FINNED_FRANKEN_JELLYFISH,
+    # Mutant fish
+    SolutionType.MUTANT_X_WING,
+    SolutionType.MUTANT_SWORDFISH,
+    SolutionType.MUTANT_JELLYFISH,
+    SolutionType.FINNED_MUTANT_X_WING,
+    SolutionType.FINNED_MUTANT_SWORDFISH,
+    SolutionType.FINNED_MUTANT_JELLYFISH,
+    SolutionType.FINNED_MUTANT_SQUIRMBAG,
+    SolutionType.FINNED_MUTANT_WHALE,
+    SolutionType.FINNED_MUTANT_LEVIATHAN,
 })
 
 _ALS_TYPES = frozenset({
@@ -90,6 +110,11 @@ _CHAIN_TYPES = frozenset({
 
 _MISC_TYPES = frozenset({
     SolutionType.SUE_DE_COQ,
+})
+
+_TEMPLATE_TYPES = frozenset({
+    SolutionType.TEMPLATE_SET,
+    SolutionType.TEMPLATE_DEL,
 })
 
 _UNIQUENESS_TYPES = frozenset({
@@ -120,6 +145,7 @@ class SudokuStepFinder:
         self._chains = ChainSolver(grid)
         self._als = AlsSolver(grid)
         self._misc = MiscSolver(grid)
+        self._templates = TemplateSolver(grid)
         self._brute_force = BruteForceSolver(grid)
 
     def find_all(self, sol_type: SolutionType) -> list[SolutionStep]:
@@ -142,6 +168,8 @@ class SudokuStepFinder:
             return self._chains.find_all(sol_type)
         if sol_type in _MISC_TYPES:
             return self._misc.find_all(sol_type)
+        if sol_type in _TEMPLATE_TYPES:
+            return self._templates.find_all(sol_type)
         step = self.get_step(sol_type)
         return [step] if step is not None else []
 
@@ -165,6 +193,8 @@ class SudokuStepFinder:
             return self._chains.get_step(sol_type)
         if sol_type in _MISC_TYPES:
             return self._misc.get_step(sol_type)
+        if sol_type in _TEMPLATE_TYPES:
+            return self._templates.get_step(sol_type)
         if sol_type is SolutionType.BRUTE_FORCE:
             return self._brute_force.get_step(sol_type)
         return None

@@ -204,8 +204,8 @@ TECHNIQUE_TYPES: dict[str, frozenset[SolutionType]] = {
     "0903": frozenset({SolutionType.ALS_XY_CHAIN}),
     "0904": frozenset({SolutionType.DEATH_BLOSSOM}),
     "1101": frozenset({SolutionType.SUE_DE_COQ}),
-    "1201": frozenset(),  # Template Set — not yet implemented
-    "1202": frozenset(),  # Template Delete — not yet implemented
+    "1201": frozenset({SolutionType.TEMPLATE_SET}),
+    "1202": frozenset({SolutionType.TEMPLATE_DEL}),
     "1301": frozenset(),  # Forcing Chain Contradiction — not yet implemented
     "1302": frozenset(),  # Forcing Chain Verity — not yet implemented
     "1303": frozenset(),  # Forcing Net Contradiction — not yet implemented

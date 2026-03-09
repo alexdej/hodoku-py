@@ -149,6 +149,70 @@ def _build_gnl_links(
     return links
 
 
+def _has_als_link(chain: list[int]) -> bool:
+    """Return True if any consecutive regular-node pair changes both cell and candidate.
+
+    ALS-derived weak links are the only links that connect different cells with
+    different candidates.  All regular inter-cell links share the same candidate;
+    all regular intra-cell links share the same cell.
+    """
+    for i in range(len(chain) - 1):
+        a, b = chain[i], chain[i + 1]
+        if a < 729 and b < 729:
+            if a // 9 != b // 9 and a % 9 != b % 9:
+                return True
+    return False
+
+
+def _build_gnl_links_with_als(
+    grid: Grid,
+    group_nodes: list[_GroupNode],
+) -> list[list[tuple[int, bool]]]:
+    """Extend the GNL link graph with ALS-derived weak links.
+
+    For each ALS (size >= 2), for each ordered pair of distinct candidates (j, k):
+      For each c1 in buddies_per_cand[j] and each c2 in buddies_per_cand[k]:
+        Add weak link c1(j) → c2(k).
+
+    Semantics: if c1 is ON with digit j, the ALS is locked on j, eliminating
+    digit k from all cells that see all ALS k-cells — including c2.
+    """
+    from hodoku.solver.als import _collect_alses  # avoid circular import
+
+    links = _build_gnl_links(grid, group_nodes)
+    alses = _collect_alses(grid)
+
+    for als in alses:
+        if als.indices.bit_count() <= 1:
+            continue  # single-cell (bivalue) ALSes add no new link types
+        for j in range(1, 10):
+            bj = als.buddies_per_cand[j]
+            if not bj:
+                continue
+            for k in range(1, 10):
+                if k == j:
+                    continue
+                bk = als.buddies_per_cand[k]
+                if not bk:
+                    continue
+                tmp_j = bj
+                while tmp_j:
+                    lsb = tmp_j & -tmp_j
+                    c1 = lsb.bit_length() - 1
+                    tmp_j ^= lsb
+                    c1_nid = c1 * 9 + (j - 1)
+                    tmp_k = bk
+                    while tmp_k:
+                        lsb2 = tmp_k & -tmp_k
+                        c2 = lsb2.bit_length() - 1
+                        tmp_k ^= lsb2
+                        if c1 == c2:
+                            continue
+                        links[c1_nid].append((c2 * 9 + (k - 1), False))
+
+    return links
+
+
 def _gn_house_masks(gn: _GroupNode) -> list[int]:
     """Return bitmasks of houses GN participates in (block always; row or col if aligned)."""
     masks = [BLOCK_MASKS[gn.block]]
@@ -956,9 +1020,15 @@ class ChainSolver:
             # Only regular nodes at start_cell can close a loop.
             is_loop = False
             if end_mask & chain_occupied:
-                if is_end_group or end_cell != start_cell:
+                if is_end_group:
+                    # Group nodes: start_cell may be part of a group without
+                    # creating a lasso — only block if interior cells overlap.
+                    if end_mask & (chain_occupied & ~(1 << start_cell)):
+                        continue  # lasso: group overlaps interior chain cell
+                elif end_cell != start_cell:
                     continue  # lasso
-                is_loop = True
+                else:
+                    is_loop = True
 
             # Downgrade: strong link in a weak position is recorded as weak.
             # Matches Java: if (!entry.strongOnly && newLinkIsStrong) downgrade.

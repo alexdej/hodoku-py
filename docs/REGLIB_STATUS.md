@@ -2,106 +2,155 @@
 
 ## Overview
 
-HoDoKu ships a technique-isolation test library (`reglib-1.3.txt`) that lives in the
-sibling repo at `../HoDoKu/reglib-1.3.txt`. We ported this into our test suite at
-`tests/reglib/`. Each entry reconstructs a specific pencilmark board state (given cells
-+ manually deleted candidates) and asserts that a named technique fires and produces
-exactly the expected eliminations or placements.
+HoDoKu ships a technique-isolation test library (`reglib-1.3.txt`). We ported it into
+`tests/reglib/`. Each entry reconstructs a specific pencilmark board state (given cells +
+manually deleted candidates) and asserts that a named technique fires with exactly the
+expected eliminations or placements.
 
-This is complementary to `tests/regression/` (exemplar solve-path tests): reglib tests
-one technique in isolation on a fixed board; exemplar tests validate full head-to-head
-solve paths against HoDoKu's CLI.
+Complementary to `tests/regression/` (exemplar solve-path tests): reglib tests one
+technique in isolation on a fixed board.
 
 **No Java/HoDoKu JAR required** — board states are fully self-contained.
 
-## Results (as of 2026-03-08)
+---
+
+## Results (as of 2026-03-09)
 
 ```
-1112 total   800 passed   264 failed   48 skipped
+1112 total   1004 passed   103 failed   5 xfail
 ```
 
-**75% passing** (800/1064 excluding skipped).
+**~91% passing** (1004/1107 excluding xfail).
 
-### What the `find_all` work accomplished
+---
 
-The reglib harness calls `finder.find_all(sol_type)` and checks whether the expected
-elimination set appears *anywhere* in the returned list. Before this session, most
-solvers fell back to `get_step()` (at most 1 result), causing false failures whenever
-the expected step wasn't the first one found.
+## Remaining failures — by category
 
-Work done to wire up `find_all` across all solvers:
+### ALS nodes in grouped chains (44 failures)
 
-| Solver | Method added | Pattern used |
-|--------|-------------|--------------|
-| `simple.py` | already done | scan-based collectors |
-| `fish.py` | `find_all` + `_find_basic_fish_all`, `_find_finned_fish_all` | `seen_elims` dedup |
-| `single_digit.py` | `find_all` + `_find_*_all` variants | `seen_elims` dedup |
-| `wings.py` | `find_all` + `_find_wing_all`, `_find_w_wing_all` | `seen_elims` dedup |
-| `coloring.py` | `find_all` + `_find_simple_colors_all`, `_find_multi_colors_all` | `seen_elims` dedup |
-| `uniqueness.py` | `find_all` + `_find_ur_all`, collector param threaded through emit | optional `collector` arg |
-| `als.py` | `find_all` + `_find_als_xz_all`, `_find_als_xy_wing_all`, `_find_als_xy_chain_all` | `deletes_map` already collected all |
-| `chains.py` | `find_all` + `_find_x_chain_impl_all`, `_find_xy_type_all`, `_find_nice_loop_all` | `deletes_map` + type filter |
-| `step_finder.py` | routed all `_*_TYPES` sets to their solver's `find_all` | dispatch table |
+| Code | Technique | Variants |
+|------|-----------|---------|
+| 0709 | Grouped CNL | variant 2 |
+| 0710 | Grouped DNL | variants 3, 4 |
+| 0711 | Grouped AIC | variants 3, 4 |
 
-This fixed approximately **96 false failures** (360 → 264).
+These variants set `AllowAlsInTablingChains=true` in Java's regression tester.
+Java's implementation is in `TablingSolver.fillTablesWithAls()`, which adds ALS nodes to
+the forward-propagation implication tables before expanding and checking loops.
 
-## Remaining 264 failures — by category
+**Investigation (2026-03-09):** We attempted to implement ALS-in-chains by adding
+direct weak links `c1(j) → c2(k)` to the existing DFS link graph (for each ALS, each
+ordered pair of candidates (j, k), c1 ∈ buddies_per_cand[j], c2 ∈ buddies_per_cand[k]).
+This correctly models the semantic: "if c1 is ON with digit j, the ALS is locked on j,
+eliminating k from all cells that see all ALS k-cells."
 
-### Bugs in existing implementations (~183 failures)
+However, the approach causes exponential DFS blowup because:
+- ALS links are all weak, so they multiply fanout at every weak step
+- The DFS explores all combinations before the chain length limit (20) cuts it off
+- A single test case timed out at 60 seconds (vs ~5s without ALS links)
 
-| Code | Technique | Count | Root cause |
-|------|-----------|-------|-----------|
-| 0708 | AIC | 34 | chains.py misses some AIC patterns |
-| 0711 | Grouped AIC | 21 | chains.py grouped-node patterns incomplete |
-| 0710 | Grouped DNL | 19 | chains.py grouped-node patterns incomplete |
-| 0709 | Grouped CNL | 7 | chains.py grouped-node patterns incomplete |
-| 0603 | Uniqueness Test 4 | 10 | uniqueness.py partial |
-| 0606 | Hidden Rectangle | 10 | uniqueness.py partial |
-| 0600 | Uniqueness Test 1 | 9 | uniqueness.py partial |
-| 0601/02/04/05 | UT2/3/5/6 | 5 | uniqueness.py partial |
-| 0321 | Sashimi Swordfish | 17 | fish.py sashimi detection bug |
-| 0320 | Sashimi X-Wing | 9 | fish.py sashimi detection bug |
-| 0322 | Sashimi Jellyfish | 9 | fish.py sashimi detection bug |
-| 0311/12 | Finned Swordfish/Jellyfish | 7 | fish.py finned partial |
-| 0402 | Empty Rectangle | 6 | single_digit.py ER bug |
-| 0902/03 | ALS-XY-Wing/Chain | 10 | als.py partial patterns |
-| 0904 | Death Blossom | 9 | als.py partial |
+**Root cause:** Java's tabling approach is BFS/forward-propagation: each cell-candidate
+pair is visited at most once per table-filling pass. Our DFS cannot bound the search the
+same way. To implement this correctly, we need to extend `tabling.py`'s `fillTables()`
+with `fillTablesWithAls()` and then route grouped-NL results through the tabling
+infrastructure (as Java does in `doGetNiceLoops()`).
 
-### Not implemented (~83 failures)
+**Status:** Deferred. The helper functions `_build_gnl_links_with_als()` and
+`_has_als_link()` were written and are present in `chains.py` but not called. The right
+fix is implementing `TablingSolver.fillTablesWithAls()` in `tabling.py`.
 
-| Code | Technique | Count | Notes |
-|------|-----------|-------|-------|
-| 0607/08 | Avoidable Rectangle 1/2 | 25 | Requires tracking placed-but-not-given cells |
-| 0342 | Finned Franken Jellyfish | 13 | Franken/Mutant fish family |
-| 0341 | Finned Franken Swordfish | 8 | Franken/Mutant fish family |
-| 0340 | Finned Franken X-Wing | 4 | Franken/Mutant fish family |
-| 0332 | Franken Jellyfish | 4 | Franken/Mutant fish family |
-| 0331 | Franken Swordfish | 3 | Franken/Mutant fish family |
-| 0362/63/64 | Finned Mutant Jellyfish/larger | 8 | Mutant fish family |
-| 0404 | Dual Two-String Kite | 9 | single_digit.py missing |
-| 0405 | Dual Empty Rectangle | 8 | single_digit.py missing |
+### Franken/Mutant fish (41 failures)
 
-### Skipped (48 entries)
+| Code | Technique | Count |
+|------|-----------|-------|
+| 0330–0332 | Franken X-Wing/Swordfish/Jellyfish | 11 |
+| 0340–0342 | Finned Franken X-Wing/Swordfish/Jellyfish | 29 |
+| 0350–0352 | Mutant X-Wing/Swordfish/Jellyfish | (not yet counted) |
+| 0360–0364 | Finned Mutant variants | (not yet counted) |
 
-Techniques with no implementation at all — skipped by `_SKIP_CODES` in the test file:
+Franken fish allow mixed base/cover sets (rows + blocks, cols + blocks). Mutant fish
+allow fully mixed bases and covers. Not implemented in `fish.py`.
 
-| Code | Technique |
-|------|-----------|
-| 1101 | Sue de Coq |
-| 1201 | Template Set |
-| 1202 | Template Delete |
-| 1301/02 | Forcing Chain Contradiction/Verity |
-| 1303/04 | Forcing Net Contradiction/Verity |
+**Note on test 724 (0342 Finned Franken Jellyfish, line 724):** This test was
+investigated separately. Java's `/bsa` output does not find the expected step either.
+Root cause: Java's `getAllFishes()` runs with `fishType=UNDEFINED`, collecting basic
+AND finned fish in one pass before applying siamese. The expected elimination
+`{r4c9<>4, r5c9<>4, r8c9<>4}` requires siamese between a basic Franken Jellyfish
+`{r8c9<>4}` and a finned Franken Jellyfish `{r4c9<>4, r5c9<>4}` sharing the same base
+(rows 1,2,6 + block 3). Our fish.py runs basic and finned searches separately, so those
+two fish never enter the siamese matcher together.
+
+Test 724 is marked `xfail` in `_CROSS_TYPE_SIAMESE_XFAIL`.
+
+### Templates (18 failures)
+
+| Code | Technique | Count |
+|------|-----------|-------|
+| 1201 | Template Set | ~9 |
+| 1202 | Template Delete | ~9 |
+
+`solver/templates.py` not yet implemented. Template Set/Delete precompute all 46,656
+candidate templates for each digit and use AND/OR intersection to find forced placements
+and eliminations.
+
+---
+
+## Known xfails (5 entries)
+
+| Lines | Reason |
+|-------|--------|
+| 1445, 1453, 1454, 1455, 1459 | ALS-XY-Chain: needs bidirectional RC traversal or chain length >6, which Java's default settings can't find either. Confirmed fails in Java HoDoKu v2.2.0. |
+| 724 | Finned Franken Jellyfish: requires cross-type siamese (basic+finned in one pass). Java's `/bsa` also fails to find the step. |
+
+---
+
+## Session history (2026-03-09)
+
+### Group node lasso fix
+
+Fixed a bug in `_dfs_nl` (chains.py) where the start_cell bit in `chain_occupied` was
+incorrectly preventing group nodes that contain the start cell from being visited.
+
+**Example chain** (test 1280): `r9c4 -8- r7c5 -7- r9c456 =7= r9c8 =6= r9c4`
+
+Here start_cell = r9c4 (index 75). Group node r9c456 has cells {75, 76, 77}. When the
+DFS reaches r9c456, `end_mask & chain_occupied` fired because bit 75 was set (start_cell
+was added at initialization). Since `is_end_group=True`, the old code skipped it as a
+lasso — but r9c456 containing start_cell doesn't create a cycle; the chain later closes
+by returning to r9c4 via a strong link, which is a valid loop.
+
+**Fix:** Only block group nodes if their cells overlap with *interior* chain cells
+(chain_occupied excluding start_cell):
+
+```python
+if end_mask & chain_occupied:
+    if is_end_group:
+        if end_mask & (chain_occupied & ~(1 << start_cell)):
+            continue  # true lasso: overlaps interior cell
+    elif end_cell != start_cell:
+        continue  # lasso
+    else:
+        is_loop = True
+```
+
+Tests fixed: line 1280 (Grouped DNL-2), line 1321 (Grouped AIC-2).
+
+### ALS-in-chains investigation (unsuccessful)
+
+See "ALS nodes in grouped chains" above. The DFS approach is not viable; the tabling
+approach is required.
+
+---
 
 ## Running the suite
 
 ```bash
-# Full run (~2 min)
+# Full run (~10 min)
 pytest tests/reglib/ -q
 
-# Single technique by code
-pytest tests/reglib/ -k "0708" -v
+# Single technique
+pytest tests/reglib/ -k "0711" -v
 
-# Quick smoke test (first 50 entries)
-pytest tests/reglib/ -k "0000 or 0002 or 0003 or 0100" -v
+# Only grouped chain variants
+pytest tests/reglib/ -k "0709 or 0710 or 0711" -v
 ```

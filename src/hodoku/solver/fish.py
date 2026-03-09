@@ -1,7 +1,22 @@
-"""Fish solver: basic (X-Wing, Swordfish, Jellyfish) and finned/sashimi variants.
+"""Fish solver: basic, finned/sashimi, Franken, and Mutant variants.
 
-Mirrors the basic-fish and finned-fish portions of Java's FishSolver.
-Franken and Mutant variants are not implemented.
+Mirrors Java's FishSolver.  Basic and finned/sashimi were already implemented;
+Franken and Mutant extend the unit pool to include boxes as base/cover sets.
+
+Fish category classification (mirrors Java's createFishStep logic):
+  BASIC   — base = rows only,         cover = cols only (or vice versa)
+  FRANKEN — base ⊆ {rows, blocks},   cover ⊆ {cols, blocks}  (or vice versa)
+  MUTANT  — any other combination (rows and cols appear on the same side)
+
+Unit pools for initForCandidat (fishType, lines=True):
+  BASIC:   base = rows,              cover = cols
+  FRANKEN: base = rows + blocks,     cover = cols + blocks
+  MUTANT:  base = all 27 units,      cover = all 27 units  (one orientation)
+
+Endo fins: cells that appear in two or more base units (possible when blocks
+overlap rows/cols).  At most MAX_ENDO_FINS=2 endo fins are allowed.
+Endo fins that are not covered appear in the regular fins mask and are
+handled identically to external fins when computing eliminations.
 """
 
 from __future__ import annotations
@@ -9,6 +24,8 @@ from __future__ import annotations
 from itertools import combinations
 
 from hodoku.core.grid import (
+    ALL_UNIT_MASKS,
+    BLOCK_MASKS,
     BUDDIES,
     COL_MASKS,
     COLS,
@@ -67,6 +84,159 @@ _FINNED_TO_SASHIMI = {
     SolutionType.FINNED_JELLYFISH: SolutionType.SASHIMI_JELLYFISH,
 }
 
+# ---------------------------------------------------------------------------
+# Franken / Mutant fish
+# ---------------------------------------------------------------------------
+
+# Fish category constants (mirror Java FishSolver BASIC/FRANKEN/MUTANT)
+_CAT_BASIC   = 0
+_CAT_FRANKEN = 1
+_CAT_MUTANT  = 2
+
+# Unit type bit-flags (for category classification)
+_BIT_LINE  = 1
+_BIT_COL   = 2
+_BIT_BLOCK = 4
+
+# HoDoKu defaults for fin/endo-fin limits
+_MAX_FINS      = 5
+_MAX_ENDO_FINS = 2
+
+# Entity type constants for boxes (Java's Sudoku2.BLOCK = 0)
+_BLOCK = 2
+
+# Entity type constants (reuse existing _LINE=0, _COL=1, new _BLOCK_ENT=2)
+_BLOCK_ENT = 2
+
+# SolutionType → (category, size, with_fins)
+_GENERALIZED_INFO: dict[SolutionType, tuple[int, int, bool]] = {
+    # Franken (basic / no fins)
+    SolutionType.FRANKEN_X_WING:    (_CAT_FRANKEN, 2, False),
+    SolutionType.FRANKEN_SWORDFISH: (_CAT_FRANKEN, 3, False),
+    SolutionType.FRANKEN_JELLYFISH: (_CAT_FRANKEN, 4, False),
+    # Franken (finned)
+    SolutionType.FINNED_FRANKEN_X_WING:    (_CAT_FRANKEN, 2, True),
+    SolutionType.FINNED_FRANKEN_SWORDFISH: (_CAT_FRANKEN, 3, True),
+    SolutionType.FINNED_FRANKEN_JELLYFISH: (_CAT_FRANKEN, 4, True),
+    # Mutant (basic / no fins)
+    SolutionType.MUTANT_X_WING:    (_CAT_MUTANT, 2, False),
+    SolutionType.MUTANT_SWORDFISH: (_CAT_MUTANT, 3, False),
+    SolutionType.MUTANT_JELLYFISH: (_CAT_MUTANT, 4, False),
+    # Mutant (finned)
+    SolutionType.FINNED_MUTANT_X_WING:      (_CAT_MUTANT, 2, True),
+    SolutionType.FINNED_MUTANT_SWORDFISH:   (_CAT_MUTANT, 3, True),
+    SolutionType.FINNED_MUTANT_JELLYFISH:   (_CAT_MUTANT, 4, True),
+    SolutionType.FINNED_MUTANT_SQUIRMBAG:   (_CAT_MUTANT, 5, True),
+    SolutionType.FINNED_MUTANT_WHALE:       (_CAT_MUTANT, 6, True),
+    SolutionType.FINNED_MUTANT_LEVIATHAN:   (_CAT_MUTANT, 7, True),
+}
+
+# (category, size, with_fins) → basic SolutionType (for step annotation when no fins)
+_CAT_BASIC_TYPES: dict[tuple[int, int], SolutionType] = {
+    (_CAT_FRANKEN, 2): SolutionType.FRANKEN_X_WING,
+    (_CAT_FRANKEN, 3): SolutionType.FRANKEN_SWORDFISH,
+    (_CAT_FRANKEN, 4): SolutionType.FRANKEN_JELLYFISH,
+    (_CAT_MUTANT,  2): SolutionType.MUTANT_X_WING,
+    (_CAT_MUTANT,  3): SolutionType.MUTANT_SWORDFISH,
+    (_CAT_MUTANT,  4): SolutionType.MUTANT_JELLYFISH,
+}
+
+# (category, size) → finned SolutionType
+_CAT_FINNED_TYPES: dict[tuple[int, int], SolutionType] = {
+    (_CAT_FRANKEN, 2): SolutionType.FINNED_FRANKEN_X_WING,
+    (_CAT_FRANKEN, 3): SolutionType.FINNED_FRANKEN_SWORDFISH,
+    (_CAT_FRANKEN, 4): SolutionType.FINNED_FRANKEN_JELLYFISH,
+    (_CAT_MUTANT,  2): SolutionType.FINNED_MUTANT_X_WING,
+    (_CAT_MUTANT,  3): SolutionType.FINNED_MUTANT_SWORDFISH,
+    (_CAT_MUTANT,  4): SolutionType.FINNED_MUTANT_JELLYFISH,
+    (_CAT_MUTANT,  5): SolutionType.FINNED_MUTANT_SQUIRMBAG,
+    (_CAT_MUTANT,  6): SolutionType.FINNED_MUTANT_WHALE,
+    (_CAT_MUTANT,  7): SolutionType.FINNED_MUTANT_LEVIATHAN,
+}
+
+
+def _classify_fish(base_type_bits: int, cover_type_bits: int) -> int:
+    """Classify a fish as BASIC/FRANKEN/MUTANT based on unit type bits.
+
+    Mirrors Java FishSolver.createFishStep type-determination logic.
+    LINE_MASK=1, COL_MASK=2, BLOCK_MASK=4 in Java.
+    """
+    if ((base_type_bits == _BIT_LINE and cover_type_bits == _BIT_COL) or
+            (base_type_bits == _BIT_COL and cover_type_bits == _BIT_LINE)):
+        return _CAT_BASIC
+    # Franken: base ⊆ {LINE,BLOCK} and cover ⊆ {COL,BLOCK}, or vice versa
+    if (((base_type_bits & ~(_BIT_LINE | _BIT_BLOCK)) == 0 and
+             (cover_type_bits & ~(_BIT_COL | _BIT_BLOCK)) == 0) or
+            ((base_type_bits & ~(_BIT_COL | _BIT_BLOCK)) == 0 and
+             (cover_type_bits & ~(_BIT_LINE | _BIT_BLOCK)) == 0)):
+        return _CAT_FRANKEN
+    return _CAT_MUTANT
+
+
+def _unit_type_bit(unit_idx: int) -> int:
+    """Return the type bit for a unit index (0-8=row, 9-17=col, 18-26=block)."""
+    if unit_idx < 9:
+        return _BIT_LINE
+    if unit_idx < 18:
+        return _BIT_COL
+    return _BIT_BLOCK
+
+
+def _build_unit_pools(
+    cand_set: int,
+    fish_cat: int,
+    lines: bool,
+    n: int,
+    with_fins: bool,
+) -> tuple[list[tuple[int, int]], list[tuple[int, int]]]:
+    """Build (base_pool, cover_pool) for a generalized fish search.
+
+    Each pool entry is (unit_cands, unit_index) where unit_index is 0-26
+    (0-8=rows, 9-17=cols, 18-26=blocks).
+
+    Mirrors Java FishSolver.initForCandidat().
+    """
+    base_pool: list[tuple[int, int]] = []
+    cover_pool: list[tuple[int, int]] = []
+
+    for i in range(27):
+        if fish_cat == _CAT_BASIC and i >= 18:
+            continue
+        unit_cands = cand_set & ALL_UNIT_MASKS[i]
+        if not unit_cands:
+            continue
+
+        if i < 9:  # row
+            if lines or fish_cat == _CAT_MUTANT:
+                # row → base (with size filter), and cover if MUTANT
+                if with_fins or bin(unit_cands).count('1') <= n:
+                    base_pool.append((unit_cands, i))
+                if fish_cat == _CAT_MUTANT:
+                    cover_pool.append((unit_cands, i))
+            else:
+                # row → cover only (non-MUTANT, lines=False)
+                cover_pool.append((unit_cands, i))
+        elif i < 18:  # col
+            if lines or fish_cat == _CAT_MUTANT:
+                # col → cover, and base if MUTANT
+                cover_pool.append((unit_cands, i))
+                if fish_cat == _CAT_MUTANT:
+                    if with_fins or bin(unit_cands).count('1') <= n:
+                        base_pool.append((unit_cands, i))
+            else:
+                # col → base (with size filter), and cover if MUTANT
+                if with_fins or bin(unit_cands).count('1') <= n:
+                    base_pool.append((unit_cands, i))
+                if fish_cat == _CAT_MUTANT:
+                    cover_pool.append((unit_cands, i))
+        else:  # block (i >= 18)
+            if fish_cat != _CAT_BASIC:
+                cover_pool.append((unit_cands, i))
+                if with_fins or bin(unit_cands).count('1') <= n:
+                    base_pool.append((unit_cands, i))
+
+    return base_pool, cover_pool
+
 
 def _apply_siamese(steps: list[SolutionStep]) -> None:
     """Append siamese combinations to *steps* (modifies in place).
@@ -118,7 +288,7 @@ def _apply_siamese(steps: list[SolutionStep]) -> None:
 
 
 class FishSolver:
-    """X-Wing, Swordfish, Jellyfish — basic and finned/sashimi variants."""
+    """X-Wing, Swordfish, Jellyfish — basic, finned/sashimi, Franken, Mutant."""
 
     def __init__(self, grid: Grid) -> None:
         self.grid = grid
@@ -130,6 +300,9 @@ class FishSolver:
             return self._find_finned_fish(sol_type, sashimi=False)
         if sol_type in _SASHIMI_SIZE:
             return self._find_finned_fish(sol_type, sashimi=True)
+        if sol_type in _GENERALIZED_INFO:
+            steps = self._find_generalized_fish_all(sol_type)
+            return steps[0] if steps else None
         return None
 
     def find_all(self, sol_type: SolutionType) -> list[SolutionStep]:
@@ -153,6 +326,10 @@ class FishSolver:
                 _apply_siamese(steps)
                 return steps
             return sashimi_steps
+        if sol_type in _GENERALIZED_INFO:
+            steps = self._find_generalized_fish_all(sol_type)
+            _apply_siamese(steps)
+            return steps
         return []
 
     def _find_basic_fish_all(self, sol_type: SolutionType) -> list[SolutionStep]:
@@ -462,6 +639,197 @@ class FishSolver:
                         )
 
         return None
+
+    # ------------------------------------------------------------------
+    # Generalized fish (Franken / Mutant)
+    # ------------------------------------------------------------------
+
+    def _find_generalized_fish_all(
+        self, sol_type: SolutionType
+    ) -> list[SolutionStep]:
+        """Find all Franken or Mutant fish of the requested type.
+
+        Mirrors Java FishSolver.getFishes() with FRANKEN or MUTANT fish_type.
+        """
+        fish_cat, n, with_fins = _GENERALIZED_INFO[sol_type]
+        grid = self.grid
+        results: list[SolutionStep] = []
+        seen_elims: set[tuple] = set()
+
+        # MUTANT: only one orientation (lines=True) since all units go to both
+        # pools regardless of orientation.
+        # FRANKEN: two orientations to cover both row-base and col-base setups.
+        orientations = [True] if fish_cat == _CAT_MUTANT else [True, False]
+
+        for cand in range(1, 10):
+            cand_set = grid.candidate_sets[cand]
+            if not cand_set:
+                continue
+
+            for lines in orientations:
+                base_pool, cover_pool = _build_unit_pools(
+                    cand_set, fish_cat, lines, n, with_fins
+                )
+                if len(base_pool) < n:
+                    continue
+
+                for base_combo in combinations(range(len(base_pool)), n):
+                    # Accumulate base candidates and track endo fins
+                    base_cand = 0
+                    endo_fins = 0
+                    skip = False
+                    for bi in base_combo:
+                        overlap = base_cand & base_pool[bi][0]
+                        if overlap:
+                            if not with_fins:
+                                # Basic fish: no endo fins allowed
+                                skip = True
+                                break
+                            if bin(endo_fins | overlap).count('1') > _MAX_ENDO_FINS:
+                                skip = True
+                                break
+                            endo_fins |= overlap
+                        base_cand |= base_pool[bi][0]
+                    if skip:
+                        continue
+
+                    # Unit indices used as base (to exclude from cover)
+                    base_ids = frozenset(base_pool[bi][1] for bi in base_combo)
+
+                    # Eligible cover units: not a base unit, intersects base_cand
+                    cover_eligible = [
+                        (mask, idx) for mask, idx in cover_pool
+                        if idx not in base_ids and (mask & base_cand)
+                    ]
+                    if len(cover_eligible) < n:
+                        continue
+
+                    for cover_combo in combinations(range(len(cover_eligible)), n):
+                        cover_cand = 0
+                        cannibalistic = 0
+                        for ci in cover_combo:
+                            overlap = cover_cand & cover_eligible[ci][0]
+                            if overlap:
+                                cannibalistic |= overlap
+                            cover_cand |= cover_eligible[ci][0]
+
+                        fins = base_cand & ~cover_cand
+
+                        if not with_fins:
+                            # Basic Franken/Mutant: no fins allowed
+                            if fins:
+                                continue
+                            elim = cand_set & cover_cand & ~base_cand
+                            if cannibalistic:
+                                elim |= cand_set & cannibalistic
+                            if not elim:
+                                continue
+                        else:
+                            # Finned Franken/Mutant
+                            fin_count = bin(fins).count('1')
+                            if fin_count == 0:
+                                continue  # basic fish — handled elsewhere
+                            if fin_count > _MAX_FINS:
+                                continue
+                            fin_buddies = _fin_buddies(fins)
+                            elim = cand_set & cover_cand & fin_buddies & ~base_cand
+                            if cannibalistic:
+                                elim |= cand_set & cannibalistic & fin_buddies
+                            if not elim:
+                                continue
+
+                        # Classify this fish
+                        base_bits = 0
+                        for bi in base_combo:
+                            base_bits |= _unit_type_bit(base_pool[bi][1])
+                        cover_bits = 0
+                        for ci in cover_combo:
+                            cover_bits |= _unit_type_bit(cover_eligible[ci][1])
+                        actual_cat = _classify_fish(base_bits, cover_bits)
+
+                        if actual_cat != fish_cat:
+                            continue
+
+                        # Dedup by elimination set
+                        elim_key = (cand, elim)
+                        if elim_key in seen_elims:
+                            continue
+                        seen_elims.add(elim_key)
+
+                        results.append(self._make_general_step(
+                            sol_type, cand,
+                            [base_pool[bi] for bi in base_combo],
+                            [cover_eligible[ci] for ci in cover_combo],
+                            base_cand, elim, fins, endo_fins,
+                        ))
+
+        return results
+
+    def _make_general_step(
+        self,
+        sol_type: SolutionType,
+        cand: int,
+        base_units: list[tuple[int, int]],  # (unit_cands, unit_idx)
+        cover_units: list[tuple[int, int]],
+        base_cand: int,
+        elim: int,
+        fins: int,
+        endo_fins: int,
+    ) -> SolutionStep:
+        """Build a SolutionStep for a Franken/Mutant fish."""
+        step = SolutionStep(sol_type)
+        step.add_value(cand)
+
+        # Body cells: base candidates minus external fins
+        body = base_cand & ~fins
+        tmp = body
+        while tmp:
+            lsb = tmp & -tmp
+            step.add_index(lsb.bit_length() - 1)
+            tmp ^= lsb
+
+        # External fins (fins excluding endo fins)
+        from hodoku.core.solution_step import Candidate
+        ext_fins = fins & ~endo_fins
+        tmp = ext_fins
+        while tmp:
+            lsb = tmp & -tmp
+            step.fins.append(Candidate(lsb.bit_length() - 1, cand))
+            tmp ^= lsb
+
+        # Endo fins
+        tmp = endo_fins
+        while tmp:
+            lsb = tmp & -tmp
+            step.endo_fins.append(Candidate(lsb.bit_length() - 1, cand))
+            tmp ^= lsb
+
+        # Base entities
+        for _mask, uid in base_units:
+            if uid < 9:
+                step.base_entities.append(Entity(_LINE, uid + 1))
+            elif uid < 18:
+                step.base_entities.append(Entity(_COL, uid - 9 + 1))
+            else:
+                step.base_entities.append(Entity(_BLOCK_ENT, uid - 18 + 1))
+
+        # Cover entities
+        for _mask, uid in cover_units:
+            if uid < 9:
+                step.cover_entities.append(Entity(_LINE, uid + 1))
+            elif uid < 18:
+                step.cover_entities.append(Entity(_COL, uid - 9 + 1))
+            else:
+                step.cover_entities.append(Entity(_BLOCK_ENT, uid - 18 + 1))
+
+        # Eliminations
+        tmp = elim
+        while tmp:
+            lsb = tmp & -tmp
+            step.add_candidate_to_delete(lsb.bit_length() - 1, cand)
+            tmp ^= lsb
+
+        return step
 
     # ------------------------------------------------------------------
     # Step construction
