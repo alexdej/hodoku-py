@@ -1,0 +1,43 @@
+name: Parity (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      puzzle-file:
+        description: "Puzzle file stem (e.g. exemplars-1.0)"
+        required: true
+      puzzle-count:
+        description: "Max puzzles (0 = all)"
+        required: false
+        default: "0"
+
+jobs:
+  parity:
+    name: ${{ github.event.inputs.puzzle-file }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - run: pip install -e . && pip install pytest py4j
+
+      - name: Run parity tests
+        run: |
+          COUNT="${{ github.event.inputs.puzzle-count }}"
+          ARGS="tests/parity/ --puzzle-file ${{ github.event.inputs.puzzle-file }} -v --tb=short"
+          if [ "$COUNT" != "0" ]; then
+            ARGS="$ARGS --puzzle-count $COUNT"
+          fi
+          pytest $ARGS --junitxml=parity-results.xml
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parity-${{ github.event.inputs.puzzle-file }}
+          path: parity-results.xml

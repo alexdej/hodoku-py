@@ -1,12 +1,6 @@
 name: Parity
 
 on:
-  workflow_dispatch:
-    inputs:
-      puzzle-count:
-        description: "Max puzzles per file (0 = all)"
-        required: false
-        default: "0"
   schedule:
     - cron: "0 6 * * *"  # daily at 06:00 UTC
 
@@ -35,13 +29,7 @@ jobs:
       - run: pip install -e . && pip install pytest py4j
 
       - name: Run parity tests
-        run: |
-          COUNT="${{ github.event.inputs.puzzle-count || '0' }}"
-          ARGS="tests/parity/ --puzzle-file ${{ matrix.puzzle-file }} -v --tb=short"
-          if [ "$COUNT" != "0" ]; then
-            ARGS="$ARGS --puzzle-count $COUNT"
-          fi
-          pytest $ARGS --junitxml=parity-results.xml
+        run: pytest tests/parity/ --puzzle-file ${{ matrix.puzzle-file }} -v --tb=short --junitxml=parity-results.xml
 
       - name: Upload results
         if: always()
