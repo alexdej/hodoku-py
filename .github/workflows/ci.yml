@@ -20,3 +20,14 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: pip install -e . && pip install pytest
       - run: pytest -m unit -v
+
+  reglib:
+    name: Reglib regression suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e . && pip install pytest
+      - run: pytest tests/reglib/ -v
