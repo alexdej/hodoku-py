@@ -14,6 +14,7 @@ from hodoku.solver.brute_force import BruteForceSolver
 from hodoku.solver.chains import ChainSolver
 from hodoku.solver.coloring import ColoringSolver
 from hodoku.solver.fish import FishSolver
+from hodoku.solver.misc import MiscSolver
 from hodoku.solver.simple import SimpleSolver
 from hodoku.solver.single_digit import SingleDigitSolver
 from hodoku.solver.uniqueness import UniquenessSolver
@@ -87,6 +88,10 @@ _CHAIN_TYPES = frozenset({
     SolutionType.AIC,
 })
 
+_MISC_TYPES = frozenset({
+    SolutionType.SUE_DE_COQ,
+})
+
 _UNIQUENESS_TYPES = frozenset({
     SolutionType.UNIQUENESS_1,
     SolutionType.UNIQUENESS_2,
@@ -95,6 +100,8 @@ _UNIQUENESS_TYPES = frozenset({
     SolutionType.UNIQUENESS_5,
     SolutionType.UNIQUENESS_6,
     SolutionType.HIDDEN_RECTANGLE,
+    SolutionType.AVOIDABLE_RECTANGLE_1,
+    SolutionType.AVOIDABLE_RECTANGLE_2,
     SolutionType.BUG_PLUS_1,
 })
 
@@ -112,6 +119,7 @@ class SudokuStepFinder:
         self._uniqueness = UniquenessSolver(grid)
         self._chains = ChainSolver(grid)
         self._als = AlsSolver(grid)
+        self._misc = MiscSolver(grid)
         self._brute_force = BruteForceSolver(grid)
 
     def find_all(self, sol_type: SolutionType) -> list[SolutionStep]:
@@ -132,6 +140,8 @@ class SudokuStepFinder:
             return self._als.find_all(sol_type)
         if sol_type in _CHAIN_TYPES:
             return self._chains.find_all(sol_type)
+        if sol_type in _MISC_TYPES:
+            return self._misc.find_all(sol_type)
         step = self.get_step(sol_type)
         return [step] if step is not None else []
 
@@ -153,6 +163,8 @@ class SudokuStepFinder:
             return self._als.get_step(sol_type)
         if sol_type in _CHAIN_TYPES:
             return self._chains.get_step(sol_type)
+        if sol_type in _MISC_TYPES:
+            return self._misc.get_step(sol_type)
         if sol_type is SolutionType.BRUTE_FORCE:
             return self._brute_force.get_step(sol_type)
         return None

@@ -1,8 +1,7 @@
-"""Uniqueness solver: Uniqueness Tests 1-6, Hidden Rectangle, BUG+1.
+"""Uniqueness solver: Uniqueness Tests 1-6, Hidden Rectangle, BUG+1,
+Avoidable Rectangles 1-2.
 
 Mirrors Java's UniquenessSolver.
-Avoidable Rectangles (AR1/AR2) require tracking solved-but-not-given cells,
-which our current Grid does not do — skipped for now.
 """
 
 from __future__ import annotations
@@ -21,6 +20,11 @@ _UT_TYPES = frozenset({
     SolutionType.HIDDEN_RECTANGLE,
 })
 
+_AR_TYPES = frozenset({
+    SolutionType.AVOIDABLE_RECTANGLE_1,
+    SolutionType.AVOIDABLE_RECTANGLE_2,
+})
+
 # Bitmask for all 9 digits (bits 0-8 → digits 1-9)
 _ALL_DIGITS = (1 << 9) - 1
 
@@ -34,6 +38,8 @@ class UniquenessSolver:
     def get_step(self, sol_type: SolutionType) -> SolutionStep | None:
         if sol_type in _UT_TYPES:
             return self._find_ur(sol_type)
+        if sol_type in _AR_TYPES:
+            return self._find_ar(sol_type, only_one=True)
         if sol_type == SolutionType.BUG_PLUS_1:
             return self._find_bug_plus_1()
         return None
@@ -41,6 +47,10 @@ class UniquenessSolver:
     def find_all(self, sol_type: SolutionType) -> list[SolutionStep]:
         if sol_type in _UT_TYPES:
             return self._find_ur_all(sol_type)
+        if sol_type in _AR_TYPES:
+            results: list[SolutionStep] = []
+            self._find_ar(sol_type, only_one=False, results=results)
+            return results
         if sol_type == SolutionType.BUG_PLUS_1:
             step = self._find_bug_plus_1()
             return [step] if step is not None else []
@@ -66,6 +76,160 @@ class UniquenessSolver:
                 collector=results, allowed=allowed,
             )
         return results
+
+    # ------------------------------------------------------------------
+    # Avoidable Rectangles
+    # ------------------------------------------------------------------
+
+    def _find_ar(
+        self,
+        target_type: SolutionType,
+        only_one: bool = True,
+        results: list[SolutionStep] | None = None,
+    ) -> SolutionStep | None:
+        """Find Avoidable Rectangle steps.
+
+        An AR is a UR where some cells are already solved (but NOT givens).
+        Starting cells must be solved non-given cells.
+        """
+        grid = self.grid
+        seen_rects: set[tuple[int, int, int, int]] = set()
+
+        for i11 in range(81):
+            # Must be solved and not a given
+            if grid.values[i11] == 0 or grid.is_fixed(i11):
+                continue
+            cand1 = grid.values[i11]
+
+            step = self._find_ar_for_start(
+                i11, cand1, seen_rects, target_type, only_one, results,
+            )
+            if only_one and step is not None:
+                return step
+        return None
+
+    def _find_ar_for_start(
+        self,
+        i11: int,
+        cand1: int,
+        seen_rects: set[tuple[int, int, int, int]],
+        target_type: SolutionType,
+        only_one: bool,
+        results: list[SolutionStep] | None,
+    ) -> SolutionStep | None:
+        grid = self.grid
+        r11, c11, b11 = CONSTRAINTS[i11]
+
+        # Find second cell in same block, same row or col, also solved non-given
+        for i12 in BLOCKS[b11]:
+            if i12 == i11:
+                continue
+            r12, c12, _ = CONSTRAINTS[i12]
+            if r12 != r11 and c12 != c11:
+                continue
+            if grid.values[i12] == 0 or grid.is_fixed(i12):
+                continue
+            cand2 = grid.values[i12]
+
+            is_lines = (r11 == r12)
+            unit11 = COLS[c11] if is_lines else LINES[r11]
+            unit12 = COLS[c12] if is_lines else LINES[r12]
+
+            for idx in range(9):
+                i21 = unit11[idx]
+                i22 = unit12[idx]
+                if CONSTRAINTS[i21][2] == b11:
+                    continue  # must be different block
+
+                # Three valid configurations for the far side:
+                v21 = grid.values[i21]
+                v22 = grid.values[i22]
+                nc21 = grid.candidates[i21].bit_count()
+                nc22 = grid.candidates[i22].bit_count()
+
+                valid = False
+                # Case 1: i21 solved=cand2 (not given), i22 unsolved bivalue with cand1
+                if (v21 == cand2 and not grid.is_fixed(i21) and
+                        v22 == 0 and grid.candidates[i22] >> (cand1 - 1) & 1 and nc22 == 2):
+                    valid = True
+                # Case 2: i22 solved=cand1 (not given), i21 unsolved bivalue with cand2
+                elif (v22 == cand1 and not grid.is_fixed(i22) and
+                        v21 == 0 and grid.candidates[i21] >> (cand2 - 1) & 1 and nc21 == 2):
+                    valid = True
+                # Case 3: both unsolved bivalue, i21 has cand2, i22 has cand1
+                elif (v21 == 0 and grid.candidates[i21] >> (cand2 - 1) & 1 and nc21 == 2 and
+                        v22 == 0 and grid.candidates[i22] >> (cand1 - 1) & 1 and nc22 == 2):
+                    valid = True
+
+                if not valid:
+                    continue
+
+                key = tuple(sorted((i11, i12, i21, i22)))
+                if key in seen_rects:
+                    continue
+                seen_rects.add(key)
+
+                step = self._check_ar(
+                    i11, i12, i21, i22, cand1, cand2,
+                    target_type, only_one, results,
+                )
+                if only_one and step is not None:
+                    return step
+        return None
+
+    def _check_ar(
+        self,
+        i11: int, i12: int, i21: int, i22: int,
+        cand1: int, cand2: int,
+        target_type: SolutionType,
+        only_one: bool,
+        results: list[SolutionStep] | None,
+    ) -> SolutionStep | None:
+        grid = self.grid
+
+        def _emit(step: SolutionStep) -> SolutionStep | None:
+            if not step.candidates_to_delete:
+                return None
+            if results is not None:
+                if step.type == target_type:
+                    results.append(step)
+                return None
+            if step.type == target_type:
+                return step
+            return None
+
+        if grid.values[i21] != 0 or grid.values[i22] != 0:
+            # AR Type 1: one far cell solved, eliminate UR candidate from the other
+            step = SolutionStep(SolutionType.AVOIDABLE_RECTANGLE_1)
+            if grid.values[i21] != 0:
+                # i21 solved (cand2), eliminate cand1 from i22
+                if grid.candidates[i22] >> (cand1 - 1) & 1:
+                    step.add_candidate_to_delete(i22, cand1)
+            else:
+                # i22 solved (cand1), eliminate cand2 from i21
+                if grid.candidates[i21] >> (cand2 - 1) & 1:
+                    step.add_candidate_to_delete(i21, cand2)
+            return _emit(step)
+        else:
+            # AR Type 2: both far cells unsolved bivalue
+            # Find the shared additional candidate
+            cands21 = [d for d in range(1, 10) if grid.candidates[i21] >> (d - 1) & 1]
+            additional = cands21[0] if cands21[0] != cand2 else cands21[1]
+            if not (grid.candidates[i22] >> (additional - 1) & 1):
+                return None
+
+            # Eliminate additional from all cells seeing both i21 and i22
+            peers = BUDDIES[i21] & BUDDIES[i22] & grid.candidate_sets[additional]
+            if not peers:
+                return None
+
+            step = SolutionStep(SolutionType.AVOIDABLE_RECTANGLE_2)
+            while peers:
+                lsb = peers & -peers
+                cell = lsb.bit_length() - 1
+                step.add_candidate_to_delete(cell, additional)
+                peers ^= lsb
+            return _emit(step)
 
     # ------------------------------------------------------------------
     # Helpers

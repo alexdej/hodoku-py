@@ -104,6 +104,7 @@ class Grid:
         "free",
         "ns_queue",
         "hs_queue",
+        "givens",
     )
 
     def __init__(self) -> None:
@@ -130,20 +131,44 @@ class Grid:
         # Hidden-single queue: (constraint_index, digit) — constraint has exactly 1
         # cell left for digit
         self.hs_queue: collections.deque[tuple[int, int]] = collections.deque()
+        # Bitmask of cells that are original givens (not placed during solving)
+        self.givens: int = 0
 
     # ------------------------------------------------------------------
     # Parsing
     # ------------------------------------------------------------------
 
     def set_sudoku(self, puzzle: str) -> None:
-        """Load an 81-character puzzle string ('.' or '0' for empty)."""
-        digits = [c for c in puzzle if c.isdigit() or c == '.']
-        if len(digits) != 81:
-            raise ValueError(f"Expected 81 cells, got {len(digits)}: {puzzle!r}")
+        """Load a puzzle string ('.' or '0' for empty).
+
+        Digits prefixed with '+' are placed (solved) cells; digits without
+        '+' are givens.  Both are set on the grid, but only non-'+' cells
+        are recorded in the ``givens`` bitmask.
+        """
+        # Parse into (is_placed, char) pairs
+        cells: list[tuple[bool, str]] = []
+        i = 0
+        while i < len(puzzle):
+            ch = puzzle[i]
+            if ch == '+':
+                i += 1
+                if i < len(puzzle) and (puzzle[i].isdigit() or puzzle[i] == '.'):
+                    cells.append((True, puzzle[i]))
+            elif ch.isdigit() or ch == '.':
+                cells.append((False, ch))
+            i += 1
+        if len(cells) != 81:
+            raise ValueError(f"Expected 81 cells, got {len(cells)}: {puzzle!r}")
         self.__init__()
-        for i, ch in enumerate(digits):
+        for idx, (is_placed, ch) in enumerate(cells):
             if ch not in ('.', '0'):
-                self.set_cell(i, int(ch))
+                self.set_cell(idx, int(ch))
+                if not is_placed:
+                    self.givens |= 1 << idx
+
+    def is_fixed(self, index: int) -> bool:
+        """True if the cell is an original given (not placed during solving)."""
+        return bool(self.givens & (1 << index))
 
     def get_sudoku_string(self) -> str:
         return "".join(str(v) if v else "0" for v in self.values)

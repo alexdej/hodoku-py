@@ -203,7 +203,7 @@ TECHNIQUE_TYPES: dict[str, frozenset[SolutionType]] = {
     "0902": frozenset({SolutionType.ALS_XY_WING}),
     "0903": frozenset({SolutionType.ALS_XY_CHAIN}),
     "0904": frozenset({SolutionType.DEATH_BLOSSOM}),
-    "1101": frozenset(),  # Sue de Coq — not yet implemented
+    "1101": frozenset({SolutionType.SUE_DE_COQ}),
     "1201": frozenset(),  # Template Set — not yet implemented
     "1202": frozenset(),  # Template Delete — not yet implemented
     "1301": frozenset(),  # Forcing Chain Contradiction — not yet implemented
@@ -248,17 +248,12 @@ class ReglibEntry:
 # ---------------------------------------------------------------------------
 
 def _parse_givens_plus(s: str) -> str:
-    """Strip '+' markers, returning an 81-char string suitable for Grid.set_sudoku."""
-    result: list[str] = []
-    i = 0
-    while i < len(s):
-        if s[i] == "+":
-            result.append(s[i + 1])
-            i += 2
-        else:
-            result.append(s[i])
-            i += 1
-    return "".join(result)
+    """Return a string suitable for Grid.set_sudoku, preserving '+' markers.
+
+    '+' before a digit marks it as placed (not a given). Grid.set_sudoku
+    uses this to populate the ``givens`` bitmask.
+    """
+    return s
 
 
 def _parse_cell_list(s: str) -> tuple[tuple[int, int, int], ...]:
@@ -338,7 +333,7 @@ def parse_reglib(path: Path = REGLIB_FILE) -> list[ReglibEntry]:
         code, variant, fail_case = _resolve_code(raw_code)
 
         givens_placed = _parse_givens_plus(givens_raw)
-        if len(givens_placed) != 81:
+        if sum(1 for c in givens_placed if c.isdigit() or c == '.') != 81:
             continue  # malformed — skip
 
         solution_types = TECHNIQUE_TYPES.get(code, frozenset())
