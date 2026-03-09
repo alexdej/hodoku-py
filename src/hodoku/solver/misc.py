@@ -418,4 +418,6 @@ class MiscSolver:
         # Store intersection cells and candidates in indices/values
         for idx in _iter_bits(inter_cells):
             step.add_index(idx)
+        for d in _iter_bits(inter_cands):
+            step.add_value(d + 1)
         return step

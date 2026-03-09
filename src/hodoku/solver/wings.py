@@ -240,10 +240,8 @@ class WingSolver:
             if pivot_mask >> (bit - 1) & 1:
                 step.add_value(bit)
         if not xyz:
-            # XY-Wing stores only z as third value (HoDoKu convention)
-            # Rewrite: values = [x, y, z] where pivot={x,y}, pincer1={x,z}, pincer2={y,z}
-            # The third value recorded is cand_z (already last if pivot={x,y})
-            pass  # pivot_mask has 2 bits; cand_z is implicitly recorded via fins
+            # XY-Wing: add Z digit as third value (HoDoKu convention)
+            step.add_value(cand_z)
 
         step.add_index(pivot)
         step.add_index(pincer1)

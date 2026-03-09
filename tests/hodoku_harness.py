@@ -169,6 +169,14 @@ def _parse_step_line(line: str) -> HodokuStep | None:
             digit = int(m.group(2))
             for cell in cells:
                 step.eliminations.append((cell, digit))
+        # Some forcing chains use "=> r5c9=3" (placement, not elimination).
+        # If no eliminations were found, try placement parsing on the part after =>.
+        if not step.eliminations:
+            m = _PLACEMENT_RE.search(elim_part)
+            if m:
+                row, col, digit = int(m.group(1)), int(m.group(2)), int(m.group(3))
+                step.indices.append((row - 1) * 9 + (col - 1))
+                step.values.append(digit)
     else:
         # Placement step: "r<r>c<c>=<digit>"
         m = _PLACEMENT_RE.search(rest)

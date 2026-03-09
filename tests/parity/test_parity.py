@@ -17,8 +17,8 @@ import signal
 import pytest
 
 from hodoku.solver.solver import SudokuSolver
-from tests.compare import first_divergence, hodoku_path, solution_path
-from tests.parity.conftest import PuzzleEntry, _LazyHodokuResults, _load_puzzle_file, _resolve_puzzle_path
+from tests.compare import first_divergence, hodoku_steps, our_steps, paths_match
+from tests.parity.conftest import PuzzleEntry, HodokuResults, _load_puzzle_file, _resolve_puzzle_path
 
 pytestmark = [pytest.mark.parity, pytest.mark.java]
 
@@ -40,7 +40,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
 def test_matches_hodoku(
     entry: PuzzleEntry,
-    hodoku_parity_results: _LazyHodokuResults,
+    hodoku_parity_results: HodokuResults,
 ) -> None:
     """Our solver's solution path must match HoDoKu's step-for-step."""
     hodoku_result = hodoku_parity_results.get(entry.puzzle)
@@ -62,13 +62,14 @@ def test_matches_hodoku(
         signal.alarm(0)
         signal.signal(signal.SIGALRM, old_handler)
 
-    ours = solution_path(our_result)
-    theirs = hodoku_path(hodoku_result)
+    ours = our_steps(our_result)
+    theirs = hodoku_steps(hodoku_result)
 
     section_info = f"  section: {entry.section}\n" if entry.section else ""
-    assert ours == theirs, (
+    divergence = first_divergence(ours, theirs)
+    assert paths_match(ours, theirs), (
         f"{section_info}"
         f"  puzzle: {entry.puzzle}\n"
         f"  ours ({len(ours)} steps) vs hodoku ({len(theirs)} steps)\n"
-        f"{first_divergence(ours, theirs)}"
+        f"{divergence}"
     )

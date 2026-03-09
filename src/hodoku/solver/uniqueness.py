@@ -201,6 +201,12 @@ class UniquenessSolver:
         if grid.values[i21] != 0 or grid.values[i22] != 0:
             # AR Type 1: one far cell solved, eliminate UR candidate from the other
             step = SolutionStep(SolutionType.AVOIDABLE_RECTANGLE_1)
+            step.add_value(cand1)
+            step.add_value(cand2)
+            step.add_index(i11)
+            step.add_index(i12)
+            step.add_index(i21)
+            step.add_index(i22)
             if grid.values[i21] != 0:
                 # i21 solved (cand2), eliminate cand1 from i22
                 if grid.candidates[i22] >> (cand1 - 1) & 1:
@@ -224,6 +230,12 @@ class UniquenessSolver:
                 return None
 
             step = SolutionStep(SolutionType.AVOIDABLE_RECTANGLE_2)
+            step.add_value(cand1)
+            step.add_value(cand2)
+            step.add_index(i11)
+            step.add_index(i12)
+            step.add_index(i21)
+            step.add_index(i22)
             while peers:
                 lsb = peers & -peers
                 cell = lsb.bit_length() - 1

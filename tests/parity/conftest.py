@@ -1,13 +1,13 @@
 """pytest configuration for the parity test suite.
 
 Provides:
-  --puzzle-file PATH   path to a puzzle file (required to run any tests)
-  --puzzle-count N     limit to N randomly sampled puzzles (default: all)
-  --puzzle-seed N      RNG seed for random sampling (default: 42)
+  --puzzle-file PATH       path to a puzzle file (required to run any tests)
+  --puzzle-count N         limit to N randomly sampled puzzles (default: all)
+  --puzzle-seed N          RNG seed for random sampling (default: 42)
+  --hodoku-backend MODE    "py4j" (default) or "batch"
 
 Session fixtures:
-  parity_entries          the sampled PuzzleEntry objects
-  hodoku_parity_results   dict[puzzle, HodokuResult] — one JVM invocation
+  hodoku_parity_results   lazy solver that returns HodokuResult per puzzle
 """
 
 from __future__ import annotations
@@ -119,24 +119,27 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         default=42,
         help="RNG seed for random sampling (default: 42).",
     )
+    parser.addoption(
+        "--hodoku-backend",
+        default="py4j",
+        choices=["py4j", "batch"],
+        help="HoDoKu backend: 'py4j' (default, persistent JVM) or 'batch' (CLI subprocess).",
+    )
 
+
+# ---------------------------------------------------------------------------
+# Batch backend (original) — solves puzzles via CLI in chunks
+# ---------------------------------------------------------------------------
 
 BATCH_SIZE = 100
 
 
-class _LazyHodokuResults:
-    """Solves puzzles via HoDoKu in batches, on demand.
-
-    Puzzles are grouped into chunks of BATCH_SIZE in the order they appear
-    in the puzzle file. When a test requests a puzzle, the chunk containing
-    it is solved and cached. This way tests start running after only the
-    first chunk is solved, not after all puzzles are solved.
-    """
+class _BatchHodokuResults:
+    """Solves puzzles via HoDoKu CLI in batches, on demand."""
 
     def __init__(self, puzzles: list[str]) -> None:
         self._puzzles = puzzles
         self._cache: dict[str, HodokuResult] = {}
-        # Map puzzle -> chunk index for O(1) lookup
         self._chunk_of: dict[str, int] = {}
         for i, p in enumerate(puzzles):
             self._chunk_of[p] = i // BATCH_SIZE
@@ -158,27 +161,76 @@ class _LazyHodokuResults:
         start = chunk_idx * BATCH_SIZE
         end = min(start + BATCH_SIZE, len(self._puzzles))
         print(
-            f"\n[hodoku] Solving puzzles {start+1}-{end} of {len(self._puzzles)} "
+            f"\n[hodoku:batch] Solving puzzles {start+1}-{end} of {len(self._puzzles)} "
             f"(chunk {chunk_idx+1}/{self._total_chunks})..."
         )
         chunk = self._puzzles[start:end]
         self._cache.update(run_hodoku_batch(chunk))
         self._solved_chunks.add(chunk_idx)
 
+    def shutdown(self) -> None:
+        pass
+
+
+# ---------------------------------------------------------------------------
+# Py4J backend — persistent JVM, solves one puzzle at a time
+# ---------------------------------------------------------------------------
+
+class _Py4jHodokuResults:
+    """Solves puzzles via Py4J gateway, one at a time on demand."""
+
+    def __init__(self) -> None:
+        from tests.hodoku_gateway import HodokuGateway
+        print("\n[hodoku:py4j] Starting JVM gateway...")
+        self._gateway = HodokuGateway()
+        self._cache: dict[str, HodokuResult] = {}
+
+    def get(self, puzzle: str) -> HodokuResult | None:
+        if puzzle not in self._cache:
+            self._cache[puzzle] = self._gateway.solve(puzzle)
+        return self._cache[puzzle]
+
+    def shutdown(self) -> None:
+        self._gateway.shutdown()
+
+
+# ---------------------------------------------------------------------------
+# Protocol type for the test to depend on
+# ---------------------------------------------------------------------------
+
+class HodokuResults:
+    """Protocol-like base for both backends."""
+    def get(self, puzzle: str) -> HodokuResult | None: ...
+    def shutdown(self) -> None: ...
+
+
+# ---------------------------------------------------------------------------
+# Fixture
+# ---------------------------------------------------------------------------
 
 @pytest.fixture(scope="session")
 def hodoku_parity_results(
     request: pytest.FixtureRequest,
-    hodoku_available: bool,  # from parent conftest — skips if HoDoKu absent
-) -> _LazyHodokuResults:
-    """Provide lazy, chunked access to HoDoKu results."""
+    hodoku_available: bool,
+) -> HodokuResults:
+    """Provide lazy access to HoDoKu results via the selected backend."""
     puzzle_file = request.config.getoption("--puzzle-file")
     if puzzle_file is None:
         pytest.skip("--puzzle-file not provided")
+    backend = request.config.getoption("--hodoku-backend")
+
     count = request.config.getoption("--puzzle-count")
     seed = request.config.getoption("--puzzle-seed")
     path = _resolve_puzzle_path(puzzle_file)
     if not path.exists():
         pytest.fail(f"--puzzle-file not found: {path}")
     entries = _load_puzzle_file(path, count, seed, file_stem=path.stem)
-    return _LazyHodokuResults([e.puzzle for e in entries])
+    puzzles = [e.puzzle for e in entries]
+
+    if backend == "py4j":
+        results = _Py4jHodokuResults()
+    else:
+        results = _BatchHodokuResults(puzzles)
+
+    request.addfinalizer(results.shutdown)
+    return results
