@@ -22,12 +22,6 @@ This mirrors Sudoku2.setSudoku(libraryFormat) in RegressionTester.java.
 Fail cases
 ----------
 Entries with variant '-x' require that the technique NOT fire.
-
-Techniques not yet implemented
--------------------------------
-Entries whose technique code is in _SKIP_CODES are skipped outright because
-the corresponding solver isn't implemented yet.  All other entries run and
-naturally pass or fail — failing tests reveal real gaps in our implementation.
 """
 
 from __future__ import annotations
@@ -38,17 +32,6 @@ from hodoku.core.grid import Grid
 from hodoku.core.types import SolutionType
 from hodoku.solver.step_finder import SudokuStepFinder, _ALS_TYPES
 from tests.reglib.reglib_parser import REGLIB_FILE, ReglibEntry
-
-# Technique codes with no implementation at all — skip rather than fail.
-_SKIP_CODES = frozenset({
-    "1101",  # Sue de Coq
-    "1201",  # Template Set
-    "1202",  # Template Delete
-    "1301",  # Forcing Chain Contradiction
-    "1302",  # Forcing Chain Verity
-    "1303",  # Forcing Net Contradiction
-    "1304",  # Forcing Net Verity
-})
 
 
 def _build_grid(entry: ReglibEntry) -> Grid:
@@ -79,16 +62,10 @@ def _find_all_steps(
 
 
 def test_reglib_technique(reglib_entry: ReglibEntry) -> None:
-    if not REGLIB_FILE.exists():
-        pytest.skip("reglib-1.3.txt not found (expected at ../HoDoKu/reglib-1.3.txt)")
-
     entry = reglib_entry
 
-    if entry.technique_code in _SKIP_CODES:
-        pytest.skip(f"Technique {entry.technique_code} not yet implemented")
-
     if not entry.solution_types:
-        pytest.skip(f"Unknown technique code {entry.technique_code!r}")
+        pytest.fail(f"Technique {entry.technique_code} not yet implemented")
 
     allow_overlap = (
         entry.variant == 2 and entry.technique_code in _ALS_OVERLAP_CODES

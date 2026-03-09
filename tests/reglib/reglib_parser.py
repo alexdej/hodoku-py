@@ -33,10 +33,94 @@ from pathlib import Path
 
 from hodoku.core.types import SolutionType
 
-# reglib-1.3.txt lives in the sibling HoDoKu repository
-REGLIB_FILE = (
-    Path(__file__).parent.parent.parent.parent / "HoDoKu" / "reglib-1.3.txt"
-)
+# reglib-1.3.txt lives alongside this file
+REGLIB_FILE = Path(__file__).parent / "reglib-1.3.txt"
+
+# ---------------------------------------------------------------------------
+# Technique code → human-readable name (used in test IDs)
+# ---------------------------------------------------------------------------
+
+CODE_NAMES: dict[str, str] = {
+    "0000": "Full_House",
+    "0002": "Hidden_Single",
+    "0003": "Naked_Single",
+    "0100": "Locked_Candidates_1",
+    "0101": "Locked_Candidates_2",
+    "0110": "Locked_Pair",
+    "0111": "Locked_Triple",
+    "0200": "Naked_Pair",
+    "0201": "Naked_Triple",
+    "0202": "Naked_Quadruple",
+    "0210": "Hidden_Pair",
+    "0211": "Hidden_Triple",
+    "0212": "Hidden_Quadruple",
+    "0300": "X-Wing",
+    "0301": "Swordfish",
+    "0302": "Jellyfish",
+    "0310": "Finned_X-Wing",
+    "0311": "Finned_Swordfish",
+    "0312": "Finned_Jellyfish",
+    "0320": "Sashimi_X-Wing",
+    "0321": "Sashimi_Swordfish",
+    "0322": "Sashimi_Jellyfish",
+    "0330": "Franken_X-Wing",
+    "0331": "Franken_Swordfish",
+    "0332": "Franken_Jellyfish",
+    "0340": "Finned_Franken_X-Wing",
+    "0341": "Finned_Franken_Swordfish",
+    "0342": "Finned_Franken_Jellyfish",
+    "0350": "Mutant_X-Wing",
+    "0351": "Mutant_Swordfish",
+    "0352": "Mutant_Jellyfish",
+    "0360": "Finned_Mutant_X-Wing",
+    "0361": "Finned_Mutant_Swordfish",
+    "0362": "Finned_Mutant_Jellyfish",
+    "0363": "Finned_Mutant_Squirmbag",
+    "0364": "Finned_Mutant_Whale",
+    "0400": "Skyscraper",
+    "0401": "Two-String_Kite",
+    "0402": "Empty_Rectangle",
+    "0403": "Turbot_Fish",
+    "0404": "Dual_Two-String_Kite",
+    "0405": "Dual_Empty_Rectangle",
+    "0500": "Simple_Colors_Trap",
+    "0501": "Simple_Colors_Wrap",
+    "0502": "Multi-Colors_1",
+    "0503": "Multi-Colors_2",
+    "0600": "Uniqueness_1",
+    "0601": "Uniqueness_2",
+    "0602": "Uniqueness_3",
+    "0603": "Uniqueness_4",
+    "0604": "Uniqueness_5",
+    "0605": "Uniqueness_6",
+    "0606": "Hidden_Rectangle",
+    "0607": "Avoidable_Rectangle_1",
+    "0608": "Avoidable_Rectangle_2",
+    "0610": "BUG+1",
+    "0701": "X-Chain",
+    "0702": "XY-Chain",
+    "0703": "Remote_Pair",
+    "0706": "Continuous_Nice_Loop",
+    "0707": "Discontinuous_Nice_Loop",
+    "0708": "AIC",
+    "0709": "Grouped_CNL",
+    "0710": "Grouped_DNL",
+    "0711": "Grouped_AIC",
+    "0800": "XY-Wing",
+    "0801": "XYZ-Wing",
+    "0803": "W-Wing",
+    "0901": "ALS-XZ",
+    "0902": "ALS-XY-Wing",
+    "0903": "ALS-XY-Chain",
+    "0904": "Death_Blossom",
+    "1101": "Sue_de_Coq",
+    "1201": "Template_Set",
+    "1202": "Template_Delete",
+    "1301": "Forcing_Chain_Contradiction",
+    "1302": "Forcing_Chain_Verity",
+    "1303": "Forcing_Net_Contradiction",
+    "1304": "Forcing_Net_Verity",
+}
 
 # ---------------------------------------------------------------------------
 # Technique code → frozenset[SolutionType]
@@ -119,14 +203,13 @@ TECHNIQUE_TYPES: dict[str, frozenset[SolutionType]] = {
     "0902": frozenset({SolutionType.ALS_XY_WING}),
     "0903": frozenset({SolutionType.ALS_XY_CHAIN}),
     "0904": frozenset({SolutionType.DEATH_BLOSSOM}),
-    # Not yet implemented — entries for these codes are skipped:
-    # "1101": SUE_DE_COQ
-    # "1201": TEMPLATE_SET
-    # "1202": TEMPLATE_DEL
-    # "1301": FORCING_CHAIN_CONTRADICTION
-    # "1302": FORCING_CHAIN_VERITY
-    # "1303": FORCING_NET_CONTRADICTION
-    # "1304": FORCING_NET_VERITY
+    "1101": frozenset(),  # Sue de Coq — not yet implemented
+    "1201": frozenset(),  # Template Set — not yet implemented
+    "1202": frozenset(),  # Template Delete — not yet implemented
+    "1301": frozenset(),  # Forcing Chain Contradiction — not yet implemented
+    "1302": frozenset(),  # Forcing Chain Verity — not yet implemented
+    "1303": frozenset(),  # Forcing Net Contradiction — not yet implemented
+    "1304": frozenset(),  # Forcing Net Verity — not yet implemented
 }
 
 
@@ -150,13 +233,14 @@ class ReglibEntry:
 
     @property
     def test_id(self) -> str:
+        name = CODE_NAMES.get(self.technique_code, self.technique_code)
         if self.fail_case:
             suffix = "-x"
         elif self.variant is not None:
             suffix = f"-{self.variant}"
         else:
             suffix = ""
-        return f"{self.technique_code}{suffix}_{self.line_num}"
+        return f"{self.technique_code}_{name}{suffix}_{self.line_num}"
 
 
 # ---------------------------------------------------------------------------

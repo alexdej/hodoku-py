@@ -20,11 +20,9 @@ Running
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
-from tests.reglib.reglib_parser import REGLIB_FILE, ReglibEntry, parse_reglib
+from tests.reglib.reglib_parser import ReglibEntry, parse_reglib, REGLIB_FILE
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
@@ -42,8 +40,6 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 
 def _load_entries(config: pytest.Config) -> list[ReglibEntry]:
-    if not REGLIB_FILE.exists():
-        return []
     entries = parse_reglib(REGLIB_FILE)
     section = config.getoption("--reglib-section", default=None)
     if section:
@@ -56,9 +52,6 @@ def _load_entries(config: pytest.Config) -> list[ReglibEntry]:
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     if "reglib_entry" not in metafunc.fixturenames:
-        return
-    if not REGLIB_FILE.exists():
-        metafunc.parametrize("reglib_entry", [], ids=[])
         return
     entries = _load_entries(metafunc.config)
     metafunc.parametrize("reglib_entry", entries, ids=[e.test_id for e in entries])
