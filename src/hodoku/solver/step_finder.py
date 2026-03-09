@@ -84,6 +84,7 @@ _CHAIN_TYPES = frozenset({
     SolutionType.GROUPED_CONTINUOUS_NICE_LOOP,   # trigger for all GNL types
     SolutionType.GROUPED_DISCONTINUOUS_NICE_LOOP,
     SolutionType.GROUPED_AIC,
+    SolutionType.AIC,
 })
 
 _UNIQUENESS_TYPES = frozenset({
