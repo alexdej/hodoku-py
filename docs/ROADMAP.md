@@ -37,7 +37,7 @@ Each layer depends only on those above it in the list.
 | 11 | Coloring | `solver/coloring.py` | ✅ | Simple Colors (Trap/Wrap), Multi-Colors 1&2 |
 | 12 | Uniqueness | `solver/uniqueness.py` | ✅ | Uniqueness Tests 1–6, Hidden Rectangle, BUG+1 (AR1/AR2 skipped — require givens tracking) |
 | 13 | Basic fish | `solver/fish.py` | ✅ | X-Wing, Swordfish, Jellyfish (and larger) |
-| 14 | Finned/Sashimi fish | `solver/fish.py` | ✅ | Finned X-Wing/Swordfish/Jellyfish, Sashimi variants (Franken/Mutant not implemented) |
+| 14 | Finned/Sashimi/Franken/Mutant fish | `solver/fish.py` | ✅ | Finned, Sashimi, Franken, Mutant variants — all sizes, all passing reglib |
 | 15 | Chains | `solver/chains.py` | ✅ | X-Chain, XY-Chain, Remote Pair, Turbot Fish, DNL, CNL, AIC, GDNL, GCNL, GAIC |
 | 16 | ALS | `solver/als.py` | ✅ | ALS-XZ, ALS-XY-Wing, ALS-XY-Chain validated (`tests/test_validate_als.py`). Death Blossom implemented but unvalidatable: HoDoKu always finds a Forcing Chain first on any puzzle hard enough to need DB. |
 | 17 | Forcing chains/nets | `solver/tabling.py` | ⬜ | Forcing Chain/Net (Contradiction + Verity) |
@@ -123,12 +123,12 @@ in the same order. Goal is 100% fidelity.
     all pass on three clean puzzles. Death Blossom is implemented but no validation
     puzzle found: HoDoKu always reaches a Forcing Chain before DB can fire.
 
-10. **Grouped Nice Loop** — GDNL, GCNL, and GAIC implemented and validated
-    against HoDoKu on `...3.....6..724....2..6..73.4...796.............29..455.......1..8..6...274.1.8..`.
-    All six chain steps in the full solve path (2 DNL, 2 GDNL, 1 AIC, 1 DNL)
-    match HoDoKu exactly. Implementation: `_GroupNode`, `_collect_group_nodes()`,
-    `_build_gnl_links()` in `chains.py`; `_dfs_nl` refactored to use integer
-    node IDs and bitmask occupancy tracking. See `docs/SPEC_ROW17_GNL.md`.
+10. **Grouped Nice Loop** — GDNL, GCNL, and GAIC implemented and validated.
+    Implementation: `_GroupNode`, `_collect_group_nodes()`, `_build_gnl_links()`
+    in `chains.py`; `_dfs_nl` refactored to use integer node IDs and bitmask
+    occupancy tracking. See `docs/SPEC_ROW17_GNL.md`.
+    Note: variants requiring ALS nodes in chains (AllowAlsInTablingChains=true)
+    remain unimplemented — 44 reglib failures. Requires `tabling.py` extension.
 
 ---
 
@@ -217,6 +217,7 @@ reglib harness, verify the failure count drops, then repeat for the others.
 
 | Technique | Code | Notes |
 |-----------|------|-------|
+| ALS nodes in grouped chains | 0709-2/0710-3,4/0711-3,4 | 44 reglib failures. Requires `tabling.py` extended with `fillTablesWithAls()`. DFS approach ruled out (exponential blowup). |
 | Sue de Coq | 1101 | Complex interaction of ALS + Locked Candidates. Skipped in reglib harness (`_SKIP_CODES`). |
 | Template Set/Delete | 1201/1202 | `solver/templates.py` placeholder exists (row 18). Skipped in reglib harness. |
 | Forcing Chain Contradiction/Verity | 1301/1302 | `solver/tabling.py` (row 17). Skipped in reglib harness. In progress on a separate branch. |
@@ -229,9 +230,8 @@ chain or not validated end-to-end:
 
 | Technique | Status | Gap |
 |-----------|--------|-----|
-| Franken/Mutant fish | Logic in `fish.py` | Not wired into `step_finder._FISH_TYPES`; never fires during a real solve |
-| Dual Two-String Kite (0404) | `SolutionType` defined | No solver logic — `single_digit.py` has no `DUAL_TWO_STRING_KITE` case |
-| Dual Empty Rectangle (0405) | `SolutionType` defined | Same — no solver logic |
+| Dual Two-String Kite (0404) | Implemented | Validated against reglib |
+| Dual Empty Rectangle (0405) | Implemented | Validated against reglib |
 | Avoidable Rectangles AR1/AR2 | `SolutionType` defined | Require tracking which cells were given vs. solved; our `Grid` doesn't record givens |
 | Death Blossom | Implemented in `als.py` | No validation puzzle found; HoDoKu always finds a Forcing Chain first |
 
@@ -244,8 +244,6 @@ Revisit if needed, but don't block progress on them.
 
 | Technique | Notes |
 |-----------|-------|
-| Franken fish | Fish using blocks as base/cover units (mixed row/col/block). Rare in practice, significant added complexity. |
-| Mutant fish | Fully generalized fish — any combination of rows, cols, and blocks as base or cover. Even rarer. |
 | Avoidable Rectangles (AR1/AR2) | Like Unique Rectangles but require tracking which cells were given vs. solved. Our Grid doesn't record givens. |
 
 ---
