@@ -43,6 +43,14 @@ _JAVA_XFAIL_LINES = frozenset({1445, 1453, 1454, 1455, 1459})
 # applying siamese.  Our implementation runs basic and finned separately.
 _CROSS_TYPE_SIAMESE_XFAIL = frozenset({724})
 
+# Tests with search spaces too large for pure Python (require C accelerator).
+# Finned Mutant Whale (size 6): C(24,6)=134K base combos × cover search.
+_NEEDS_C_ACCEL_LINES = frozenset({763})
+
+def _has_c_accel() -> bool:
+    from hodoku.solver.fish import _accel_find_covers
+    return _accel_find_covers is not None
+
 
 def _build_grid(entry: ReglibEntry) -> Grid:
     """Reconstruct the PM board state described by the reglib entry."""
@@ -60,6 +68,7 @@ def _find_all_steps(
     finder: SudokuStepFinder,
     sol_types: frozenset[SolutionType],
     allow_overlap: bool = False,
+    for_candidate: int = -1,
 ) -> list:
     """Return all steps of any of the given SolutionTypes."""
     results = []
@@ -67,7 +76,7 @@ def _find_all_steps(
         if allow_overlap and sol_type in _ALS_TYPES:
             results.extend(finder._als.find_all(sol_type, allow_overlap=True))
         else:
-            results.extend(finder.find_all(sol_type))
+            results.extend(finder.find_all(sol_type, for_candidate=for_candidate))
     return results
 
 
@@ -80,6 +89,11 @@ def test_reglib_technique(reglib_entry: ReglibEntry) -> None:
     if entry.line_num in _CROSS_TYPE_SIAMESE_XFAIL:
         pytest.xfail("Requires cross-type siamese (basic+finned in one pass)")
 
+    if entry.line_num in _NEEDS_C_ACCEL_LINES and not _has_c_accel():
+        pytest.skip("Requires C accelerator (gcc not available); run: "
+                     "gcc -O2 -shared -fPIC -o src/hodoku/solver/_fish_accel.so "
+                     "src/hodoku/solver/_fish_accel.c")
+
     if not entry.solution_types:
         pytest.fail(f"Technique {entry.technique_code} not yet implemented")
 
@@ -87,9 +101,18 @@ def test_reglib_technique(reglib_entry: ReglibEntry) -> None:
         entry.variant == 2 and entry.technique_code in _ALS_OVERLAP_CODES
     )
 
+    # Extract target digit for fish solver optimization (search one digit
+    # instead of all 9).  candidates_field is e.g. "3" for digit 3.
+    for_candidate = -1
+    if len(entry.candidates_field) == 1 and entry.candidates_field.isdigit():
+        for_candidate = int(entry.candidates_field)
+
     grid = _build_grid(entry)
     finder = SudokuStepFinder(grid)
-    steps = _find_all_steps(finder, entry.solution_types, allow_overlap=allow_overlap)
+    steps = _find_all_steps(
+        finder, entry.solution_types, allow_overlap=allow_overlap,
+        for_candidate=for_candidate,
+    )
 
     # --- Fail case: technique must NOT fire ---
     if entry.fail_case:

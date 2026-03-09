@@ -64,7 +64,7 @@ Done (all validated against HoDoKu):
 - solver/single_digit.py — Skyscraper, 2-String Kite, Empty Rectangle, Dual variants
 - solver/wings.py — XY-Wing, XYZ-Wing, W-Wing
 - solver/coloring.py — Simple Colors, Multi-Colors
-- solver/fish.py — Basic fish (X-Wing, Swordfish, Jellyfish), Finned, Sashimi
+- solver/fish.py — Basic fish, Finned, Sashimi, Franken, Mutant (all sizes through Whale)
 - solver/uniqueness.py — Uniqueness 1-6, Hidden Rectangle, Avoidable Rectangle 1-2, BUG+1
 - solver/chains.py — X-Chain, XY-Chain, Remote Pair, Nice Loops, AIC, Grouped variants
 - solver/tabling.py — Forcing Chains/Nets, Grouped chains
@@ -76,8 +76,7 @@ Done (all validated against HoDoKu):
 
 Not yet implemented:
 - solver/templates.py — Template Set/Delete (18 reglib failures)
-- Franken/Mutant fish variants (41 reglib failures)
-- ALS nodes in tabling chains (46 reglib failures)
+- ALS nodes in tabling chains (44 reglib failures)
 - generator/ — puzzle generation
 
 ## Key design decisions
@@ -91,6 +90,8 @@ Not yet implemented:
 - **No threading**: skip SudokuSolverFactory/SudokuGeneratorFactory pools for now
 - **Chain encoding**: use same 32-bit bit-packed int format as Java (required for TablingSolver)
 - **Static tables**: `Sudoku2`'s lookup arrays → module-level constants in `core/grid.py`
+- **C accelerator**: `solver/_fish_accel.c` for Mutant fish cover search (auto-compiled via
+  ctypes on first import; pure Python fallback if no C compiler available)
 
 ## A note on porting approach and trade-offs
 
@@ -114,7 +115,7 @@ Full details in `docs/ROADMAP.md` → "HoDoKu compatibility: elimination orderin
 
 - **reglib suite** (`tests/reglib/`): Primary validation. 1112 technique-isolation tests from
   HoDoKu's reglib-1.3.txt. Each reconstructs a PM board and checks that `find_all()` returns
-  the expected eliminations. Current: 1002 passed / 105 failed / 5 xfail (upstream Java failures).
+  the expected eliminations. Current: 1062 passed / 44 failed / 6 xfail.
 - **exemplar regression** (`tests/regression/`): Full solve-path comparison against HoDoKu CLI output.
 - The goal is 100% fidelity with HoDoKu, down to the precise step-by-step solve path. This is a
   strict port, not an attempt to improve or optimize. Maintaining fidelity simplifies validation.

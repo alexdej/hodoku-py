@@ -37,7 +37,7 @@ Each layer depends only on those above it in the list.
 | 11 | Coloring | `solver/coloring.py` | ✅ | Simple Colors (Trap/Wrap), Multi-Colors 1&2 |
 | 12 | Uniqueness | `solver/uniqueness.py` | ✅ | Uniqueness Tests 1–6, Hidden Rectangle, BUG+1 (AR1/AR2 skipped — require givens tracking) |
 | 13 | Basic fish | `solver/fish.py` | ✅ | X-Wing, Swordfish, Jellyfish (and larger) |
-| 14 | Finned/Sashimi/Franken/Mutant fish | `solver/fish.py` | ✅ | Finned, Sashimi, Franken, Mutant variants — all sizes, all passing reglib |
+| 14 | Finned/Sashimi/Franken/Mutant fish | `solver/fish.py` | ✅ | Finned, Sashimi, Franken, Mutant — all sizes through Whale. Mutant Squirmbag/Whale use C accelerator (`_fish_accel.c`) for cover search performance. |
 | 15 | Chains | `solver/chains.py` | ✅ | X-Chain, XY-Chain, Remote Pair, Turbot Fish, DNL, CNL, AIC, GDNL, GCNL, GAIC |
 | 16 | ALS | `solver/als.py` | ✅ | ALS-XZ, ALS-XY-Wing, ALS-XY-Chain validated (`tests/test_validate_als.py`). Death Blossom implemented but unvalidatable: HoDoKu always finds a Forcing Chain first on any puzzle hard enough to need DB. |
 | 17 | Forcing chains/nets | `solver/tabling.py` | ⬜ | Forcing Chain/Net (Contradiction + Verity) |
@@ -114,7 +114,7 @@ in the same order. Goal is 100% fidelity.
 
 8. **Finned/Sashimi fish** (`tests/test_validate_finned_fish.py`) — Finned
    X-Wing, Finned Swordfish, and Finned Jellyfish all pass. Sashimi variants
-   implemented but no test puzzle yet. Franken/Mutant not implemented.
+   implemented but no test puzzle yet. Franken/Mutant all passing in reglib.
 
 9. **Chains** (`tests/test_validate_aic.py`) — X-Chain, XY-Chain, Remote Pair,
    DNL, CNL, and AIC all pass. Turbot Fish implemented.
@@ -218,7 +218,7 @@ reglib harness, verify the failure count drops, then repeat for the others.
 | Technique | Code | Notes |
 |-----------|------|-------|
 | ALS nodes in grouped chains | 0709-2/0710-3,4/0711-3,4 | 44 reglib failures. Requires `tabling.py` extended with `fillTablesWithAls()`. DFS approach ruled out (exponential blowup). |
-| Sue de Coq | 1101 | Complex interaction of ALS + Locked Candidates. Skipped in reglib harness (`_SKIP_CODES`). |
+| Sue de Coq | 1101 | Implemented in `solver/misc.py`. All reglib tests passing. |
 | Template Set/Delete | 1201/1202 | `solver/templates.py` placeholder exists (row 18). Skipped in reglib harness. |
 | Forcing Chain Contradiction/Verity | 1301/1302 | `solver/tabling.py` (row 17). Skipped in reglib harness. In progress on a separate branch. |
 | Forcing Net Contradiction/Verity | 1303/1304 | Same file as above. Skipped in reglib harness. |
@@ -253,6 +253,24 @@ Revisit if needed, but don't block progress on them.
 - Add each new technique to `SudokuStepFinder.get_step()` in `step_finder.py`
 - Add a `pytestmark = pytest.mark.java` line to every validation test module
 - Techniques within a file can be added incrementally; re-run validation after each
+
+### C accelerator (`_fish_accel.c`)
+
+The Mutant fish cover-combination search has a huge search space (up to C(24,6) = 134K
+base combos × cover DFS for Whale). CPython is ~50-100x slower than Java JIT for tight
+bitwise loops, making this intractable in pure Python.
+
+`solver/_fish_accel.c` implements the cover DFS in C, loaded via `ctypes` at import time.
+81-bit candidate masks are split into lo/hi `uint64` halves (matching Java's M1/M2).
+
+- **Auto-compiles** on first import if `.so` is missing but `.c` exists (requires `gcc`/`cc`)
+- **Falls back** to pure Python DFS with pruning if no C compiler is available
+- **Performance**: Squirmbag 0.6s, Whale 5s (vs 17s/timeout in Python)
+- **Packaging**: The `.so` is gitignored; `.c` source is committed. For distribution,
+  the `.so` should be built as part of the package build step (future work).
+
+If more hot loops need C acceleration in the future, follow the same pattern:
+self-contained `.c` file, `ctypes` loading with auto-compile, Python fallback.
 
 ### HoDoKu compatibility: elimination ordering
 

@@ -19,7 +19,7 @@ Core solver complete through ALS techniques. Generator and public API not yet im
 | Wings | XY-Wing, XYZ-Wing, W-Wing | ✅ |
 | Coloring | Simple Colors, Multi-Colors 1&2 | ✅ |
 | Uniqueness | UT1–6, Hidden Rectangle, BUG+1 | ✅ |
-| Fish | X-Wing, Swordfish, Jellyfish; Finned/Sashimi variants | ✅ |
+| Fish | X-Wing through Whale; Finned/Sashimi, Franken, Mutant variants | ✅ |
 | Chains | X-Chain, XY-Chain, Remote Pair, DNL, CNL, AIC, Grouped Nice Loops/AIC | ✅ |
 | ALS | ALS-XZ, ALS-XY-Wing, ALS-XY-Chain, Death Blossom | ✅ |
 | Forcing chains/nets | Contradiction + Verity | ⬜ |
@@ -31,6 +31,7 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for full details and known gaps.
 ## Requirements
 
 - Python 3.11+
+- C compiler (optional) — auto-detected at runtime for Mutant fish acceleration. Without it, Mutant Whale (size 6) tests are skipped; everything else works in pure Python.
 
 ## Test requirements
 
@@ -123,7 +124,8 @@ src/hodoku/
 │   ├── step_finder.py   # SudokuStepFinder — routes get_step() calls
 │   ├── solver.py        # SudokuSolver — solve loop and difficulty rating
 │   ├── simple.py        # Singles, locked candidates, subsets
-│   ├── fish.py          # Basic and finned/sashimi fish
+│   ├── fish.py          # Basic, finned/sashimi, Franken, Mutant fish
+│   ├── _fish_accel.c    # C accelerator for Mutant fish (auto-compiled)
 │   ├── single_digit.py  # Skyscraper, 2-String Kite, Empty Rectangle
 │   ├── uniqueness.py    # Uniqueness Tests 1–6, BUG+1
 │   ├── wings.py         # XY-Wing, XYZ-Wing, W-Wing

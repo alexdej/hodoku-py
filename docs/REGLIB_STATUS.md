@@ -63,6 +63,21 @@ fix is implementing `TablingSolver.fillTablesWithAls()` in `tabling.py`.
 
 Implemented in `fish.py` via `_find_generalized_fish_all()`. All 0330–0364 variants pass.
 
+**Performance:** Mutant Squirmbag (size 5) and Whale (size 6) have enormous search spaces
+(C(21,5)² ≈ 414M and C(24,6) = 134K base combos respectively). Two optimizations make
+these tractable:
+
+1. **C accelerator** (`_fish_accel.c`): The cover-combination DFS loop is implemented in C
+   via ctypes. 81-bit candidate masks are split into lo/hi uint64 halves (like Java's M1/M2).
+   Speedup: ~30-100x vs pure Python (Squirmbag: 0.6s vs 17s, Whale: 5s vs timeout).
+   Compiled: `gcc -O2 -shared -fPIC -o _fish_accel.so _fish_accel.c`
+   Falls back to pure Python DFS with pruning if .so is unavailable.
+
+2. **`for_candidate` parameter**: `find_all(sol_type, for_candidate=digit)` restricts the
+   search to a single digit (like Java's `getAllFishes(forCandidate)`). The reglib test
+   harness extracts the target digit from `candidates_field` and passes it through, reducing
+   work ~9x for large fish.
+
 **Note on test 724 (0342 Finned Franken Jellyfish, line 724):** This test was
 investigated separately. Java's `/bsa` output does not find the expected step either.
 Root cause: Java's `getAllFishes()` runs with `fishType=UNDEFINED`, collecting basic
@@ -131,6 +146,24 @@ Tests fixed: line 1280 (Grouped DNL-2), line 1321 (Grouped AIC-2).
 
 See "ALS nodes in grouped chains" above. The DFS approach is not viable; the tabling
 approach is required.
+
+### Mutant fish performance fix (C accelerator)
+
+Mutant Squirmbag (size 5, 0363) and Whale (size 6, 0364) caused the test suite to
+hang (>500s) due to the combinatorial explosion in the cover search loop. For digit 9
+on the Squirmbag test puzzle, C(21,5)² ≈ 414M inner loop iterations.
+
+**Root cause:** CPython is ~50-100x slower than Java's JIT for tight numeric loops with
+81-bit bitwise operations. Optimizations tried:
+
+1. `bin(x).count('1')` → `.bit_count()`: 7-10x speedup in popcount (200ns→20ns per call)
+2. DFS with zero-fins pruning: ~30% fewer nodes but Python DFS overhead offsets gains
+3. Suffix-OR pruning: marginal improvement (most cover sets collectively cover all base cells)
+4. `for_candidate` parameter: ~9x reduction (search 1 digit instead of all 9)
+
+None of these were sufficient. Final solution: **C extension** (`_fish_accel.c`) for the
+cover DFS loop, loaded via ctypes. This brings Squirmbag from 17s→0.6s and Whale from
+timeout→5s, matching Java's performance order-of-magnitude.
 
 ---
 

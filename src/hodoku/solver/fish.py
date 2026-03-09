@@ -21,7 +21,10 @@ handled identically to external fins when computing eliminations.
 
 from __future__ import annotations
 
+import ctypes
+import ctypes.util
 from itertools import combinations
+from pathlib import Path
 
 from hodoku.core.grid import (
     ALL_UNIT_MASKS,
@@ -36,6 +39,90 @@ from hodoku.core.grid import (
 
 # All 81 cells mask
 _ALL_CELLS = (1 << 81) - 1
+
+# ---- C accelerator for cover search (optional, huge speedup) ----
+
+_LO_MASK = (1 << 64) - 1
+_HI_SHIFT = 64
+
+
+class _FishResult(ctypes.Structure):
+    _fields_ = [
+        ("indices", ctypes.c_int32 * 7),
+        ("cover_lo", ctypes.c_uint64), ("cover_hi", ctypes.c_uint64),
+        ("cannibal_lo", ctypes.c_uint64), ("cannibal_hi", ctypes.c_uint64),
+        ("fins_lo", ctypes.c_uint64), ("fins_hi", ctypes.c_uint64),
+        ("elim_lo", ctypes.c_uint64), ("elim_hi", ctypes.c_uint64),
+    ]
+
+
+def _try_compile_accel(c_path: Path, so_path: Path) -> bool:
+    """Try to compile the C accelerator.  Returns True on success."""
+    import subprocess
+    import sys
+    # Determine shared library extension and compiler flags
+    if sys.platform == "win32":
+        # Windows: try gcc (MinGW) → produces .dll
+        so_path = c_path.with_suffix(".dll")
+        cmd = ["gcc", "-O2", "-shared", "-o", str(so_path), str(c_path)]
+    elif sys.platform == "darwin":
+        cmd = ["cc", "-O2", "-shared", "-fPIC", "-o", str(so_path), str(c_path)]
+    else:
+        cmd = ["gcc", "-O2", "-shared", "-fPIC", "-o", str(so_path), str(c_path)]
+    try:
+        subprocess.run(cmd, capture_output=True, timeout=30, check=True)
+        return so_path.exists()
+    except (FileNotFoundError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return False
+
+
+def _load_accel():
+    """Try to load the C accelerator; return (lib, find_covers) or (None, None).
+
+    If the .so is missing but the .c source exists, attempts to compile it
+    automatically.  Falls back to pure Python if compilation fails.
+    """
+    import sys
+    c_path = Path(__file__).parent / "_fish_accel.c"
+    suffix = ".dll" if sys.platform == "win32" else ".so"
+    so_path = c_path.with_suffix(suffix)
+
+    if not so_path.exists():
+        if c_path.exists():
+            _try_compile_accel(c_path, so_path)
+        if not so_path.exists():
+            return None, None
+
+    try:
+        lib = ctypes.CDLL(str(so_path))
+
+        # Initialize BUDDIES table in C
+        lib.fish_set_buddy.argtypes = [ctypes.c_int, ctypes.c_uint64, ctypes.c_uint64]
+        lib.fish_set_buddy.restype = None
+        for cell in range(81):
+            b = BUDDIES[cell]
+            lib.fish_set_buddy(cell, b & _LO_MASK, b >> _HI_SHIFT)
+
+        # Set up find_covers signature
+        lib.fish_find_covers.argtypes = [
+            ctypes.POINTER(ctypes.c_uint64),  # ce_lo
+            ctypes.POINTER(ctypes.c_uint64),  # ce_hi
+            ctypes.c_int,                      # num_cover
+            ctypes.c_int,                      # n
+            ctypes.c_uint64, ctypes.c_uint64,  # base_lo, base_hi
+            ctypes.c_uint64, ctypes.c_uint64,  # cand_lo, cand_hi
+            ctypes.c_int,                      # with_fins
+            ctypes.c_int,                      # max_fins
+            ctypes.POINTER(_FishResult),       # out
+            ctypes.c_int,                      # max_out
+        ]
+        lib.fish_find_covers.restype = ctypes.c_int
+        return lib, lib.fish_find_covers
+    except OSError:
+        return None, None
+
+
+_accel_lib, _accel_find_covers = _load_accel()
 
 
 def _fin_buddies(fin_mask: int) -> int:
@@ -209,7 +296,7 @@ def _build_unit_pools(
         if i < 9:  # row
             if lines or fish_cat == _CAT_MUTANT:
                 # row → base (with size filter), and cover if MUTANT
-                if with_fins or bin(unit_cands).count('1') <= n:
+                if with_fins or unit_cands.bit_count() <= n:
                     base_pool.append((unit_cands, i))
                 if fish_cat == _CAT_MUTANT:
                     cover_pool.append((unit_cands, i))
@@ -221,18 +308,18 @@ def _build_unit_pools(
                 # col → cover, and base if MUTANT
                 cover_pool.append((unit_cands, i))
                 if fish_cat == _CAT_MUTANT:
-                    if with_fins or bin(unit_cands).count('1') <= n:
+                    if with_fins or unit_cands.bit_count() <= n:
                         base_pool.append((unit_cands, i))
             else:
                 # col → base (with size filter), and cover if MUTANT
-                if with_fins or bin(unit_cands).count('1') <= n:
+                if with_fins or unit_cands.bit_count() <= n:
                     base_pool.append((unit_cands, i))
                 if fish_cat == _CAT_MUTANT:
                     cover_pool.append((unit_cands, i))
         else:  # block (i >= 18)
             if fish_cat != _CAT_BASIC:
                 cover_pool.append((unit_cands, i))
-                if with_fins or bin(unit_cands).count('1') <= n:
+                if with_fins or unit_cands.bit_count() <= n:
                     base_pool.append((unit_cands, i))
 
     return base_pool, cover_pool
@@ -305,7 +392,7 @@ class FishSolver:
             return steps[0] if steps else None
         return None
 
-    def find_all(self, sol_type: SolutionType) -> list[SolutionStep]:
+    def find_all(self, sol_type: SolutionType, *, for_candidate: int = -1) -> list[SolutionStep]:
         if sol_type in _FISH_SIZE:
             return self._find_basic_fish_all(sol_type)
         if sol_type in _FINNED_SIZE:
@@ -327,7 +414,7 @@ class FishSolver:
                 return steps
             return sashimi_steps
         if sol_type in _GENERALIZED_INFO:
-            steps = self._find_generalized_fish_all(sol_type)
+            steps = self._find_generalized_fish_all(sol_type, for_candidate=for_candidate)
             _apply_siamese(steps)
             return steps
         return []
@@ -350,7 +437,7 @@ class FishSolver:
 
                 eligible: list[int] = []
                 for u in range(9):
-                    cnt = bin(cand_set & unit_masks[u]).count("1")
+                    cnt = (cand_set & unit_masks[u]).bit_count()
                     if 2 <= cnt <= n:
                         eligible.append(u)
 
@@ -440,7 +527,7 @@ class FishSolver:
                         fin_mask = base_mask & ~cover_mask
                         if not fin_mask:
                             continue
-                        if bin(fin_mask).count('1') > 5:
+                        if fin_mask.bit_count() > 5:
                             continue
 
                         fin_common = _fin_buddies(fin_mask)
@@ -451,7 +538,7 @@ class FishSolver:
                         is_sashimi = False
                         for u in combo:
                             body = cand_set & unit_masks[u] & cover_mask
-                            if bin(body).count('1') <= 1:
+                            if body.bit_count() <= 1:
                                 is_sashimi = True
                                 break
 
@@ -506,7 +593,7 @@ class FishSolver:
                 # Collect candidate base units (those with 2..n occurrences)
                 eligible: list[int] = []
                 for u in range(9):
-                    cnt = bin(cand_set & unit_masks[u]).count("1")
+                    cnt = (cand_set & unit_masks[u]).bit_count()
                     if 2 <= cnt <= n:
                         eligible.append(u)
 
@@ -608,7 +695,7 @@ class FishSolver:
                         fin_mask = base_mask & ~cover_mask
                         if not fin_mask:
                             continue  # basic fish, handled elsewhere
-                        if bin(fin_mask).count('1') > 5:
+                        if fin_mask.bit_count() > 5:
                             continue
 
                         # Eliminations: cover candidates that see ALL fin cells
@@ -621,7 +708,7 @@ class FishSolver:
                         is_sashimi = False
                         for u in combo:
                             body = cand_set & unit_masks[u] & cover_mask
-                            if bin(body).count('1') <= 1:
+                            if body.bit_count() <= 1:
                                 is_sashimi = True
                                 break
 
@@ -645,11 +732,12 @@ class FishSolver:
     # ------------------------------------------------------------------
 
     def _find_generalized_fish_all(
-        self, sol_type: SolutionType
+        self, sol_type: SolutionType, *, for_candidate: int = -1
     ) -> list[SolutionStep]:
         """Find all Franken or Mutant fish of the requested type.
 
         Mirrors Java FishSolver.getFishes() with FRANKEN or MUTANT fish_type.
+        When for_candidate is 1-9, only that digit is searched (much faster).
         """
         fish_cat, n, with_fins = _GENERALIZED_INFO[sol_type]
         grid = self.grid
@@ -662,6 +750,8 @@ class FishSolver:
         orientations = [True] if fish_cat == _CAT_MUTANT else [True, False]
 
         for cand in range(1, 10):
+            if for_candidate != -1 and cand != for_candidate:
+                continue
             cand_set = grid.candidate_sets[cand]
             if not cand_set:
                 continue
@@ -685,7 +775,7 @@ class FishSolver:
                                 # Basic fish: no endo fins allowed
                                 skip = True
                                 break
-                            if bin(endo_fins | overlap).count('1') > _MAX_ENDO_FINS:
+                            if (endo_fins | overlap).bit_count() > _MAX_ENDO_FINS:
                                 skip = True
                                 break
                             endo_fins |= overlap
@@ -704,64 +794,123 @@ class FishSolver:
                     if len(cover_eligible) < n:
                         continue
 
-                    for cover_combo in combinations(range(len(cover_eligible)), n):
-                        cover_cand = 0
-                        cannibalistic = 0
-                        for ci in cover_combo:
-                            overlap = cover_cand & cover_eligible[ci][0]
+                    # Precompute base classification bits (same for all cover combos)
+                    base_bits = 0
+                    for bi in base_combo:
+                        base_bits |= _unit_type_bit(base_pool[bi][1])
+
+                    num_cover = len(cover_eligible)
+
+                    if _accel_find_covers is not None:
+                        # ---- C-accelerated cover search ----
+                        _ce_lo = (ctypes.c_uint64 * num_cover)()
+                        _ce_hi = (ctypes.c_uint64 * num_cover)()
+                        for i in range(num_cover):
+                            m = cover_eligible[i][0]
+                            _ce_lo[i] = m & _LO_MASK
+                            _ce_hi[i] = m >> _HI_SHIFT
+                        _max_out = 10000
+                        _out = (_FishResult * _max_out)()
+                        nfound = _accel_find_covers(
+                            _ce_lo, _ce_hi, num_cover, n,
+                            base_cand & _LO_MASK, base_cand >> _HI_SHIFT,
+                            cand_set & _LO_MASK, cand_set >> _HI_SHIFT,
+                            1 if with_fins else 0, _MAX_FINS,
+                            _out, _max_out,
+                        )
+                        for ri in range(min(nfound, _max_out)):
+                            r = _out[ri]
+                            cover_cand = r.cover_lo | (r.cover_hi << _HI_SHIFT)
+                            fins = r.fins_lo | (r.fins_hi << _HI_SHIFT)
+                            elim = r.elim_lo | (r.elim_hi << _HI_SHIFT)
+                            # Classify
+                            cover_bits = 0
+                            for k in range(n):
+                                cover_bits |= _unit_type_bit(cover_eligible[r.indices[k]][1])
+                            actual_cat = _classify_fish(base_bits, cover_bits)
+                            if actual_cat != fish_cat:
+                                continue
+                            elim_key = (cand, elim)
+                            if elim_key in seen_elims:
+                                continue
+                            seen_elims.add(elim_key)
+                            results.append(self._make_general_step(
+                                sol_type, cand,
+                                [base_pool[bi] for bi in base_combo],
+                                [cover_eligible[r.indices[k]] for k in range(n)],
+                                base_cand, elim, fins, endo_fins,
+                            ))
+                    else:
+                        # ---- Pure Python fallback (DFS with pruning) ----
+                        ce_masks = [cover_eligible[i][0] for i in range(num_cover)]
+                        _cc = [0] * (n + 1)
+                        _cn = [0] * (n + 1)
+                        _ni = [0] * (n + 1)
+                        _pi = [0] * (n + 1)
+                        level = 1
+                        _ni[1] = 0
+                        while True:
+                            while _ni[level] > num_cover - (n - level + 1):
+                                level -= 1
+                                if level == 0:
+                                    break
+                            if level == 0:
+                                break
+                            ci = _ni[level]
+                            _ni[level] = ci + 1
+                            _pi[level] = ci
+                            mask = ce_masks[ci]
+                            prev_cand = _cc[level - 1]
+                            new_cand = prev_cand | mask
+                            overlap = prev_cand & mask
+                            new_cannibal = _cn[level - 1]
                             if overlap:
-                                cannibalistic |= overlap
-                            cover_cand |= cover_eligible[ci][0]
-
-                        fins = base_cand & ~cover_cand
-
-                        if not with_fins:
-                            # Basic Franken/Mutant: no fins allowed
-                            if fins:
-                                continue
-                            elim = cand_set & cover_cand & ~base_cand
-                            if cannibalistic:
-                                elim |= cand_set & cannibalistic
-                            if not elim:
-                                continue
-                        else:
-                            # Finned Franken/Mutant
-                            fin_count = bin(fins).count('1')
-                            if fin_count == 0:
-                                continue  # basic fish — handled elsewhere
-                            if fin_count > _MAX_FINS:
-                                continue
-                            fin_buddies = _fin_buddies(fins)
-                            elim = cand_set & cover_cand & fin_buddies & ~base_cand
-                            if cannibalistic:
-                                elim |= cand_set & cannibalistic & fin_buddies
-                            if not elim:
-                                continue
-
-                        # Classify this fish
-                        base_bits = 0
-                        for bi in base_combo:
-                            base_bits |= _unit_type_bit(base_pool[bi][1])
-                        cover_bits = 0
-                        for ci in cover_combo:
-                            cover_bits |= _unit_type_bit(cover_eligible[ci][1])
-                        actual_cat = _classify_fish(base_bits, cover_bits)
-
-                        if actual_cat != fish_cat:
-                            continue
-
-                        # Dedup by elimination set
-                        elim_key = (cand, elim)
-                        if elim_key in seen_elims:
-                            continue
-                        seen_elims.add(elim_key)
-
-                        results.append(self._make_general_step(
-                            sol_type, cand,
-                            [base_pool[bi] for bi in base_combo],
-                            [cover_eligible[ci] for ci in cover_combo],
-                            base_cand, elim, fins, endo_fins,
-                        ))
+                                new_cannibal |= overlap
+                            if level < n:
+                                if with_fins and not (base_cand & ~new_cand):
+                                    continue
+                                _cc[level] = new_cand
+                                _cn[level] = new_cannibal
+                                level += 1
+                                _ni[level] = ci + 1
+                            else:
+                                fins = base_cand & ~new_cand
+                                if not with_fins:
+                                    if fins:
+                                        continue
+                                    elim = cand_set & new_cand & ~base_cand
+                                    if new_cannibal:
+                                        elim |= cand_set & new_cannibal
+                                    if not elim:
+                                        continue
+                                else:
+                                    fin_count = fins.bit_count()
+                                    if fin_count == 0:
+                                        continue
+                                    if fin_count > _MAX_FINS:
+                                        continue
+                                    fin_buddies = _fin_buddies(fins)
+                                    elim = cand_set & new_cand & fin_buddies & ~base_cand
+                                    if new_cannibal:
+                                        elim |= cand_set & new_cannibal & fin_buddies
+                                    if not elim:
+                                        continue
+                                cover_bits = 0
+                                for lv in range(1, n + 1):
+                                    cover_bits |= _unit_type_bit(cover_eligible[_pi[lv]][1])
+                                actual_cat = _classify_fish(base_bits, cover_bits)
+                                if actual_cat != fish_cat:
+                                    continue
+                                elim_key = (cand, elim)
+                                if elim_key in seen_elims:
+                                    continue
+                                seen_elims.add(elim_key)
+                                results.append(self._make_general_step(
+                                    sol_type, cand,
+                                    [base_pool[bi] for bi in base_combo],
+                                    [cover_eligible[_pi[lv]] for lv in range(1, n + 1)],
+                                    base_cand, elim, fins, endo_fins,
+                                ))
 
         return results
 

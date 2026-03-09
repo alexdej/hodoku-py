@@ -148,8 +148,11 @@ class SudokuStepFinder:
         self._templates = TemplateSolver(grid)
         self._brute_force = BruteForceSolver(grid)
 
-    def find_all(self, sol_type: SolutionType) -> list[SolutionStep]:
-        """Return ALL steps of the given type (for /bsa mode and reglib harness)."""
+    def find_all(self, sol_type: SolutionType, *, for_candidate: int = -1) -> list[SolutionStep]:
+        """Return ALL steps of the given type (for /bsa mode and reglib harness).
+
+        for_candidate: when 1-9, restricts fish search to that digit only.
+        """
         if sol_type in _SIMPLE_TYPES:
             return self._simple.find_all(sol_type)
         if sol_type in _SINGLE_DIGIT_TYPES:
@@ -159,7 +162,7 @@ class SudokuStepFinder:
         if sol_type in _COLORING_TYPES:
             return self._coloring.find_all(sol_type)
         if sol_type in _FISH_TYPES:
-            return self._fish.find_all(sol_type)
+            return self._fish.find_all(sol_type, for_candidate=for_candidate)
         if sol_type in _UNIQUENESS_TYPES:
             return self._uniqueness.find_all(sol_type)
         if sol_type in _ALS_TYPES:
