@@ -21,14 +21,18 @@ puzzle = gen.generate(difficulty=DifficultyType.MEDIUM)
 
 ## Reference implementation
 
-HoDoKu JAR lives at `hodoku/hodoku.jar`. Run it with:
+HoDoKu JAR lives at `hodoku/hodoku.jar`. Java source at `../HoDoKu/`.
 
 ```bash
 # Solve a puzzle, print solution path
-MSYS_NO_PATHCONV=1 bash hodoku/hodoku.sh /vp /o stdout <puzzle_string>
+java -jar hodoku/hodoku.jar /vp /o stdout <puzzle_string>
 
 # Find ALL applicable steps (no solve, richer output)
-MSYS_NO_PATHCONV=1 bash hodoku/hodoku.sh /bsa /o stdout <puzzle_string>
+java -jar hodoku/hodoku.jar /bsa /o stdout <puzzle_string>
+
+# Run regression tester (file path must NOT start with / — it's parsed as an option flag)
+cp tests/reglib/reglib-1.3.txt reglib-1.3.txt
+java -jar hodoku/hodoku.jar /test reglib-1.3.txt
 ```
 
 Every technique implementation must be validated against HoDoKu output on the same puzzle.
@@ -36,47 +40,45 @@ Every technique implementation must be validated against HoDoKu output on the sa
 ## Project structure
 
 ```
-docs/               # CODEBASE_MAP.md, ARCHITECTURE.md — reference these before coding
-hodoku/             # HoDoKu JAR
-src/
-  hodoku/        # the library
-    core/           # Grid, CellSet, SolutionStep, types, scoring
-    solver/         # SudokuSolver, SudokuStepFinder, all specialized solvers
-    generator/      # SudokuGenerator, pattern support
-    api.py          # public-facing Solver and Generator classes
+docs/               # ARCHITECTURE.md, ROADMAP.md, REGLIB_STATUS.md, specs
+hodoku/             # HoDoKu JAR + shell wrapper
+src/hodoku/
+  core/             # Grid, CellSet, SolutionStep, types, scoring
+  solver/           # SudokuStepFinder, all specialized solvers:
+                    #   simple, single_digit, wings, coloring, fish,
+                    #   uniqueness, chains, tabling, als, misc, brute_force
+                    #   (chain_utils, table_entry — shared helpers)
+  generator/        # SudokuGenerator (stub — not yet implemented)
+  api.py            # public-facing Solver and Generator classes
 tests/
+  reglib/           # Technique-isolation tests from reglib-1.3.txt (primary validation)
+  regression/       # Full solve-path regression tests (exemplars)
 pyproject.toml
 ```
 
-## Hodoku source code
+## Implementation status
 
-HoDoKu source code is available for reference at `../HoDoKu` (relative to the project directory).
+Done (all validated against HoDoKu):
+- core/ — Grid, CellSet, SolutionStep, types, scoring
+- solver/simple.py — Full House, Naked/Hidden Single, Locked Candidates, Subsets
+- solver/single_digit.py — Skyscraper, 2-String Kite, Empty Rectangle, Dual variants
+- solver/wings.py — XY-Wing, XYZ-Wing, W-Wing
+- solver/coloring.py — Simple Colors, Multi-Colors
+- solver/fish.py — Basic fish (X-Wing, Swordfish, Jellyfish), Finned, Sashimi
+- solver/uniqueness.py — Uniqueness 1-6, Hidden Rectangle, Avoidable Rectangle 1-2, BUG+1
+- solver/chains.py — X-Chain, XY-Chain, Remote Pair, Nice Loops, AIC, Grouped variants
+- solver/tabling.py — Forcing Chains/Nets, Grouped chains
+- solver/als.py — ALS-XZ, ALS-XY-Wing, ALS-XY-Chain, Death Blossom
+- solver/misc.py — Sue de Coq
+- solver/brute_force.py — last-resort guess
+- solver/solver.py — full solve loop, scoring, level computation
+- api.py — public Solver API
 
-## Implementation order
-
-Build in this sequence — each layer depends only on those above:
-
-1. `core/cell_set.py` — 81-cell bitset (Python int)
-2. `core/types.py` — SolutionType, SolutionCategory enums
-3. `core/grid.py` — Grid with static lookup tables, set_cell, del_candidate
-4. `core/solution_step.py` — SolutionStep dataclass and sub-types
-5. `core/scoring.py` — StepConfig, DifficultyLevel defaults
-6. `generator/generator.py` — backtracking solver + uniqueness validation
-7. `solver/step_finder.py` — SudokuStepFinder skeleton + candidate cache
-8. `solver/solver.py` — solve loop, scoring, level computation
-9. `solver/simple.py` — Full House, Naked/Hidden Single, Locked Candidates, Subsets
-   **→ first validation checkpoint against HoDoKu**
-10. `solver/single_digit.py` — Skyscraper, 2-String Kite, Empty Rectangle
-11. `solver/wings.py` — XY-Wing, XYZ-Wing, W-Wing
-12. `solver/coloring.py` — Simple Colors, Multi-Colors
-13. `solver/uniqueness.py` — Uniqueness Tests 1-6, BUG+1
-14. `solver/fish.py` — Basic fish first, then finned/franken/mutant incrementally
-15. `solver/chains.py` — X-Chain, XY-Chain, Remote Pair, simple Nice Loop/AIC
-16. `solver/als.py` — ALS-XZ, ALS-XY-Wing, ALS-XY-Chain, Death Blossom, SDC
-17. `solver/tabling.py` — Forcing Chains/Nets, Grouped chains (hardest)
-18. `solver/templates.py` — Template Set/Delete
-19. `solver/brute_force.py` — last-resort guess
-20. `api.py` — public API wrapping SudokuSolver
+Not yet implemented:
+- solver/templates.py — Template Set/Delete (18 reglib failures)
+- Franken/Mutant fish variants (41 reglib failures)
+- ALS nodes in tabling chains (46 reglib failures)
+- generator/ — puzzle generation
 
 ## Key design decisions
 
@@ -110,12 +112,12 @@ Full details in `docs/ROADMAP.md` → "HoDoKu compatibility: elimination orderin
 
 ## Testing approach
 
-- Unit-test each solver in isolation with puzzle strings where that technique is the next step
-- Compare full solution paths against HoDoKu batch output for regression
-- Benchmark suite separate from correctness tests
-- The goal is 100% fidelity with HoDoKu, down to the precise step-by-step solve path, even if a different
-  solve path would be equivalent (or better). This project is a strict port of HoDoKu as it stands, not an attempt
-  to improve or optimize it. Maintaining strict step-by-step fidelity simplifies validation.
+- **reglib suite** (`tests/reglib/`): Primary validation. 1112 technique-isolation tests from
+  HoDoKu's reglib-1.3.txt. Each reconstructs a PM board and checks that `find_all()` returns
+  the expected eliminations. Current: 1002 passed / 105 failed / 5 xfail (upstream Java failures).
+- **exemplar regression** (`tests/regression/`): Full solve-path comparison against HoDoKu CLI output.
+- The goal is 100% fidelity with HoDoKu, down to the precise step-by-step solve path. This is a
+  strict port, not an attempt to improve or optimize. Maintaining fidelity simplifies validation.
 
 ## Python environment
 
@@ -123,18 +125,7 @@ Full details in `docs/ROADMAP.md` → "HoDoKu compatibility: elimination orderin
 - Try to keep use of python commands consistent so that the user has the option to approve each tool once for the whole session. If
   you switch between different python executables the user has to approve each time and that slows us down.
 
-## Shell
-
-- The user always launches claude code in the project's working directory.
-- NEVER use `cd` to change to the current working directory before running a command. The working directory is already set — just run the command directly.
-- If for some reason the working directory is incorrect, stop what you are doing and ask the user for help.
-- IMPORTANT: On Windows with Git Bash, `/c/Users/...` and `C:\Users\...` are the SAME path.
-- Do NOT do `cd /c/Users/.../project && command` if the cwd is `C:\Users\...\project`. They are equivalent — skip the `cd`.
-- When working with java, hodoku.jar expects commands line arguments to have a `/` eg `/bs`. Set MSYS_NO_PATHCONV=1 when working with hodoku.jar or else git bash will interpret
-  command line arguments as paths and mangle them.
-
 ## Source control
 
-- jujutsu (jj) is configured for this project, backed by git, but jj is managed by the user outside the container.
-- **Git is read-only for Claude.** Use `git log`, `git status`, `git diff` freely to inspect state. Do NOT make commits, create branches, push, or run any git command that writes to the repository. Ask the user to commit when work is ready.
-- This is not a collaborative project; all work is being done on this one instance.
+- Use **jj** (jujutsu) for commits, not git.
+- This is not a collaborative project; all work is on one instance.
