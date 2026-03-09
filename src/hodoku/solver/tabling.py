@@ -4,9 +4,8 @@ Mirrors Java's TablingSolver. Builds implication tables for every premise
 ("candidate N is set/deleted in cell X"), expands them transitively, then
 checks for contradictions and verities.
 
-Phase 1: Forcing Chains only (chainsOnly=True, withGroupNodes=True).
-Phase 2 (future): Forcing Nets.
-Phase 3 (future): ALS nodes in tabling.
+Also implements Nice Loop / AIC detection via the tabling framework,
+including support for ALS nodes in grouped chains.
 """
 
 from __future__ import annotations
@@ -25,16 +24,22 @@ from hodoku.core.grid import (
 )
 from hodoku.core.solution_step import Candidate, SolutionStep
 from hodoku.core.types import SolutionType
+from hodoku.solver.als import Als, _collect_alses
 from hodoku.solver.chain_utils import (
+    ALS_NODE,
     GROUP_NODE,
     NORMAL_NODE,
+    get_als_index,
     get_candidate,
     get_cell_index,
     get_cell_index2,
     get_cell_index3,
+    get_lower_als_index,
+    get_higher_als_index,
     get_node_type,
     is_strong,
     make_entry,
+    make_entry_als,
     make_entry_simple,
 )
 from hodoku.solver.chains import _collect_group_nodes, _GroupNode
@@ -57,6 +62,11 @@ def _iter_bits(mask: int):
 
 def _bit_count(mask: int) -> int:
     return mask.bit_count()
+
+
+def _first_bit(mask: int) -> int:
+    """Return the index of the lowest set bit."""
+    return (mask & -mask).bit_length() - 1
 
 
 def _get_all_candidates(grid: Grid, cell: int) -> list[int]:
@@ -91,6 +101,9 @@ class TablingSolver:
         # Group nodes cache
         self.group_nodes: list[_GroupNode] = []
 
+        # ALS cache (populated by _fill_tables_with_als)
+        self._alses: list[Als] = []
+
         # Steps found in current run
         self.steps: list[SolutionStep] = []
         self.deletes_map: dict[str, int] = {}
@@ -105,6 +118,12 @@ class TablingSolver:
         self._lasso_set: int = 0  # bitmask
         self._tmp_chains: list[list[int]] = [[] for _ in range(9)]
         self._tmp_chains_index: int = 0
+
+        # Chain cell tracking (for nice loop lasso detection)
+        self._chain_set: int = 0  # 81-bit bitmask of cells in current chain
+
+        # Nice loop filter flag
+        self._only_grouped_nice_loops: bool = False
 
         # Temporary sets for checks
         self._global_step = SolutionStep(SolutionType.HIDDEN_SINGLE)
@@ -223,10 +242,10 @@ class TablingSolver:
                         on_entry.add_entry_simple(cell, cand, False)
 
                     if anz_cands == 2:
-                        # Strong link: the single remaining peer
-                        # Java adds this to onTable (see TablingSolver.java:1858)
+                        # Strong link: if cand is OFF, the other candidate
+                        # has to be ON (Java: offTable line 1862, NOT onTable)
                         peer = (peers_in_house & -peers_in_house).bit_length() - 1
-                        on_entry.add_entry_simple(peer, cand, True)
+                        off_entry.add_entry_simple(peer, cand, True)
 
     # ------------------------------------------------------------------
     # Step 2: Fill tables with group nodes
@@ -401,6 +420,199 @@ class TablingSolver:
                         cell_index2=gn2.index2, cell_index3=gn2.index3,
                         node_type=GROUP_NODE,
                     )
+
+    # ------------------------------------------------------------------
+    # Step 2b: Fill tables with ALS nodes
+    # ------------------------------------------------------------------
+
+    def _get_als_table_entry(
+        self, entry_cell: int, als_index: int, cand: int,
+    ) -> TableEntry | None:
+        """Look up an existing ALS table entry in the extended table."""
+        entry = make_entry_als(entry_cell, als_index, cand, False, ALS_NODE)
+        idx = self.extended_table_map.get(entry)
+        if idx is not None:
+            return self.extended_table[idx]
+        return None
+
+    def _fill_tables_with_als(self) -> None:
+        """Add ALS node implications to the extended table and cross-link
+        them into on_table / off_table.
+
+        Mirrors TablingSolver.fillTablesWithAls() in Java.
+        """
+        grid = self.grid
+        alses = _collect_alses(grid)
+        # Skip single-cell ALSes (bivalue cells, handled as normal nodes)
+        self._alses = [als for als in alses if als.indices.bit_count() >= 2]
+        alses = self._alses
+
+        gns = self.group_nodes
+
+        for i, als in enumerate(alses):
+            for j in range(1, 10):
+                if not als.indices_per_cand[j]:
+                    continue
+
+                # Check if there are possible eliminations for any other digit k
+                als_elims: list[int] = [0] * 10  # [k] = bitmask of eliminable cells
+                eliminations_present = False
+                for k in range(1, 10):
+                    if k == j:
+                        continue
+                    if not als.indices_per_cand[k]:
+                        continue
+                    # Cells with candidate k that see ALL ALS cells with k
+                    als_elims[k] = grid.candidate_sets[k] & als.buddies_per_cand[k]
+                    if als_elims[k]:
+                        eliminations_present = True
+
+                if not eliminations_present:
+                    continue
+
+                # Create or find the ALS off-table entry
+                entry_cell = _first_bit(als.indices_per_cand[j])
+                off_entry = self._get_als_table_entry(entry_cell, i, j)
+                if off_entry is None:
+                    off_entry = self._get_next_extended_table_entry(
+                        self.extended_table_index
+                    )
+                    off_entry.add_entry(
+                        entry_cell, j, False,
+                        cell_index2=get_lower_als_index(i),
+                        cell_index3=get_higher_als_index(i),
+                        node_type=ALS_NODE,
+                    )
+                    self.extended_table_map[off_entry.entries[0]] = (
+                        self.extended_table_index
+                    )
+                    self.extended_table_index += 1
+
+                # Put the ALS into onTables of all entry candidates:
+                # find cells with candidate j that see all ALS cells with j
+                trigger_cells = grid.candidate_sets[j] & als.buddies_per_cand[j]
+                als_entry_val = make_entry_als(
+                    entry_cell, i, j, False, ALS_NODE
+                )
+
+                for cell in _iter_bits(trigger_cells):
+                    # Add ALS to cell's ON table
+                    on_te = self.on_table[cell * 10 + j]
+                    on_te.add_entry(
+                        entry_cell, j, False,
+                        cell_index2=get_lower_als_index(i),
+                        cell_index3=get_higher_als_index(i),
+                        node_type=ALS_NODE,
+                    )
+
+                    # Every group node containing this cell that doesn't
+                    # overlap the ALS and sees all ALS cells with j
+                    for gn in gns:
+                        if gn.digit != j:
+                            continue
+                        if not (gn.cells & (1 << cell)):
+                            continue
+                        # Check overlap with ALS
+                        if gn.cells & als.indices:
+                            continue
+                        # All ALS cells with j must be in group node's buddies
+                        if (als.indices_per_cand[j] & gn.buddies) != als.indices_per_cand[j]:
+                            continue
+                        # Look up the group node ON entry in extended table
+                        gn_on_val = make_entry(
+                            gn.index1, gn.index2, gn.index3,
+                            j, True, GROUP_NODE,
+                        )
+                        gn_ext_idx = self.extended_table_map.get(gn_on_val)
+                        if gn_ext_idx is None:
+                            continue
+                        gn_te = self.extended_table[gn_ext_idx]
+                        if als_entry_val in gn_te.indices:
+                            continue
+                        # Add ALS to group node's ON table
+                        gn_te.add_entry(
+                            entry_cell, j, False,
+                            cell_index2=get_lower_als_index(i),
+                            cell_index3=get_higher_als_index(i),
+                            node_type=ALS_NODE,
+                        )
+
+                # Record elimination targets in the ALS off-table
+                chain_penalty = als.get_chain_penalty()
+                for k in range(1, 10):
+                    if not als_elims[k]:
+                        continue
+                    for cell in _iter_bits(als_elims[k]):
+                        off_entry.add_entry(cell, k, False, penalty=chain_penalty)
+                    # If a group node is a subset of the eliminations
+                    for gn in gns:
+                        if gn.digit != k:
+                            continue
+                        if (gn.cells & als_elims[k]) != gn.cells:
+                            continue
+                        off_entry.add_entry(
+                            gn.index1, k, False,
+                            cell_index2=gn.index2, cell_index3=gn.index3,
+                            node_type=GROUP_NODE,
+                            penalty=chain_penalty,
+                        )
+
+                # Trigger other non-overlapping ALSes
+                for k_idx, k_als in enumerate(alses):
+                    if k_idx == i:
+                        continue
+                    if als.indices & k_als.indices:
+                        continue  # overlapping
+                    for l in range(1, 10):
+                        if not als_elims[l]:
+                            continue
+                        if not k_als.indices_per_cand[l]:
+                            continue
+                        # alsEliminations must contain all k_als cells with l
+                        if (k_als.indices_per_cand[l] & als_elims[l]) != k_als.indices_per_cand[l]:
+                            continue
+                        # Create table for triggered ALS if needed
+                        k_entry_cell = _first_bit(k_als.indices_per_cand[l])
+                        if self._get_als_table_entry(k_entry_cell, k_idx, l) is None:
+                            new_entry = self._get_next_extended_table_entry(
+                                self.extended_table_index
+                            )
+                            new_entry.add_entry(
+                                k_entry_cell, l, False,
+                                cell_index2=get_lower_als_index(k_idx),
+                                cell_index3=get_higher_als_index(k_idx),
+                                node_type=ALS_NODE,
+                            )
+                            self.extended_table_map[new_entry.entries[0]] = (
+                                self.extended_table_index
+                            )
+                            self.extended_table_index += 1
+                        # Link from current ALS to triggered ALS
+                        off_entry.add_entry(
+                            k_entry_cell, l, False,
+                            cell_index2=get_lower_als_index(k_idx),
+                            cell_index3=get_higher_als_index(k_idx),
+                            node_type=ALS_NODE,
+                            penalty=chain_penalty,
+                        )
+
+                # Forcings: if a buddy cell has only 1 candidate left
+                for cell in _iter_bits(als.buddies):
+                    if grid.values[cell] != 0:
+                        continue
+                    cand_count = grid.candidates[cell].bit_count()
+                    if cand_count <= 2:
+                        continue
+                    remaining = grid.candidates[cell]
+                    for l in range(1, 10):
+                        if als_elims[l] and (als_elims[l] & (1 << cell)):
+                            remaining &= ~DIGIT_MASKS[l]
+                    if remaining.bit_count() == 1:
+                        forced_digit = remaining.bit_length()
+                        off_entry.add_entry(
+                            cell, forced_digit, True,
+                            penalty=chain_penalty + 1,
+                        )
 
     # ------------------------------------------------------------------
     # Step 3: Expand tables (transitive closure)
@@ -946,11 +1158,15 @@ class TablingSolver:
 
     def _add_chain(
         self, entry: TableEntry, cell_index: int, cand: int, is_set: bool,
+        is_nice_loop: bool = False, is_aic: bool = False,
     ) -> None:
         """Build and add a chain to the global step.
 
         Mirrors TablingSolver.addChain() — builds the chain backwards then
         reverses it, checking for lassos along the way.
+
+        is_nice_loop: lasso detection allowing start cell at both ends.
+        is_aic: stricter lasso detection (no return to start cell allowed).
         """
         if self._tmp_chains_index >= len(self._tmp_chains):
             return
@@ -960,30 +1176,85 @@ class TablingSolver:
         if self._chain_index == 0:
             return
 
-        # Reverse the chain and interleave net branches (mins)
         j = 0
+        if is_nice_loop or is_aic:
+            lasso_cells: int = 0  # 81-bit bitmask
+            # For nice loops: first and second chain entries must differ in cell
+            if is_nice_loop:
+                c0 = get_cell_index(self._chain[0])
+                c1 = get_cell_index(self._chain[1]) if self._chain_index > 1 else -1
+                if c0 == c1:
+                    return
+
+        last_cell_index = -1
+        last_cell_entry = -1
+        first_cell_index = get_cell_index(self._chain[self._chain_index - 1])
+
+        # Reverse the chain and check for lassos
         for i in range(self._chain_index - 1, -1, -1):
             old_entry = self._chain[i]
+            new_cell_index = get_cell_index(old_entry)
+
+            if is_nice_loop or is_aic:
+                if lasso_cells & (1 << new_cell_index):
+                    return  # lasso detected
+
+                # Add last cell to lasso set (skip start cell for nice loops)
+                if last_cell_index != -1 and (last_cell_index != first_cell_index or is_aic):
+                    lasso_cells |= 1 << last_cell_index
+                    # Group nodes: add all cells
+                    if get_node_type(last_cell_entry) == GROUP_NODE:
+                        ci2 = get_cell_index2(last_cell_entry)
+                        if ci2 != -1:
+                            lasso_cells |= 1 << ci2
+                        ci3 = get_cell_index3(last_cell_entry)
+                        if ci3 != -1:
+                            lasso_cells |= 1 << ci3
+                    elif get_node_type(last_cell_entry) == ALS_NODE:
+                        als_idx = get_als_index(last_cell_entry)
+                        if als_idx < len(self._alses):
+                            lasso_cells |= self._alses[als_idx].indices
+
+            last_cell_index = new_cell_index
+            last_cell_entry = old_entry
             self._tmp_chain[j] = old_entry
             j += 1
             # Check for net branches (mins)
             for k in range(self._act_min):
                 if self._mins[k][self._min_indexes[k] - 1] == old_entry:
-                    # This min connects here — add it (reversed, negated)
                     for m in range(self._min_indexes[k] - 2, -1, -1):
                         self._tmp_chain[j] = -self._mins[k][m]
                         j += 1
-                    # Sentinel for net branch end
-                    self._tmp_chain[j] = -(1 << 31)  # Integer.MIN_VALUE equivalent
+                    self._tmp_chain[j] = -(1 << 31)
                     j += 1
 
         if j > 0:
-            # Copy to the step's chain list
             chain_data = self._tmp_chain[:j]
             if self._tmp_chains_index < len(self._tmp_chains):
                 self._tmp_chains[self._tmp_chains_index] = list(chain_data)
             self._global_step.chains.append(list(chain_data))
             self._tmp_chains_index += 1
+
+            # Collect chain cells for continuous nice loop elimination checking
+            if is_nice_loop:
+                self._chain_set = 0
+                for ci in range(j):
+                    ev = chain_data[ci]
+                    if ev < 0:
+                        continue  # net branch marker
+                    self._chain_set |= 1 << get_cell_index(ev)
+                    nt = get_node_type(ev)
+                    if nt == GROUP_NODE:
+                        ci2 = get_cell_index2(ev)
+                        if ci2 != -1:
+                            self._chain_set |= 1 << ci2
+                        ci3 = get_cell_index3(ev)
+                        if ci3 != -1:
+                            self._chain_set |= 1 << ci3
+                    elif nt == ALS_NODE:
+                        aidx = get_als_index(ev)
+                        if aidx < len(self._alses):
+                            self._chain_set |= self._alses[aidx].indices
 
     # ------------------------------------------------------------------
     # Dedup and step management
@@ -1025,6 +1296,394 @@ class TablingSolver:
         # New step
         self.deletes_map[del_key] = len(self.steps)
         self.steps.append(copy.deepcopy(step))
+
+    # ------------------------------------------------------------------
+    # Nice Loop / AIC detection via tabling
+    # ------------------------------------------------------------------
+
+    def find_all_nice_loops(
+        self,
+        with_als_nodes: bool = False,
+        target_type: SolutionType | None = None,
+    ) -> list[SolutionStep]:
+        """Find all grouped nice loops / AICs using the tabling framework.
+
+        Mirrors TablingSolver.getAllGroupedNiceLoops() in Java.
+        Returns all steps, filtered to target_type if specified.
+        """
+        self.steps.clear()
+        self.deletes_map.clear()
+        self._only_grouped_nice_loops = True
+
+        # Fill tables
+        self._fill_tables()
+        self._fill_tables_with_group_nodes()
+        if with_als_nodes:
+            self._fill_tables_with_als()
+
+        # Expand tables
+        self._expand_tables(self.on_table)
+        self._expand_tables(self.off_table)
+
+        # Check for nice loops and AICs
+        self._check_nice_loops(self.on_table)
+        self._check_nice_loops(self.off_table)
+        self._check_aics(self.off_table)
+
+        self._only_grouped_nice_loops = False
+
+        # Filter to target type if specified
+        if target_type is not None:
+            return [s for s in self.steps if s.type == target_type]
+
+        self.steps.sort(key=_tabling_sort_key)
+        return list(self.steps)
+
+    def _check_nice_loops(self, table: list[TableEntry]) -> None:
+        """Check all table entries for nice loops.
+
+        Mirrors TablingSolver.checkNiceLoops() in Java.
+        """
+        for i in range(len(table)):
+            if table[i].index == 0:
+                continue
+            start_index = table[i].get_cell_index(0)
+            for j in range(1, table[i].index):
+                if table[i].entries[j] == 0:
+                    break
+                if (table[i].get_node_type(j) == NORMAL_NODE
+                        and table[i].get_cell_index(j) == start_index):
+                    self._check_nice_loop(table[i], j)
+
+    def _check_nice_loop(self, entry: TableEntry, entry_index: int) -> None:
+        """Check if a loop forms a valid nice loop and determine eliminations.
+
+        Mirrors TablingSolver.checkNiceLoop() in Java.
+        """
+        if entry.get_distance(entry_index) <= 2:
+            return
+
+        grid = self.grid
+        self._global_step.reset()
+        self._global_step.type = SolutionType.DISCONTINUOUS_NICE_LOOP
+        self._reset_tmp_chains()
+        self._add_chain(
+            entry, entry.get_cell_index(entry_index),
+            entry.get_candidate(entry_index), entry.is_strong(entry_index),
+            is_nice_loop=True,
+        )
+        if not self._global_step.chains:
+            return
+
+        nl_chain = self._global_step.chains[0]
+        nl_chain_index = len(nl_chain) - 1
+        nl_chain_length = len(nl_chain)
+
+        if get_cell_index(nl_chain[0]) == get_cell_index(nl_chain[1]):
+            return  # first link must leave start cell
+
+        first_link_strong = entry.is_strong(1)
+        last_link_strong = entry.is_strong(entry_index)
+        start_candidate = entry.get_candidate(0)
+        end_candidate = entry.get_candidate(entry_index)
+        start_index = entry.get_cell_index(0)
+
+        if not first_link_strong and not last_link_strong and start_candidate == end_candidate:
+            # Discontinuous: eliminate startCandidate from startIndex
+            self._global_step.add_candidate_to_delete(start_index, start_candidate)
+
+        elif first_link_strong and last_link_strong and start_candidate == end_candidate:
+            # Discontinuous: eliminate all except startCandidate
+            for d in range(1, 10):
+                if grid.candidates[start_index] & DIGIT_MASKS[d] and d != start_candidate:
+                    self._global_step.add_candidate_to_delete(start_index, d)
+
+        elif first_link_strong != last_link_strong and start_candidate != end_candidate:
+            # Discontinuous: eliminate the weak-link candidate
+            if not first_link_strong:
+                self._global_step.add_candidate_to_delete(start_index, start_candidate)
+            else:
+                self._global_step.add_candidate_to_delete(start_index, end_candidate)
+
+        elif ((not first_link_strong and not last_link_strong
+                and grid.candidates[start_index].bit_count() == 2
+                and start_candidate != end_candidate)
+              or (first_link_strong and last_link_strong
+                  and start_candidate != end_candidate)
+              or (first_link_strong != last_link_strong
+                  and start_candidate == end_candidate)):
+            # Continuous nice loop
+            self._global_step.type = SolutionType.CONTINUOUS_NICE_LOOP
+            self._check_continuous_nl_eliminations(
+                nl_chain, nl_chain_index, start_index,
+                start_candidate, end_candidate,
+                first_link_strong, last_link_strong,
+            )
+        else:
+            return  # not a valid loop type
+
+        if not self._global_step.candidates_to_delete:
+            return
+
+        # Check for grouped nodes
+        grouped = any(
+            get_node_type(nl_chain[i]) != NORMAL_NODE
+            for i in range(len(nl_chain))
+            if nl_chain[i] >= 0
+        )
+        if grouped:
+            if self._global_step.type == SolutionType.DISCONTINUOUS_NICE_LOOP:
+                self._global_step.type = SolutionType.GROUPED_DISCONTINUOUS_NICE_LOOP
+            elif self._global_step.type == SolutionType.CONTINUOUS_NICE_LOOP:
+                self._global_step.type = SolutionType.GROUPED_CONTINUOUS_NICE_LOOP
+
+        if self._only_grouped_nice_loops and not grouped:
+            return
+
+        # Dedup by elimination set
+        del_key = self._global_step.get_candidate_string()
+        old_index = self.deletes_map.get(del_key)
+        if old_index is not None:
+            if self.steps[old_index].get_chain_length() <= nl_chain_length:
+                return
+
+        self.deletes_map[del_key] = len(self.steps)
+        self.steps.append(copy.deepcopy(self._global_step))
+
+    def _check_continuous_nl_eliminations(
+        self,
+        nl_chain: list[int],
+        nl_chain_index: int,
+        start_index: int,
+        start_candidate: int,
+        end_candidate: int,
+        first_link_strong: bool,
+        last_link_strong: bool,
+    ) -> None:
+        """Find eliminations for a continuous nice loop.
+
+        Mirrors the CNL elimination logic in TablingSolver.checkNiceLoop().
+        """
+        grid = self.grid
+        alses = self._alses
+
+        for i in range(nl_chain_index + 1):
+            ev = nl_chain[i]
+            if ev < 0:
+                continue  # net branch marker
+
+            # Cell with two strong links → eliminate all except strong link cands
+            if (i == 0 and first_link_strong and last_link_strong) or \
+               (i > 0 and is_strong(nl_chain[i]) and i <= nl_chain_index - 2
+                and get_cell_index(nl_chain[i - 1]) != get_cell_index(nl_chain[i])):
+
+                if i == 0 or (
+                    not is_strong(nl_chain[i + 1])
+                    and get_cell_index(nl_chain[i]) == get_cell_index(nl_chain[i + 1])
+                    and is_strong(nl_chain[i + 2])
+                    and get_cell_index(nl_chain[i + 1]) != get_cell_index(nl_chain[i + 2])
+                ):
+                    if i == 0:
+                        c1, c2 = start_candidate, end_candidate
+                    else:
+                        c1 = get_candidate(nl_chain[i])
+                        c2 = get_candidate(nl_chain[i + 2])
+                    cell = get_cell_index(nl_chain[i])
+                    for d in range(1, 10):
+                        if grid.candidates[cell] & DIGIT_MASKS[d] and d != c1 and d != c2:
+                            self._global_step.add_candidate_to_delete(cell, d)
+
+            # Weak link between cells
+            if i > 0 and not is_strong(nl_chain[i]) \
+               and get_cell_index(nl_chain[i - 1]) != get_cell_index(nl_chain[i]):
+                act_cand = get_candidate(nl_chain[i])
+                # Get buddies for both endpoints of the weak link
+                buddies_prev = _get_node_buddies(nl_chain[i - 1], act_cand, alses)
+                buddies_curr = _get_node_buddies(nl_chain[i], act_cand, alses)
+                common = buddies_prev & buddies_curr
+                common &= ~self._chain_set
+                common &= ~(1 << start_index)
+                common &= grid.candidate_sets[act_cand]
+                for cell in _iter_bits(common):
+                    self._global_step.add_candidate_to_delete(cell, act_cand)
+
+                # ALS node: additional eliminations for non-RC candidates
+                if get_node_type(nl_chain[i]) == ALS_NODE:
+                    als_idx = get_als_index(nl_chain[i])
+                    if als_idx < len(alses):
+                        als = alses[als_idx]
+                        # Check if the exit is forced (next link is strong)
+                        is_force_exit = (
+                            i < nl_chain_index and is_strong(nl_chain[i + 1])
+                        )
+                        next_cell_index = get_cell_index(nl_chain[i + 1]) if i < nl_chain_index else -1
+                        exit_cands: int = 0  # bitmask of exit candidates
+                        if is_force_exit:
+                            force_cand = get_candidate(nl_chain[i + 1])
+                            exit_cands = grid.candidates[next_cell_index] & ~DIGIT_MASKS[force_cand]
+                        elif i < nl_chain_index:
+                            exit_cands = DIGIT_MASKS[get_candidate(nl_chain[i + 1])]
+
+                        # Eliminate non-RC, non-exit candidates
+                        for d in range(1, 10):
+                            if DIGIT_MASKS[d] & exit_cands:
+                                continue
+                            if d == act_cand:
+                                continue
+                            if not als.buddies_per_cand[d]:
+                                continue
+                            elim = als.buddies_per_cand[d] & grid.candidate_sets[d]
+                            for cell in _iter_bits(elim):
+                                self._global_step.add_candidate_to_delete(cell, d)
+
+                        # Force exit: exit candidates eliminate via combined buddies
+                        if is_force_exit:
+                            next_buddies = BUDDIES[next_cell_index]
+                            tmp_exit = exit_cands
+                            while tmp_exit:
+                                lsb = tmp_exit & -tmp_exit
+                                d = lsb.bit_length()
+                                tmp_exit ^= lsb
+                                elim = als.buddies_per_cand[d] & next_buddies
+                                elim &= grid.candidate_sets[d]
+                                for cell in _iter_bits(elim):
+                                    self._global_step.add_candidate_to_delete(cell, d)
+
+    def _check_aics(self, table: list[TableEntry]) -> None:
+        """Check off_table entries for AIC patterns.
+
+        Mirrors TablingSolver.checkAics() in Java.
+        AICs start with a strong link (off-table premise leads to ON entries).
+        """
+        grid = self.grid
+        for i in range(len(table)):
+            if table[i].index == 0:
+                continue
+            start_index = table[i].get_cell_index(0)
+            start_candidate = table[i].get_candidate(0)
+            start_buddies = BUDDIES[start_index]
+
+            for j in range(1, table[i].index):
+                if table[i].entries[j] == 0:
+                    break
+                if (table[i].get_node_type(j) != NORMAL_NODE
+                        or not table[i].is_strong(j)
+                        or table[i].get_cell_index(j) == start_index):
+                    continue
+
+                end_index = table[i].get_cell_index(j)
+                end_candidate = table[i].get_candidate(j)
+
+                if start_candidate == end_candidate:
+                    # Type 1: same candidate at both ends
+                    common = start_buddies & BUDDIES[end_index]
+                    common &= grid.candidate_sets[start_candidate]
+                    if common and _bit_count(common) >= 2:
+                        self._check_aic(table[i], j)
+                else:
+                    # Type 2: different candidates, endpoints see each other
+                    if not (start_buddies & (1 << end_index)):
+                        continue
+                    if (grid.candidates[end_index] & DIGIT_MASKS[start_candidate]
+                            and grid.candidates[start_index] & DIGIT_MASKS[end_candidate]):
+                        self._check_aic(table[i], j)
+
+    def _check_aic(self, entry: TableEntry, entry_index: int) -> None:
+        """Build an AIC step and add to results.
+
+        Mirrors TablingSolver.checkAic() in Java.
+        """
+        if entry.get_distance(entry_index) <= 2:
+            return
+
+        grid = self.grid
+        self._global_step.reset()
+        self._global_step.type = SolutionType.AIC
+
+        start_candidate = entry.get_candidate(0)
+        end_candidate = entry.get_candidate(entry_index)
+        start_index = entry.get_cell_index(0)
+        end_index = entry.get_cell_index(entry_index)
+
+        if start_candidate == end_candidate:
+            # Type 1: eliminate from cells seeing both endpoints
+            common = BUDDIES[start_index] & BUDDIES[end_index]
+            common &= grid.candidate_sets[start_candidate]
+            if _bit_count(common) > 1:
+                for cell in _iter_bits(common):
+                    if cell != start_index:
+                        self._global_step.add_candidate_to_delete(cell, start_candidate)
+        else:
+            # Type 2: cross-elimination
+            if grid.candidates[start_index] & DIGIT_MASKS[end_candidate]:
+                self._global_step.add_candidate_to_delete(start_index, end_candidate)
+            if grid.candidates[end_index] & DIGIT_MASKS[start_candidate]:
+                self._global_step.add_candidate_to_delete(end_index, start_candidate)
+
+        if not self._global_step.candidates_to_delete:
+            return
+
+        self._reset_tmp_chains()
+        self._add_chain(
+            entry, entry.get_cell_index(entry_index),
+            entry.get_candidate(entry_index), entry.is_strong(entry_index),
+            is_aic=True,
+        )
+        if not self._global_step.chains:
+            return
+
+        chain = self._global_step.chains[0]
+
+        grouped = any(
+            get_node_type(chain[ci]) != NORMAL_NODE
+            for ci in range(len(chain))
+            if chain[ci] >= 0
+        )
+        if grouped:
+            if self._global_step.type == SolutionType.AIC:
+                self._global_step.type = SolutionType.GROUPED_AIC
+
+        if self._only_grouped_nice_loops and not grouped:
+            return
+
+        del_key = self._global_step.get_candidate_string()
+        old_index = self.deletes_map.get(del_key)
+        if old_index is not None:
+            if self.steps[old_index].get_chain_length() <= len(chain):
+                return
+
+        self.deletes_map[del_key] = len(self.steps)
+        self.steps.append(copy.deepcopy(self._global_step))
+
+
+# ---------------------------------------------------------------------------
+# Node buddies helper (matching Chain.getSNodeBuddies in Java)
+# ---------------------------------------------------------------------------
+
+def _get_node_buddies(entry: int, candidate: int, alses: list[Als]) -> int:
+    """Get the buddy set for a chain node entry.
+
+    For normal nodes: buddies of the cell.
+    For group nodes: intersection of buddies of all cells.
+    For ALS nodes: buddiesPerCandidat[candidate] for the ALS.
+    """
+    nt = get_node_type(entry)
+    if nt == NORMAL_NODE:
+        return BUDDIES[get_cell_index(entry)]
+    elif nt == GROUP_NODE:
+        result = BUDDIES[get_cell_index(entry)]
+        ci2 = get_cell_index2(entry)
+        if ci2 != -1:
+            result &= BUDDIES[ci2]
+        ci3 = get_cell_index3(entry)
+        if ci3 != -1:
+            result &= BUDDIES[ci3]
+        return result
+    elif nt == ALS_NODE:
+        als_idx = get_als_index(entry)
+        if als_idx < len(alses):
+            return alses[als_idx].buddies_per_cand[candidate]
+    return 0
 
 
 # ---------------------------------------------------------------------------

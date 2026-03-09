@@ -63,18 +63,34 @@ def _build_grid(entry: ReglibEntry) -> Grid:
 
 _ALS_OVERLAP_CODES = frozenset({"0902", "0903", "0904"})
 
+# Grouped chain codes / variants that require ALS nodes in tabling chains
+# (mirrors RegressionTester.java option flags)
+_ALS_TABLING_CODES: dict[str, frozenset[int]] = {
+    "0709": frozenset({2}),         # Grouped CNL variant 2
+    "0710": frozenset({3, 4}),      # Grouped DNL variants 3, 4
+    "0711": frozenset({3, 4}),      # Grouped AIC variants 3, 4
+}
+
 
 def _find_all_steps(
     finder: SudokuStepFinder,
     sol_types: frozenset[SolutionType],
     allow_overlap: bool = False,
     for_candidate: int = -1,
+    allow_als_in_tabling: bool = False,
+    grid: 'Grid | None' = None,
 ) -> list:
     """Return all steps of any of the given SolutionTypes."""
     results = []
     for sol_type in sorted(sol_types, key=lambda t: t.value):
         if allow_overlap and sol_type in _ALS_TYPES:
             results.extend(finder._als.find_all(sol_type, allow_overlap=True))
+        elif allow_als_in_tabling and grid is not None:
+            from hodoku.solver.tabling import TablingSolver
+            ts = TablingSolver(grid)
+            results.extend(ts.find_all_nice_loops(
+                with_als_nodes=True, target_type=sol_type,
+            ))
         else:
             results.extend(finder.find_all(sol_type, for_candidate=for_candidate))
     return results
@@ -101,6 +117,14 @@ def test_reglib_technique(reglib_entry: ReglibEntry) -> None:
         entry.variant == 2 and entry.technique_code in _ALS_OVERLAP_CODES
     )
 
+    # Check if this variant needs ALS nodes in tabling chains
+    als_variants = _ALS_TABLING_CODES.get(entry.technique_code)
+    allow_als_in_tabling = (
+        als_variants is not None
+        and entry.variant is not None
+        and entry.variant in als_variants
+    )
+
     # Extract target digit for fish solver optimization (search one digit
     # instead of all 9).  candidates_field is e.g. "3" for digit 3.
     for_candidate = -1
@@ -112,6 +136,8 @@ def test_reglib_technique(reglib_entry: ReglibEntry) -> None:
     steps = _find_all_steps(
         finder, entry.solution_types, allow_overlap=allow_overlap,
         for_candidate=for_candidate,
+        allow_als_in_tabling=allow_als_in_tabling,
+        grid=grid,
     )
 
     # --- Fail case: technique must NOT fire ---

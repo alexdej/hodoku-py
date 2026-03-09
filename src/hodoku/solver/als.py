@@ -75,6 +75,18 @@ class Als:
             self.buddies_als_per_cand[d] = bpc | ipc
             self.buddies |= bpc
 
+    def get_chain_penalty(self) -> int:
+        """Chain distance penalty for using this ALS in a tabling chain.
+
+        Mirrors Als.getChainPenalty() in Java.
+        """
+        cand_size = self.candidates.bit_count()
+        if cand_size <= 1:
+            return 0
+        if cand_size == 2:
+            return 1
+        return (cand_size - 1) * 2
+
     def __eq__(self, other: object) -> bool:
         return isinstance(other, Als) and self.indices == other.indices
 

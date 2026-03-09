@@ -17,16 +17,16 @@ technique in isolation on a fixed board.
 ## Results (as of 2026-03-09)
 
 ```
-1112 total   1062 passed   44 failed   6 xfailed
+1112 total   1106 passed   0 failed   6 xfailed
 ```
 
-**~96% passing** (1062/1106 excluding xfail).
+**~100% passing** (1106/1112 excluding xfail).
 
 ---
 
 ## Remaining failures — by category
 
-### ALS nodes in grouped chains (44 failures)
+### ALS nodes in grouped chains (0 failures — all passing ✅)
 
 | Code | Technique | Variants |
 |------|-----------|---------|
@@ -35,29 +35,15 @@ technique in isolation on a fixed board.
 | 0711 | Grouped AIC | variants 3, 4 |
 
 These variants set `AllowAlsInTablingChains=true` in Java's regression tester.
-Java's implementation is in `TablingSolver.fillTablesWithAls()`, which adds ALS nodes to
-the forward-propagation implication tables before expanding and checking loops.
+Implemented via `TablingSolver.fillTablesWithAls()` in `tabling.py`, which adds ALS nodes
+to the forward-propagation implication tables before expanding and checking loops.
+The test harness (`test_reglib.py`) creates a `TablingSolver` directly for these variants.
 
-**Investigation (2026-03-09):** We attempted to implement ALS-in-chains by adding
-direct weak links `c1(j) → c2(k)` to the existing DFS link graph (for each ALS, each
-ordered pair of candidates (j, k), c1 ∈ buddies_per_cand[j], c2 ∈ buddies_per_cand[k]).
-This correctly models the semantic: "if c1 is ON with digit j, the ALS is locked on j,
-eliminating k from all cells that see all ALS k-cells."
-
-However, the approach causes exponential DFS blowup because:
-- ALS links are all weak, so they multiply fanout at every weak step
-- The DFS explores all combinations before the chain length limit (20) cuts it off
-- A single test case timed out at 60 seconds (vs ~5s without ALS links)
-
-**Root cause:** Java's tabling approach is BFS/forward-propagation: each cell-candidate
-pair is visited at most once per table-filling pass. Our DFS cannot bound the search the
-same way. To implement this correctly, we need to extend `tabling.py`'s `fillTables()`
-with `fillTablesWithAls()` and then route grouped-NL results through the tabling
-infrastructure (as Java does in `doGetNiceLoops()`).
-
-**Status:** Deferred. The helper functions `_build_gnl_links_with_als()` and
-`_has_als_link()` were written and are present in `chains.py` but not called. The right
-fix is implementing `TablingSolver.fillTablesWithAls()` in `tabling.py`.
+**History:** An earlier DFS-based approach (adding ALS weak links to the chain graph)
+caused exponential blowup. The correct fix was the BFS/tabling approach, matching Java's
+`TablingSolver.fillTablesWithAls()`. A separate bug — house strong links being added to
+`on_table` instead of `off_table` in `_fill_tables()` — was the root cause of all 44
+failures. See "House strong link fix" in session history below.
 
 ### Franken/Mutant fish (0 failures — all passing ✅)
 
@@ -102,12 +88,15 @@ and eliminations.
 
 ---
 
-## Known xfails (5 entries)
+## Known xfails (6 entries)
 
-| Lines | Reason |
-|-------|--------|
-| 1445, 1453, 1454, 1455, 1459 | ALS-XY-Chain: needs bidirectional RC traversal or chain length >6, which Java's default settings can't find either. Confirmed fails in Java HoDoKu v2.2.0. |
-| 724 | Finned Franken Jellyfish: requires cross-type siamese (basic+finned in one pass). Java's `/bsa` also fails to find the step. |
+| Lines | Reason | Java status |
+|-------|--------|-------------|
+| 1445, 1453, 1454, 1455, 1459 | ALS-XY-Chain (0903): needs bidirectional RC traversal or chain length >6, which Java's default `allStepsAlsChainForwardOnly=true` / `getAllStepsAlsChainLength=6` can't find. | Also fails ("No step found!") |
+| 724 | Finned Franken Jellyfish (0342): requires cross-type siamese (basic+finned fish sharing a base, detected in a single pass with `fishType=UNDEFINED`). Our code runs basic and finned fish searches separately, so the two fish never enter `_apply_siamese()` together. | Passes (unified fish search) |
+
+**Note:** Java has one additional failure we don't: `0711:59` (Grouped AIC) — Java finds
+variant 7 instead of expected variant 9. Our code finds the correct variant.
 
 ---
 
@@ -142,10 +131,28 @@ if end_mask & chain_occupied:
 
 Tests fixed: line 1280 (Grouped DNL-2), line 1321 (Grouped AIC-2).
 
-### ALS-in-chains investigation (unsuccessful)
+### House strong link fix (fixed all 44 ALS-in-tabling failures)
 
-See "ALS nodes in grouped chains" above. The DFS approach is not viable; the tabling
-approach is required.
+In `_fill_tables()` (tabling.py), the house strong link — when exactly 2 cells have a
+candidate in a house, deleting from one forces the other ON — was incorrectly added to
+`on_entry` (on_table) instead of `off_entry` (off_table).
+
+Java reference: `TablingSolver.java` line 1862:
+`offTable[i * 10 + cand].addEntry(tmpSet.get(0), cand, true)`
+
+Our code had: `on_entry.add_entry_simple(peer, cand, True)` — WRONG.
+Fixed to: `off_entry.add_entry_simple(peer, cand, True)` — CORRECT.
+
+The on_table version created contradictory entries ("setting cand in cell i also sets cand
+in peer" — impossible since they share a house), corrupting table expansion and causing
+wrong chain reconstruction.
+
+### ALS-in-chains investigation (historical — superseded by house strong link fix)
+
+Before the house strong link fix was found, we attempted a DFS approach: adding ALS weak
+links directly to the chain graph. This caused exponential blowup and was abandoned. The
+actual root cause was the table corruption from the wrong-table bug above — once fixed,
+the existing tabling infrastructure (including `fillTablesWithAls()`) worked correctly.
 
 ### Mutant fish performance fix (C accelerator)
 
