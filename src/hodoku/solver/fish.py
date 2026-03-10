@@ -390,6 +390,11 @@ class FishSolver:
             return self._find_finned_fish(sol_type, sashimi=True)
         if sol_type in _GENERALIZED_INFO:
             steps = self._find_generalized_fish_all(sol_type)
+            # NOTE: Java calls Collections.sort(steps) here using
+            # SolutionStep.compareTo().  We rely on iteration order matching
+            # instead.  If a parity divergence traces to generalized fish
+            # step selection, add a sort here (see getCandidateString() sort
+            # side-effect documented in chains.py _elim_sort_key).
             return steps[0] if steps else None
         return None
 

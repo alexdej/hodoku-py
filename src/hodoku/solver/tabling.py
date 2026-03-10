@@ -2191,11 +2191,15 @@ def _compare_candidates_sorted(o1: SolutionStep, o2: SolutionStep) -> int:
 def _get_index_summe(candidates: list) -> int:
     """Weighted sum of candidate indices, matching Java's getIndexSumme().
 
+    Java's getCandidateString() sorts candidatesToDelete by (value, index) via
+    Collections.sort before compareTo/getIndexSumme is ever called.  So the
+    weighted sum is computed over the *sorted* list, not insertion order.
+
     Uses increasing offset: first candidate weight=1, next=81, then=161, etc.
     """
     total = 0
     offset = 1
-    for c in candidates:
+    for c in sorted(candidates, key=lambda c: (c.value, c.index)):
         total += c.index * offset + c.value
         offset += 80
     return total
@@ -2263,10 +2267,12 @@ def _fc_sort_cmp(o1: SolutionStep, o2: SolutionStep) -> int:
 def _compare_candidates_to_delete(o1: SolutionStep, o2: SolutionStep) -> int:
     """Compare candidates element-by-element using index*10+value.
 
-    Mirrors Java SolutionStep.compareCandidatesToDelete().
+    Mirrors Java SolutionStep.compareCandidatesToDelete().  In Java, the
+    candidatesToDelete lists are already sorted by (value, index) due to the
+    getCandidateString() side effect, so we sort before comparing.
     """
-    c1s = o1.candidates_to_delete
-    c2s = o2.candidates_to_delete
+    c1s = sorted(o1.candidates_to_delete, key=lambda c: (c.value, c.index))
+    c2s = sorted(o2.candidates_to_delete, key=lambda c: (c.value, c.index))
     if len(c1s) != len(c2s):
         return len(c2s) - len(c1s)
     for c1, c2 in zip(c1s, c2s):

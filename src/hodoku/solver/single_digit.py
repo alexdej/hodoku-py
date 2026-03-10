@@ -84,9 +84,13 @@ class SingleDigitSolver:
             return self._find_empty_rectangle()
         if sol_type == SolutionType.DUAL_TWO_STRING_KITE:
             steps = self._find_dual_two_string_kites()
+            # NOTE: Java calls Collections.sort(steps) here.  We rely on
+            # iteration order matching.  If a parity divergence traces here,
+            # add a sort (see getCandidateString() side-effect in chains.py).
             return steps[0] if steps else None
         if sol_type == SolutionType.DUAL_EMPTY_RECTANGLE:
             steps = self._find_dual_empty_rectangles()
+            # NOTE: Java calls Collections.sort(steps) here.  See above.
             return steps[0] if steps else None
         return None
 
