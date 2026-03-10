@@ -63,11 +63,9 @@ def parse_junit(xml_path: Path) -> tuple[dict, list[dict]]:
     """
     tree = ET.parse(xml_path)
     root = tree.getroot()
-    suites = root.findall("testsuite") if root.tag == "testsuites" else [root]
 
     cases = []
-    for suite in suites:
-        for tc in suite.findall("testcase"):
+    for tc in root.findall(".//testcase"):
             raw_name = tc.get("name", "")
             # Strip pytest wrapper: test_foo[...] -> ...
             if raw_name.endswith("]") and "[" in raw_name:
@@ -112,15 +110,16 @@ def parse_junit(xml_path: Path) -> tuple[dict, list[dict]]:
 
 
 def badge_color(pct: float) -> str:
+    # Hex codes — anybadge accepts these reliably across versions
     if pct >= 99:
-        return "brightgreen"
+        return "#4c1"      # bright green
     if pct >= 95:
-        return "green"
+        return "#97ca00"   # green
     if pct >= 85:
-        return "yellow"
+        return "#dfb317"   # yellow
     if pct >= 70:
-        return "orange"
-    return "red"
+        return "#fe7d37"   # orange
+    return "#e05d44"       # red
 
 
 def generate_badge(label: str, value: str, color: str, path: Path) -> None:

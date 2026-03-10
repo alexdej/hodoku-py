@@ -1,4 +1,4 @@
-name: Parity (nightly)
+name: Nightly
 
 on:
   schedule:
