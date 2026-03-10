@@ -55,6 +55,7 @@ def test_matches_hodoku(
 
     record_property("hodoku_level", hodoku_result.level.value)
     record_property("hodoku_score", str(hodoku_result.score))
+    record_property("hodoku_level_name", hodoku_result.level.name)
 
     solver = SudokuSolver()
 
@@ -79,6 +80,8 @@ def test_matches_hodoku(
 
     record_property("ours_steps", str(len(ours)))
     record_property("hodoku_steps", str(len(theirs)))
+    record_property("ours_score", str(our_result.score))
+    record_property("ours_level", our_result.level.name)
 
     match = paths_match(ours, theirs)
     if not match:
@@ -98,4 +101,15 @@ def test_matches_hodoku(
         f"  puzzle: {entry.puzzle}\n"
         f"  ours ({len(ours)} steps) vs hodoku ({len(theirs)} steps)\n"
         f"{divergence}"
+    )
+
+    assert our_result.score == hodoku_result.score, (
+        f"{section_info}"
+        f"  puzzle: {entry.puzzle}\n"
+        f"  score: ours={our_result.score} hodoku={hodoku_result.score}"
+    )
+    assert our_result.level == hodoku_result.level, (
+        f"{section_info}"
+        f"  puzzle: {entry.puzzle}\n"
+        f"  level: ours={our_result.level.name} hodoku={hodoku_result.level.name}"
     )

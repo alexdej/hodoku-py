@@ -24,6 +24,7 @@ class SolveResult:
     level: DifficultyType = DifficultyType.INCOMPLETE
     score: int = 0
     solved: bool = False
+    solution: str = ""  # 81-char grid after all steps applied
 
 
 _PLACEMENT_TYPES: frozenset[SolutionType] = frozenset({
@@ -84,6 +85,7 @@ class SudokuSolver:
         result.solved = grid.is_solved()
         result.score = total_score
         result.level = max_level if result.solved else DifficultyType.INCOMPLETE
+        result.solution = grid.get_sudoku_string()
         return result
 
     def _find_next_step(self, finder: SudokuStepFinder) -> SolutionStep | None:

@@ -89,12 +89,15 @@ def parse_junit(xml_path: Path) -> tuple[dict, list[dict]]:
                 summary = ""
 
             puzzle = ""
+            score = ""
             for prop in tc.findall("properties/property"):
-                if prop.get("name") == "puzzle":
+                pname = prop.get("name")
+                if pname == "puzzle":
                     puzzle = prop.get("value", "")
-                    break
+                elif pname == "hodoku_score":
+                    score = prop.get("value", "")
 
-            cases.append({"name": name, "status": status, "message": message, "summary": summary, "puzzle": puzzle})
+            cases.append({"name": name, "status": status, "message": message, "summary": summary, "puzzle": puzzle, "score": score})
 
     n_failures = sum(1 for c in cases if c["status"] == "failed")
     n_skipped = sum(1 for c in cases if c["status"] == "skipped")
@@ -145,7 +148,7 @@ _COMMON_CSS = """
     table { border-collapse: collapse; width: 100%; }
     th, td { border: 1px solid #ccc; padding: 0.45em 0.9em; text-align: right; vertical-align: top; }
     th:first-child, td:first-child { text-align: left; }
-    th:last-child, td:last-child { text-align: center; }
+    th:last-child, td:last-child { text-align: left; }
     th { background: #f4f4f4; }
     tr:nth-child(even) { background: #fafafa; }
     .footer { font-size: 0.8em; color: #666; margin-top: 1em; }
@@ -239,10 +242,14 @@ def generate_dataset_html(name: str, stats: dict, cases: list, now: str) -> str:
         else:
             td_msg = '<td class="message"></td>'
 
+        score = case.get("score", "")
+        td_score = f'<td class="score">{html.escape(score)}</td>'
+
         rows_html += (
             f'\n        <tr data-status="{status}" data-name="{html.escape(case["name"].lower(), quote=True)}">'
             f'<td><span class="badge {badge_class}">{badge_label}</span></td>'
             f'{td_name}'
+            f'{td_score}'
             f'{td_msg}'
             f"</tr>"
         )
@@ -256,7 +263,8 @@ def generate_dataset_html(name: str, stats: dict, cases: list, now: str) -> str:
   <style>{_COMMON_CSS}
     th:first-child, td:first-child {{ text-align: center; width: 4em; }}
     th:nth-child(2), td:nth-child(2) {{ text-align: left; font-family: monospace; font-size: 0.85em; }}
-    th:nth-child(3), td:nth-child(3) {{ text-align: left; font-size: 0.85em; color: #555; max-width: 400px; white-space: nowrap; }}
+    th:nth-child(3), td:nth-child(3) {{ text-align: right; font-family: monospace; font-size: 0.85em; color: #555; width: 5em; }}
+    th:nth-child(4), td:nth-child(4) {{ text-align: left; font-size: 0.85em; color: #555; max-width: 400px; white-space: nowrap; }}
     .msg-short {{ display: inline-block; max-width: 360px; overflow: hidden; white-space: nowrap; vertical-align: middle; }}
     th:last-child, td:last-child {{ text-align: left; }}
     .controls {{ display: flex; gap: 0.6em; align-items: center; margin: 1em 0; flex-wrap: wrap; }}
@@ -304,7 +312,7 @@ def generate_dataset_html(name: str, stats: dict, cases: list, now: str) -> str:
   </div>
   <table>
     <thead>
-      <tr><th>Status</th><th>Test</th><th>Message</th></tr>
+      <tr><th>Status</th><th>Test</th><th>Score</th><th>Message</th></tr>
     </thead>
     <tbody id="tbody">{rows_html}
     </tbody>
