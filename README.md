@@ -3,7 +3,7 @@
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)
 ![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![CI](https://github.com/alexdej/hodoku-py/actions/workflows/ci.yml/badge.svg)
-![Nightly](https://github.com/alexdej/hodoku-py/actions/workflows/nightly.yml/badge.svg)
+![Nightly](https://github.com/alexdej/hodoku-py/actions/workflows/parity-nightly.yml/badge.svg)
 ![Parity](https://alexdej.github.io/hodoku-py/badges/exemplars-1.0.svg)
 
 A pure Python port of [HoDoKu](https://hodoku.sourceforge.net/) — Sudoku solver, hint engine, and difficulty rater minus the GUI.
