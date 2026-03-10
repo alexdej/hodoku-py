@@ -336,12 +336,15 @@ def _build_nl_links(grid: Grid) -> list[list[tuple[int, bool]]]:
 def _elim_sort_key(step: SolutionStep) -> int:
     """Weighted index sum used by HoDoKu to order steps with equal elim count.
 
-    Java formula — iterates candidatesToDelete in insertion order (NOT sorted):
-        sum += cand.index * offset + cand.value;  offset starts at 1, +=80 each step
+    Java's getCandidateString() sorts candidatesToDelete by (value, index) via
+    Collections.sort before compareTo/getIndexSumme is ever called.  So the
+    weighted sum is computed over the *sorted* list, not insertion order.
+
+    Formula: sum += cand.index * offset + cand.value;  offset starts at 1, +=80
     """
     total = 0
     offset = 1
-    for c in step.candidates_to_delete:
+    for c in sorted(step.candidates_to_delete, key=lambda c: (c.value, c.index)):
         total += c.index * offset + c.value
         offset += 80
     return total
