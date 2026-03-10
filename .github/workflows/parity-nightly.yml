@@ -3,16 +3,22 @@ name: Parity (nightly)
 on:
   schedule:
     - cron: "0 6 * * *"  # daily at 06:00 UTC
+  workflow_dispatch:
 
 jobs:
   parity:
     name: ${{ matrix.puzzle-file }}
     runs-on: ubuntu-latest
+    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
         puzzle-file:
           - exemplars-1.0
+          - qqwing_simple
+          - qqwing_easy
+          - qqwing_intermediate
+          - qqwing_expert
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -33,3 +39,33 @@ jobs:
         with:
           name: parity-${{ matrix.puzzle-file }}
           path: parity-results.xml
+
+  report:
+    name: Generate report
+    runs-on: ubuntu-latest
+    needs: parity
+    if: always()
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install anybadge
+
+      - name: Download all parity results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: parity-*
+          path: parity-results/
+
+      - name: Generate report
+        run: python scripts/generate_parity_report.py --results-dir parity-results/ --output-dir site/
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: site/
+          keep_files: false

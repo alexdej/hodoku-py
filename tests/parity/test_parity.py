@@ -12,12 +12,13 @@ Run (requires Java and --puzzle-file):
 
 from __future__ import annotations
 
+import json
 import sys
 
 import pytest
 
 from hodoku.solver.solver import SudokuSolver
-from tests.compare import first_divergence, hodoku_steps, our_steps, paths_match
+from tests.compare import first_divergence, hodoku_steps, our_steps, paths_match, steps_match
 from tests.parity.conftest import PuzzleEntry, HodokuResults, _load_puzzle_file, _resolve_puzzle_path
 
 pytestmark = [pytest.mark.parity, pytest.mark.java]
@@ -41,13 +42,19 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 def test_matches_hodoku(
     entry: PuzzleEntry,
     hodoku_parity_results: HodokuResults,
+    record_property,
 ) -> None:
     """Our solver's solution path must match HoDoKu's step-for-step."""
+    record_property("puzzle", entry.puzzle)
+    record_property("section", entry.section or "")
     hodoku_result = hodoku_parity_results.get(entry.puzzle)
     if hodoku_result is None:
         pytest.skip("HoDoKu produced no result")
     if not hodoku_result.solved:
         pytest.skip("HoDoKu could not solve this puzzle")
+
+    record_property("hodoku_level", hodoku_result.level.value)
+    record_property("hodoku_score", str(hodoku_result.score))
 
     solver = SudokuSolver()
 
@@ -70,9 +77,23 @@ def test_matches_hodoku(
     ours = our_steps(our_result)
     theirs = hodoku_steps(hodoku_result)
 
+    record_property("ours_steps", str(len(ours)))
+    record_property("hodoku_steps", str(len(theirs)))
+
+    match = paths_match(ours, theirs)
+    if not match:
+        for i, (o, t) in enumerate(zip(ours, theirs)):
+            if not steps_match(o, t):
+                record_property("divergence", json.dumps({
+                    "step": i + 1,
+                    "ours":   {"type": o.type.value if o.type else None, "elims": list(o.eliminations), "placements": list(o.placements)},
+                    "hodoku": {"type": t.type.value if t.type else None, "elims": list(t.eliminations), "placements": list(t.placements)},
+                }))
+                break
+
     section_info = f"  section: {entry.section}\n" if entry.section else ""
     divergence = first_divergence(ours, theirs)
-    assert paths_match(ours, theirs), (
+    assert match, (
         f"{section_info}"
         f"  puzzle: {entry.puzzle}\n"
         f"  ours ({len(ours)} steps) vs hodoku ({len(theirs)} steps)\n"
