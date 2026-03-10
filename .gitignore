@@ -71,3 +71,6 @@ hodoku/*
 .claude/
 CLAUDE.local.md
 
+# Docker
+.docker
+
