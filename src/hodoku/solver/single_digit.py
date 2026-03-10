@@ -373,10 +373,14 @@ class SingleDigitSolver:
 
         Row-mode: scan rows; linked ends share the same column.
         Col-mode: scan cols; linked ends share the same row.
+
+        Java calls findSkyscraper(rows, onlyOne=true) first for ALL candidates,
+        then findSkyscraper(cols, onlyOne=true). So the outer loop is lines-mode,
+        inner loop is candidate digit.
         """
         grid = self.grid
-        for cand in range(1, 10):
-            for lines in (True, False):
+        for lines in (True, False):
+            for cand in range(1, 10):
                 c_start, c_end = (0, 9) if lines else (9, 18)
                 pairs = self._collect_pairs(c_start, c_end, cand)
                 n = len(pairs)
