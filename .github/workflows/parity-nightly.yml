@@ -15,6 +15,7 @@ jobs:
       matrix:
         puzzle-file:
           - exemplars-1.0
+          - top1465
           - qqwing_simple
           - qqwing_easy
           - qqwing_intermediate
