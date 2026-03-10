@@ -2082,17 +2082,21 @@ def _tabling_sort_cmp(o1: SolutionStep, o2: SolutionStep) -> int:
     if chain_diff != 0:
         return chain_diff
 
-    # Values comparison
-    if o1.values != o2.values:
+    # Values comparison — Java uses isEqualInteger (set equality)
+    if not _same_integers(o1.values, o2.values):
         return sum(o1.values) - sum(o2.values)
 
-    # Indices comparison
-    if o1.indices != o2.indices:
+    # Indices comparison — Java uses isEqualInteger (set equality)
+    if not _same_integers(o1.indices, o2.indices):
+        # Java: indices.size() - o.indices.size() (ascending)
         if len(o1.indices) != len(o2.indices):
-            return len(o2.indices) - len(o1.indices)
-        return sum(o1.indices) - sum(o2.indices)
+            return len(o1.indices) - len(o2.indices)
+        # Java: sum2 - sum1 (descending)
+        return sum(o2.indices) - sum(o1.indices)
 
-    return 0
+    # Final tiebreaker: type comparison
+    # Java: return type.compare(o.getType()) which uses step config index
+    return _compare_types(o1.type, o2.type)
 
 
 def _is_single(t: SolutionType) -> bool:
@@ -2115,14 +2119,53 @@ def _is_equivalent(o1: SolutionStep, o2: SolutionStep) -> bool:
         return False
     if o1.candidates_to_delete:
         return _same_candidates(o1.candidates_to_delete, o2.candidates_to_delete)
-    return o1.indices == o2.indices
+    # Java uses isEqualInteger which is set equality (order-independent)
+    return _same_integers(o1.indices, o2.indices)
 
 
 def _same_candidates(a: list, b: list) -> bool:
-    """Check if two candidate lists have the same (index, value) pairs."""
+    """Check if two candidate lists have the same (index, value) pairs.
+
+    Uses set-equality (order-independent) to match Java's isEqualCandidate().
+    """
     if len(a) != len(b):
         return False
-    return all(c1.index == c2.index and c1.value == c2.value for c1, c2 in zip(a, b))
+    # O(n^2) set comparison matching Java exactly
+    for c1 in a:
+        found = False
+        for c2 in b:
+            if c1.index == c2.index and c1.value == c2.value:
+                found = True
+                break
+        if not found:
+            return False
+    return True
+
+
+def _same_integers(a: list[int], b: list[int]) -> bool:
+    """Set-equality check for integer lists, matching Java's isEqualInteger().
+
+    Order-independent: [1, 2] == [2, 1].
+    """
+    if len(a) != len(b):
+        return False
+    for v in a:
+        if v not in b:
+            return False
+    return True
+
+
+def _compare_types(t1: SolutionType, t2: SolutionType) -> int:
+    """Compare types by solver step config index.
+
+    Mirrors Java SolutionType.compare() for non-fish types.
+    """
+    from hodoku.core.scoring import STEP_CONFIG
+    c1 = STEP_CONFIG.get(t1)
+    c2 = STEP_CONFIG.get(t2)
+    idx1 = c1.index if c1 else 0
+    idx2 = c2.index if c2 else 0
+    return idx1 - idx2
 
 
 def _compare_candidates_sorted(o1: SolutionStep, o2: SolutionStep) -> int:
