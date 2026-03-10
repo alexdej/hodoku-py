@@ -203,3 +203,14 @@ STEP_CONFIG.update({
     _S.DUAL_TWO_STRING_KITE:            STEP_CONFIG[_S.TWO_STRING_KITE],
     _S.DUAL_EMPTY_RECTANGLE:            STEP_CONFIG[_S.EMPTY_RECTANGLE],
 })
+
+# Score thresholds from Options.DEFAULT_DIFFICULTY_LEVELS in Java.
+# If total score exceeds a level's max, the puzzle is bumped to the next level.
+# Mirrors: while (score > level.getMaxScore()) level = nextLevel;
+DIFFICULTY_MAX_SCORE: dict[DifficultyType, int] = {
+    DifficultyType.EASY:    800,
+    DifficultyType.MEDIUM:  1000,
+    DifficultyType.HARD:    1600,
+    DifficultyType.UNFAIR:  1800,
+    DifficultyType.EXTREME: 2**31 - 1,  # Integer.MAX_VALUE
+}

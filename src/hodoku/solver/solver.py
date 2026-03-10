@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from hodoku.core.grid import Grid
-from hodoku.core.scoring import SOLVER_STEPS, STEP_CONFIG
+from hodoku.core.scoring import DIFFICULTY_MAX_SCORE, SOLVER_STEPS, STEP_CONFIG
 from hodoku.core.solution_step import SolutionStep
 from hodoku.core.types import DifficultyType, SolutionType
 from hodoku.solver.step_finder import SudokuStepFinder
@@ -84,7 +84,15 @@ class SudokuSolver:
 
         result.solved = grid.is_solved()
         result.score = total_score
-        result.level = max_level if result.solved else DifficultyType.INCOMPLETE
+        if result.solved:
+            # Mirror Java's post-solve score-threshold bump:
+            # while (score > level.getMaxScore()) level = nextLevel
+            level = max_level
+            while DIFFICULTY_MAX_SCORE.get(level, 2**31 - 1) < total_score:
+                level = DifficultyType(level.value + 1)
+            result.level = level
+        else:
+            result.level = DifficultyType.INCOMPLETE
         result.solution = grid.get_sudoku_string()
         return result
 
