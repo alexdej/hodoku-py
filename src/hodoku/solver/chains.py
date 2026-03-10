@@ -708,7 +708,13 @@ class ChainSolver:
             # (mirrors: stackLevel > 1 && newLinkIsStrong && newLinkCandidate == startCandidate)
             if other_cand == start_cand and len(chain) > 2:
                 if is_rp and len(chain) >= 8:
-                    self._check_rp(chain, start_cand, start_buddies, start_buddies2, deletes_map)
+                    # Java only enters checkRemotePairs when startCandidate
+                    # eliminations exist (m1/m2 != 0).  Mirror that guard so
+                    # the DFS exploration order—and thus which startCandidate
+                    # wins the dedup race—matches HoDoKu's.
+                    elim_rp = start_buddies & BUDDIES[current_cell]
+                    if elim_rp:
+                        self._check_rp(chain, start_cand, start_buddies, start_buddies2, deletes_map)
                 elif not is_rp:
                     elim = start_buddies & BUDDIES[current_cell]
                     if elim:

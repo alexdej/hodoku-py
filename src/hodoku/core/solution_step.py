@@ -98,14 +98,26 @@ class SolutionStep:
         return total
 
     def get_candidate_string(self) -> str:
-        """Canonical string for dedup — sorted candidates_to_delete."""
+        """Canonical string for dedup — sorted candidates_to_delete.
+
+        Includes step type name so that different step types (e.g.
+        FORCING_CHAIN_CONTRADICTION vs FORCING_CHAIN_VERITY) that
+        happen to target the same candidates are kept in separate
+        dedup buckets — matching Java's getCandidateString().
+        """
         parts = sorted((c.index, c.value) for c in self.candidates_to_delete)
-        return ",".join(f"{i}:{v}" for i, v in parts)
+        elim_str = ",".join(f"{i}:{v}" for i, v in parts)
+        return f"{elim_str} ({self.type.name})"
 
     def get_single_candidate_string(self) -> str:
-        """Canonical string for dedup — sorted indices/values (set-cell steps)."""
+        """Canonical string for dedup — sorted indices/values (set-cell steps).
+
+        Includes step type name for the same reason as
+        get_candidate_string() — matching Java's getSingleCandidateString().
+        """
         parts = sorted(zip(self.indices, self.values))
-        return ",".join(f"{i}={v}" for i, v in parts)
+        cells_str = ",".join(f"{i}={v}" for i, v in parts)
+        return f"{self.type.name}: {cells_str}"
 
     def __repr__(self) -> str:
         return f"SolutionStep({self.type.name}, indices={self.indices}, values={self.values})"
