@@ -114,13 +114,12 @@ def parse_junit(xml_path: Path) -> tuple[dict, list[dict]]:
 
 def badge_color(pct: float) -> str:
     # Hex codes — anybadge accepts these reliably across versions
-    if pct >= 99:
+    # Only 100% gets green — any failure should stand out
+    if pct >= 100:
         return "#4c1"      # bright green
     if pct >= 95:
-        return "#97ca00"   # green
-    if pct >= 85:
         return "#dfb317"   # yellow
-    if pct >= 70:
+    if pct >= 90:
         return "#fe7d37"   # orange
     return "#e05d44"       # red
 
