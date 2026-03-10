@@ -48,8 +48,8 @@ _CROSS_TYPE_SIAMESE_XFAIL = frozenset({724})
 _NEEDS_C_ACCEL_LINES = frozenset({763})
 
 def _has_c_accel() -> bool:
-    from hodoku.solver.fish import _accel_find_covers
-    return _accel_find_covers is not None
+    from hodoku.solver.fish import _accel
+    return _accel is not None
 
 
 def _build_grid(entry: ReglibEntry) -> Grid:
@@ -106,9 +106,7 @@ def test_reglib_technique(reglib_entry: ReglibEntry) -> None:
         pytest.xfail("Requires cross-type siamese (basic+finned in one pass)")
 
     if entry.line_num in _NEEDS_C_ACCEL_LINES and not _has_c_accel():
-        pytest.skip("Requires C accelerator (gcc not available); run: "
-                     "gcc -O2 -shared -fPIC -o src/hodoku/solver/_fish_accel.so "
-                     "src/hodoku/solver/_fish_accel.c")
+        pytest.skip("Requires C accelerator; run: pip install -e . (needs a C compiler)")
 
     if not entry.solution_types:
         pytest.fail(f"Technique {entry.technique_code} not yet implemented")

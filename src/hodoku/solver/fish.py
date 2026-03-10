@@ -21,10 +21,7 @@ handled identically to external fins when computing eliminations.
 
 from __future__ import annotations
 
-import ctypes
-import ctypes.util
 from itertools import combinations
-from pathlib import Path
 
 from hodoku.core.grid import (
     ALL_UNIT_MASKS,
@@ -42,88 +39,11 @@ _ALL_CELLS = (1 << 81) - 1
 
 # ---- C accelerator for cover search (optional, huge speedup) ----
 
-_LO_MASK = (1 << 64) - 1
-_HI_SHIFT = 64
-
-
-class _FishResult(ctypes.Structure):
-    _fields_ = [
-        ("indices", ctypes.c_int32 * 7),
-        ("cover_lo", ctypes.c_uint64), ("cover_hi", ctypes.c_uint64),
-        ("cannibal_lo", ctypes.c_uint64), ("cannibal_hi", ctypes.c_uint64),
-        ("fins_lo", ctypes.c_uint64), ("fins_hi", ctypes.c_uint64),
-        ("elim_lo", ctypes.c_uint64), ("elim_hi", ctypes.c_uint64),
-    ]
-
-
-def _try_compile_accel(c_path: Path, so_path: Path) -> bool:
-    """Try to compile the C accelerator.  Returns True on success."""
-    import subprocess
-    import sys
-    # Determine shared library extension and compiler flags
-    if sys.platform == "win32":
-        # Windows: try gcc (MinGW) → produces .dll
-        so_path = c_path.with_suffix(".dll")
-        cmd = ["gcc", "-O2", "-shared", "-o", str(so_path), str(c_path)]
-    elif sys.platform == "darwin":
-        cmd = ["cc", "-O2", "-shared", "-fPIC", "-o", str(so_path), str(c_path)]
-    else:
-        cmd = ["gcc", "-O2", "-shared", "-fPIC", "-o", str(so_path), str(c_path)]
-    try:
-        subprocess.run(cmd, capture_output=True, timeout=30, check=True)
-        return so_path.exists()
-    except (FileNotFoundError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
-        return False
-
-
-def _load_accel():
-    """Try to load the C accelerator; return (lib, find_covers) or (None, None).
-
-    If the .so is missing but the .c source exists, attempts to compile it
-    automatically.  Falls back to pure Python if compilation fails.
-    """
-    import sys
-    c_path = Path(__file__).parent / "_fish_accel.c"
-    suffix = ".dll" if sys.platform == "win32" else ".so"
-    so_path = c_path.with_suffix(suffix)
-
-    if not so_path.exists():
-        if c_path.exists():
-            _try_compile_accel(c_path, so_path)
-        if not so_path.exists():
-            return None, None
-
-    try:
-        lib = ctypes.CDLL(str(so_path))
-
-        # Initialize BUDDIES table in C
-        lib.fish_set_buddy.argtypes = [ctypes.c_int, ctypes.c_uint64, ctypes.c_uint64]
-        lib.fish_set_buddy.restype = None
-        for cell in range(81):
-            b = BUDDIES[cell]
-            lib.fish_set_buddy(cell, b & _LO_MASK, b >> _HI_SHIFT)
-
-        # Set up find_covers signature
-        lib.fish_find_covers.argtypes = [
-            ctypes.POINTER(ctypes.c_uint64),  # ce_lo
-            ctypes.POINTER(ctypes.c_uint64),  # ce_hi
-            ctypes.c_int,                      # num_cover
-            ctypes.c_int,                      # n
-            ctypes.c_uint64, ctypes.c_uint64,  # base_lo, base_hi
-            ctypes.c_uint64, ctypes.c_uint64,  # cand_lo, cand_hi
-            ctypes.c_int,                      # with_fins
-            ctypes.c_int,                      # max_fins
-            ctypes.c_uint64, ctypes.c_uint64,  # endo_lo, endo_hi
-            ctypes.POINTER(_FishResult),       # out
-            ctypes.c_int,                      # max_out
-        ]
-        lib.fish_find_covers.restype = ctypes.c_int
-        return lib, lib.fish_find_covers
-    except OSError:
-        return None, None
-
-
-_accel_lib, _accel_find_covers = _load_accel()
+try:
+    from hodoku.solver import _fish_accel as _accel
+    _accel.set_buddies(list(BUDDIES))
+except ImportError:
+    _accel = None
 
 
 def _fin_buddies(fin_mask: int) -> int:
@@ -807,33 +727,16 @@ class FishSolver:
 
                     num_cover = len(cover_eligible)
 
-                    if _accel_find_covers is not None:
+                    if _accel is not None:
                         # ---- C-accelerated cover search ----
-                        _ce_lo = (ctypes.c_uint64 * num_cover)()
-                        _ce_hi = (ctypes.c_uint64 * num_cover)()
-                        for i in range(num_cover):
-                            m = cover_eligible[i][0]
-                            _ce_lo[i] = m & _LO_MASK
-                            _ce_hi[i] = m >> _HI_SHIFT
-                        _max_out = 10000
-                        _out = (_FishResult * _max_out)()
-                        nfound = _accel_find_covers(
-                            _ce_lo, _ce_hi, num_cover, n,
-                            base_cand & _LO_MASK, base_cand >> _HI_SHIFT,
-                            cand_set & _LO_MASK, cand_set >> _HI_SHIFT,
-                            1 if with_fins else 0, _MAX_FINS,
-                            endo_fins & _LO_MASK, endo_fins >> _HI_SHIFT,
-                            _out, _max_out,
-                        )
-                        for ri in range(min(nfound, _max_out)):
-                            r = _out[ri]
-                            cover_cand = r.cover_lo | (r.cover_hi << _HI_SHIFT)
-                            fins = r.fins_lo | (r.fins_hi << _HI_SHIFT)
-                            elim = r.elim_lo | (r.elim_hi << _HI_SHIFT)
-                            # Classify
+                        ce_masks = [cover_eligible[i][0] for i in range(num_cover)]
+                        for indices, cover_cand, fins, elim in _accel.find_covers(
+                            ce_masks, n, base_cand, cand_set,
+                            1 if with_fins else 0, _MAX_FINS, endo_fins,
+                        ):
                             cover_bits = 0
                             for k in range(n):
-                                cover_bits |= _unit_type_bit(cover_eligible[r.indices[k]][1])
+                                cover_bits |= _unit_type_bit(cover_eligible[indices[k]][1])
                             actual_cat = _classify_fish(base_bits, cover_bits)
                             if actual_cat != fish_cat:
                                 continue
@@ -844,7 +747,7 @@ class FishSolver:
                             results.append(self._make_general_step(
                                 sol_type, cand,
                                 [base_pool[bi] for bi in base_combo],
-                                [cover_eligible[r.indices[k]] for k in range(n)],
+                                [cover_eligible[indices[k]] for k in range(n)],
                                 base_cand, elim, fins, endo_fins,
                             ))
                     else:

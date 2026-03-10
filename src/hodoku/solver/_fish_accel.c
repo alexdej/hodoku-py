@@ -1,17 +1,20 @@
 /*
- * C accelerator for the generalized fish cover-combination search.
+ * Python C extension: generalized fish cover-combination search.
  *
- * 81-bit candidate masks are split into lo (bits 0-63) and hi (bits 64-80),
- * matching Java's M1/M2 representation.
+ * 81-bit candidate masks are split into lo (bits 0-63) and hi (bits 64-80).
  *
- * Compile:
- *   gcc -O2 -shared -fPIC -o _fish_accel.so _fish_accel.c
- *
- * Called from fish.py via ctypes.
+ * Exported Python API:
+ *   set_buddies(buddies: list[int]) -> None
+ *   find_covers(ce_masks, n, base_cand, cand_set, with_fins, max_fins, endo_fins)
+ *       -> list[tuple[tuple[int,...], int, int, int]]
+ *          each entry: (indices, cover_mask, fins_mask, elim_mask)
  */
 
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
 
 /* ---- 81-bit mask helpers ---- */
 
@@ -30,10 +33,6 @@ static inline int m_popcnt(M81 m) {
 /* ---- BUDDIES table (set once from Python) ---- */
 
 static M81 buddies[81];
-
-void fish_set_buddy(int cell, uint64_t lo, uint64_t hi) {
-    buddies[cell] = (M81){lo, hi & HI_MASK};
-}
 
 static M81 fin_buddies(M81 fins) {
     M81 result = {~(uint64_t)0, HI_MASK};
@@ -56,48 +55,35 @@ static M81 fin_buddies(M81 fins) {
 typedef struct {
     int32_t indices[7]; /* picked cover indices, 0-based */
     uint64_t cover_lo, cover_hi;
-    uint64_t cannibal_lo, cannibal_hi;
     uint64_t fins_lo, fins_hi;
     uint64_t elim_lo, elim_hi;
 } FishResult;
 
-/* ---- Main search function ----
- *
- * Returns the number of valid fish combos found.
- * Results are written into `out` (up to max_out entries).
- */
-int fish_find_covers(
-    const uint64_t *ce_lo,      /* cover-eligible masks (lo halves) */
-    const uint64_t *ce_hi,      /* cover-eligible masks (hi halves) */
-    int num_cover,              /* number of eligible cover units    */
-    int n,                      /* fish size (choose n)              */
-    uint64_t base_lo,           /* base candidate mask               */
-    uint64_t base_hi,
-    uint64_t cand_lo,           /* full candidate set for this digit */
-    uint64_t cand_hi,
-    int with_fins,
-    int max_fins,
-    uint64_t endo_lo,           /* endo fin mask (cells in >1 base unit) */
-    uint64_t endo_hi,
-    FishResult *out,
-    int max_out
+/* ---- Main search function ---- */
+
+static int fish_find_covers(
+    const uint64_t *ce_lo, const uint64_t *ce_hi,
+    int num_cover, int n,
+    uint64_t base_lo, uint64_t base_hi,
+    uint64_t cand_lo, uint64_t cand_hi,
+    int with_fins, int max_fins,
+    uint64_t endo_lo, uint64_t endo_hi,
+    FishResult *out, int max_out
 ) {
     M81 base = {base_lo, base_hi & HI_MASK};
     M81 cand = {cand_lo, cand_hi & HI_MASK};
     M81 endo = {endo_lo, endo_hi & HI_MASK};
     int count = 0;
 
-    /* DFS stack (level 0 = sentinel, levels 1..n = active) */
-    M81 cc[8] = {{0,0}};  /* cover_cand  */
-    M81 cn[8] = {{0,0}};  /* cannibalistic */
-    int ni[8] = {0};       /* next index   */
-    int pi[8] = {0};       /* picked index */
+    M81 cc[8] = {{0,0}};
+    M81 cn[8] = {{0,0}};
+    int ni[8] = {0};
+    int pi[8] = {0};
 
     int level = 1;
     ni[1] = 0;
 
     for (;;) {
-        /* Backtrack if not enough remaining units */
         while (ni[level] > num_cover - (n - level + 1)) {
             if (--level == 0) goto done;
         }
@@ -114,7 +100,6 @@ int fish_find_covers(
             new_cannibal = m_or(new_cannibal, overlap);
 
         if (level < n) {
-            /* Pruning: if fully covered already, no fins possible */
             if (with_fins && m_zero(m_andnot(base, new_cand)))
                 continue;
             cc[level] = new_cand;
@@ -126,8 +111,6 @@ int fish_find_covers(
 
         /* --- Leaf: complete combination --- */
         M81 fins = m_andnot(base, new_cand);
-
-        /* Combine external fins with endo fins (Java: finsM1 |= endoFinSetM1) */
         M81 all_fins = m_or(fins, endo);
 
         if (!with_fins) {
@@ -140,8 +123,7 @@ int fish_find_covers(
             if (count < max_out) {
                 FishResult *r = &out[count];
                 for (int k = 1; k <= n; k++) r->indices[k-1] = pi[k];
-                r->cover_lo = new_cand.lo;   r->cover_hi = new_cand.hi;
-                r->cannibal_lo = new_cannibal.lo; r->cannibal_hi = new_cannibal.hi;
+                r->cover_lo = new_cand.lo; r->cover_hi = new_cand.hi;
                 r->fins_lo = 0; r->fins_hi = 0;
                 r->elim_lo = elim.lo; r->elim_hi = elim.hi;
             }
@@ -159,8 +141,7 @@ int fish_find_covers(
             if (count < max_out) {
                 FishResult *r = &out[count];
                 for (int k = 1; k <= n; k++) r->indices[k-1] = pi[k];
-                r->cover_lo = new_cand.lo;   r->cover_hi = new_cand.hi;
-                r->cannibal_lo = new_cannibal.lo; r->cannibal_hi = new_cannibal.hi;
+                r->cover_lo = new_cand.lo; r->cover_hi = new_cand.hi;
                 r->fins_lo = fins.lo; r->fins_hi = fins.hi;
                 r->elim_lo = elim.lo; r->elim_hi = elim.hi;
             }
@@ -169,4 +150,182 @@ int fish_find_covers(
     }
 done:
     return count;
+}
+
+/* ---- Python interface ---- */
+
+/* Cached Python objects for 81-bit <-> lo/hi conversion */
+static PyObject *_py_lo_mask = NULL;  /* (1 << 64) - 1 */
+static PyObject *_py_64 = NULL;       /* 64 */
+
+static int pylong_to_m81(PyObject *obj, M81 *out) {
+    PyObject *lo_obj = PyNumber_And(obj, _py_lo_mask);
+    if (!lo_obj) return -1;
+    out->lo = PyLong_AsUnsignedLongLong(lo_obj);
+    Py_DECREF(lo_obj);
+    if (out->lo == (uint64_t)-1 && PyErr_Occurred()) return -1;
+
+    PyObject *hi_obj = PyNumber_Rshift(obj, _py_64);
+    if (!hi_obj) return -1;
+    unsigned long long hi = PyLong_AsUnsignedLongLong(hi_obj);
+    Py_DECREF(hi_obj);
+    if (hi == (unsigned long long)-1 && PyErr_Occurred()) return -1;
+    out->hi = (uint64_t)hi & HI_MASK;
+    return 0;
+}
+
+static PyObject *m81_to_pylong(M81 m) {
+    PyObject *hi_int = PyLong_FromUnsignedLongLong(m.hi);
+    if (!hi_int) return NULL;
+    PyObject *shifted = PyNumber_Lshift(hi_int, _py_64);
+    Py_DECREF(hi_int);
+    if (!shifted) return NULL;
+    PyObject *lo_int = PyLong_FromUnsignedLongLong(m.lo);
+    if (!lo_int) { Py_DECREF(shifted); return NULL; }
+    PyObject *result = PyNumber_Or(shifted, lo_int);
+    Py_DECREF(shifted);
+    Py_DECREF(lo_int);
+    return result;
+}
+
+/* set_buddies(buddies: list[int]) -> None */
+static PyObject *py_set_buddies(PyObject *self, PyObject *arg) {
+    if (!PyList_Check(arg) || PyList_GET_SIZE(arg) != 81) {
+        PyErr_SetString(PyExc_ValueError, "expected list of 81 ints");
+        return NULL;
+    }
+    for (int i = 0; i < 81; i++) {
+        if (pylong_to_m81(PyList_GET_ITEM(arg, i), &buddies[i]) < 0)
+            return NULL;
+    }
+    Py_RETURN_NONE;
+}
+
+/*
+ * find_covers(ce_masks, n, base_cand, cand_set, with_fins, max_fins, endo_fins)
+ *   -> list of (indices_tuple, cover_mask, fins_mask, elim_mask)
+ */
+static PyObject *py_find_covers(PyObject *self, PyObject *args) {
+    PyObject *ce_list;
+    int n, with_fins, max_fins;
+    PyObject *base_obj, *cand_obj, *endo_obj;
+
+    if (!PyArg_ParseTuple(args, "O!iOOiiO",
+            &PyList_Type, &ce_list,
+            &n,
+            &base_obj, &cand_obj,
+            &with_fins, &max_fins,
+            &endo_obj))
+        return NULL;
+
+    Py_ssize_t num_cover = PyList_GET_SIZE(ce_list);
+    if (num_cover == 0)
+        return PyList_New(0);
+
+    uint64_t *ce_lo = malloc(num_cover * sizeof(uint64_t));
+    uint64_t *ce_hi = malloc(num_cover * sizeof(uint64_t));
+    if (!ce_lo || !ce_hi) { free(ce_lo); free(ce_hi); return PyErr_NoMemory(); }
+
+    for (Py_ssize_t i = 0; i < num_cover; i++) {
+        M81 m;
+        if (pylong_to_m81(PyList_GET_ITEM(ce_list, i), &m) < 0) {
+            free(ce_lo); free(ce_hi);
+            return NULL;
+        }
+        ce_lo[i] = m.lo;
+        ce_hi[i] = m.hi;
+    }
+
+    M81 base, cand, endo;
+    if (pylong_to_m81(base_obj, &base) < 0 ||
+        pylong_to_m81(cand_obj, &cand) < 0 ||
+        pylong_to_m81(endo_obj, &endo) < 0) {
+        free(ce_lo); free(ce_hi);
+        return NULL;
+    }
+
+    int max_out = 10000;
+    FishResult *out = malloc(max_out * sizeof(FishResult));
+    if (!out) { free(ce_lo); free(ce_hi); return PyErr_NoMemory(); }
+
+    int nfound = fish_find_covers(
+        ce_lo, ce_hi, (int)num_cover, n,
+        base.lo, base.hi,
+        cand.lo, cand.hi,
+        with_fins, max_fins,
+        endo.lo, endo.hi,
+        out, max_out
+    );
+    free(ce_lo);
+    free(ce_hi);
+
+    int nresults = nfound < max_out ? nfound : max_out;
+    PyObject *result_list = PyList_New(nresults);
+    if (!result_list) { free(out); return NULL; }
+
+    for (int i = 0; i < nresults; i++) {
+        FishResult *r = &out[i];
+
+        PyObject *indices = PyTuple_New(n);
+        if (!indices) goto error;
+        for (int k = 0; k < n; k++) {
+            PyObject *idx = PyLong_FromLong(r->indices[k]);
+            if (!idx) { Py_DECREF(indices); goto error; }
+            PyTuple_SET_ITEM(indices, k, idx);
+        }
+
+        PyObject *cover = m81_to_pylong((M81){r->cover_lo, r->cover_hi});
+        PyObject *fins  = m81_to_pylong((M81){r->fins_lo,  r->fins_hi});
+        PyObject *elim  = m81_to_pylong((M81){r->elim_lo,  r->elim_hi});
+        if (!cover || !fins || !elim) {
+            Py_DECREF(indices); Py_XDECREF(cover); Py_XDECREF(fins); Py_XDECREF(elim);
+            goto error;
+        }
+
+        PyObject *entry = PyTuple_Pack(4, indices, cover, fins, elim);
+        Py_DECREF(indices); Py_DECREF(cover); Py_DECREF(fins); Py_DECREF(elim);
+        if (!entry) goto error;
+        PyList_SET_ITEM(result_list, i, entry);
+    }
+
+    free(out);
+    return result_list;
+
+error:
+    free(out);
+    Py_DECREF(result_list);
+    return NULL;
+}
+
+static PyMethodDef FishAccelMethods[] = {
+    {"set_buddies", py_set_buddies, METH_O,
+     "set_buddies(buddies) -> None\n"
+     "Initialize the 81-cell buddy table from a list of 81 ints (81-bit CellSets)."},
+    {"find_covers", py_find_covers, METH_VARARGS,
+     "find_covers(ce_masks, n, base_cand, cand_set, with_fins, max_fins, endo_fins)\n"
+     "-> list of (indices, cover_mask, fins_mask, elim_mask) tuples"},
+    {NULL, NULL, 0, NULL}
+};
+
+static PyModuleDef FishAccelModule = {
+    PyModuleDef_HEAD_INIT, "_fish_accel", NULL, -1, FishAccelMethods
+};
+
+PyMODINIT_FUNC PyInit__fish_accel(void) {
+    _py_64 = PyLong_FromLong(64);
+    if (!_py_64) return NULL;
+
+    PyObject *one = PyLong_FromLong(1);
+    if (!one) return NULL;
+    PyObject *shifted = PyNumber_Lshift(one, _py_64);
+    Py_DECREF(one);
+    if (!shifted) return NULL;
+    one = PyLong_FromLong(1);
+    if (!one) { Py_DECREF(shifted); return NULL; }
+    _py_lo_mask = PyNumber_Subtract(shifted, one);
+    Py_DECREF(shifted);
+    Py_DECREF(one);
+    if (!_py_lo_mask) return NULL;
+
+    return PyModule_Create(&FishAccelModule);
 }
