@@ -17,6 +17,7 @@ packages = ["src/hodoku"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+junit_family = "legacy"
 markers = [
     "unit: fast unit tests (no solver, no Java)",
     "java: requires hodoku.jar and Java (skipped automatically if unavailable)",
