@@ -90,14 +90,17 @@ def parse_junit(xml_path: Path) -> tuple[dict, list[dict]]:
 
             puzzle = ""
             score = ""
+            level = ""
             for prop in tc.findall("properties/property"):
                 pname = prop.get("name")
                 if pname == "puzzle":
                     puzzle = prop.get("value", "")
                 elif pname == "hodoku_score":
                     score = prop.get("value", "")
+                elif pname == "hodoku_level_name":
+                    level = prop.get("value", "")
 
-            cases.append({"name": name, "status": status, "message": message, "summary": summary, "puzzle": puzzle, "score": score})
+            cases.append({"name": name, "status": status, "message": message, "summary": summary, "puzzle": puzzle, "score": score, "level": level})
 
     n_failures = sum(1 for c in cases if c["status"] == "failed")
     n_skipped = sum(1 for c in cases if c["status"] == "skipped")
@@ -242,12 +245,25 @@ def generate_dataset_html(name: str, stats: dict, cases: list, now: str) -> str:
             td_msg = '<td class="message"></td>'
 
         score = case.get("score", "")
+        level_name = case.get("level", "")
+        level_color = {
+            "EASY":       "#2a7a2a",
+            "MEDIUM":     "#80c040",
+            "HARD":       "#c8a000",
+            "UNFAIR":     "#e06820",
+            "EXTREME":    "#d02020",
+            "INCOMPLETE": "#888888",
+        }.get(level_name, "#888888")
+        td_level = f'<td class="level"><span style="color:{level_color};font-weight:500">{html.escape(level_name)}</span></td>' if level_name else '<td class="level"></td>'
         td_score = f'<td class="score">{html.escape(score)}</td>'
 
+        row_num = len(rows_html.split('<tr')) - 1  # 1-based order index
         rows_html += (
-            f'\n        <tr data-status="{status}" data-name="{html.escape(case["name"].lower(), quote=True)}">'
+            f'\n        <tr data-status="{status}" data-name="{html.escape(case["name"].lower(), quote=True)}" data-order="{row_num}">'
+            f'<td class="order">{row_num}</td>'
             f'<td><span class="badge {badge_class}">{badge_label}</span></td>'
             f'{td_name}'
+            f'{td_level}'
             f'{td_score}'
             f'{td_msg}'
             f"</tr>"
@@ -260,10 +276,16 @@ def generate_dataset_html(name: str, stats: dict, cases: list, now: str) -> str:
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>hodoku-py parity — {html.escape(name)}</title>
   <style>{_COMMON_CSS}
-    th:first-child, td:first-child {{ text-align: center; width: 4em; }}
-    th:nth-child(2), td:nth-child(2) {{ text-align: left; font-family: monospace; font-size: 0.85em; }}
-    th:nth-child(3), td:nth-child(3) {{ text-align: right; font-family: monospace; font-size: 0.85em; color: #555; width: 5em; }}
-    th:nth-child(4), td:nth-child(4) {{ text-align: left; font-size: 0.85em; color: #555; max-width: 400px; white-space: nowrap; }}
+    th[data-col] {{ cursor: pointer; user-select: none; }}
+    th[data-col]:hover {{ background: #e8e8e8; }}
+    th[data-col].sort-asc::after {{ content: " ▲"; font-size: 0.75em; }}
+    th[data-col].sort-desc::after {{ content: " ▼"; font-size: 0.75em; }}
+    th:nth-child(1), td:nth-child(1) {{ text-align: right; font-size: 0.8em; color: #aaa; width: 2.5em; }}
+    th:nth-child(2), td:nth-child(2) {{ text-align: center; width: 4em; }}
+    th:nth-child(3), td:nth-child(3) {{ text-align: left; font-family: monospace; font-size: 0.85em; }}
+    th:nth-child(4), td:nth-child(4) {{ text-align: left; font-family: monospace; font-size: 0.85em; white-space: nowrap; }}
+    th:nth-child(5), td:nth-child(5) {{ text-align: right; font-family: monospace; font-size: 0.85em; width: 4.5em; }}
+    th:nth-child(6), td:nth-child(6) {{ text-align: left; font-size: 0.85em; color: #555; max-width: 400px; white-space: nowrap; }}
     .msg-short {{ display: inline-block; max-width: 360px; overflow: hidden; white-space: nowrap; vertical-align: middle; }}
     th:last-child, td:last-child {{ text-align: left; }}
     .controls {{ display: flex; gap: 0.6em; align-items: center; margin: 1em 0; flex-wrap: wrap; }}
@@ -311,7 +333,14 @@ def generate_dataset_html(name: str, stats: dict, cases: list, now: str) -> str:
   </div>
   <table>
     <thead>
-      <tr><th>Status</th><th>Test</th><th>Score</th><th>Message</th></tr>
+      <tr>
+        <th data-col="0">#</th>
+        <th data-col="1">Status</th>
+        <th data-col="2">Test</th>
+        <th data-col="3">Level</th>
+        <th data-col="4">Score</th>
+        <th>Message</th>
+      </tr>
     </thead>
     <tbody id="tbody">{rows_html}
     </tbody>
@@ -409,6 +438,38 @@ def generate_dataset_html(name: str, stats: dict, cases: list, now: str) -> str:
 
     document.addEventListener('mouseout', e => {{
       if (e.target.closest('.puzzle-string code')) tooltip.style.display = 'none';
+    }});
+
+    // Sortable columns
+    const tbody = document.getElementById('tbody');
+    let sortCol = -1, sortAsc = true;
+    const levelOrder = {{'EASY': 1, 'MEDIUM': 2, 'HARD': 3, 'UNFAIR': 4, 'EXTREME': 5, 'INCOMPLETE': 0}};
+
+    function cellKey(row, col) {{
+      const td = row.querySelectorAll('td')[col];
+      if (!td) return '';
+      if (col === 0) return parseInt(row.dataset.order) || 0;
+      if (col === 1) return row.dataset.status || '';
+      if (col === 3) return levelOrder[td.textContent.trim()] ?? 0;
+      if (col === 4) return parseInt(td.textContent.trim()) || 0;
+      return td.textContent.trim().toLowerCase();
+    }}
+
+    document.querySelectorAll('th[data-col]').forEach(th => {{
+      th.addEventListener('click', () => {{
+        const col = parseInt(th.dataset.col);
+        if (sortCol === col) {{ sortAsc = !sortAsc; }}
+        else {{ sortCol = col; sortAsc = true; }}
+        document.querySelectorAll('th[data-col]').forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
+        th.classList.add(sortAsc ? 'sort-asc' : 'sort-desc');
+        const sorted = [...rows].sort((a, b) => {{
+          const ka = cellKey(a, col), kb = cellKey(b, col);
+          if (ka < kb) return sortAsc ? -1 : 1;
+          if (ka > kb) return sortAsc ? 1 : -1;
+          return 0;
+        }});
+        sorted.forEach(r => tbody.appendChild(r));
+      }});
     }});
 
     document.addEventListener('mousemove', e => {{
