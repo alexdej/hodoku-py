@@ -530,28 +530,31 @@ class TablingSolver:
         """Find all naked and hidden singles in the grid.
 
         Returns list of (cell, digit, is_naked_single).
+
+        Uses the grid's ns_queue/hs_queue to match Java's queue-based
+        discovery order (SimpleSolver.findAllNakedSingles / findAllHiddenSingles).
+        The order matters because singles are applied sequentially and each
+        setCell modifies the grid for subsequent singles.
         """
         results: list[tuple[int, int, bool]] = []
-        # Naked singles
-        for cell in range(81):
-            if grid.values[cell] != 0:
-                continue
-            mask = grid.candidates[cell]
-            if mask and not (mask & (mask - 1)):
-                digit = mask.bit_length()
+
+        # Naked singles — iterate nsQueue
+        for cell, digit in grid.ns_queue:
+            if grid.values[cell] == 0:
                 results.append((cell, digit, True))
-        # Hidden singles
-        seen: set[tuple[int, int]] = set()
-        for unit_idx in range(27):
-            for digit in range(1, 10):
-                if grid.free[unit_idx][digit] != 1:
-                    continue
-                for cell in ALL_UNITS[unit_idx]:
-                    if grid.values[cell] == 0 and (grid.candidates[cell] & DIGIT_MASKS[digit]):
-                        if (cell, digit) not in seen:
-                            seen.add((cell, digit))
-                            results.append((cell, digit, False))
+
+        # Hidden singles — iterate hsQueue
+        # Java uses singleFound[] to avoid duplicate cells
+        single_found: set[int] = set()
+        for cell, digit in grid.hs_queue:
+            if grid.values[cell] == 0 and cell not in single_found:
+                # Verify the constraint still has free==1 for this digit
+                for constr in CELL_CONSTRAINTS[cell]:
+                    if grid.free[constr][digit] == 1:
+                        results.append((cell, digit, False))
+                        single_found.add(cell)
                         break
+
         return results
 
     # ------------------------------------------------------------------

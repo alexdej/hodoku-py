@@ -104,8 +104,15 @@ class SolutionStep:
         FORCING_CHAIN_CONTRADICTION vs FORCING_CHAIN_VERITY) that
         happen to target the same candidates are kept in separate
         dedup buckets — matching Java's getCandidateString().
+
+        IMPORTANT: sorts candidates_to_delete IN PLACE, matching Java's
+        Collections.sort(candidatesToDelete).  Java's Candidate.compareTo
+        sorts by value first, then by index.  The in-place sort is
+        required so that getIndexSumme() in compareTo() sees the same
+        ordering as Java.
         """
-        parts = sorted((c.index, c.value) for c in self.candidates_to_delete)
+        self.candidates_to_delete.sort(key=lambda c: (c.value, c.index))
+        parts = [(c.index, c.value) for c in self.candidates_to_delete]
         elim_str = ",".join(f"{i}:{v}" for i, v in parts)
         return f"{elim_str} ({self.type.name})"
 
