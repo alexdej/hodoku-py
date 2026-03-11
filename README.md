@@ -35,8 +35,9 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for full details and known gaps.
 ## Requirements
 
 - Python 3.11+
-- C compiler (optional) — auto-detected at runtime for Mutant fish acceleration. Without it, large Mutant Fish take a long time to find. The Mutant Whale (size 6) tests are automatically skipped unless
-the c optimization is detected; everything else works in pure Python.
+- C compiler (optional) — builds the fish accelerator for large Mutant fish patterns.
+  Without it everything works in pure Python, but the Mutant Whale (size 6) reglib test is skipped.
+  To build: `python setup.py build_ext --inplace` (add `--compiler=mingw32` on Windows with MinGW).
 
 ## Installation
 
@@ -101,7 +102,7 @@ src/hodoku/
 │   ├── solver.py        # SudokuSolver — solve loop and difficulty rating
 │   ├── simple.py        # Singles, locked candidates, subsets
 │   ├── fish.py          # Basic, finned/sashimi, Franken, Mutant fish
-│   ├── _fish_accel.c    # C accelerator for Mutant fish (auto-compiled)
+│   ├── _fish_accel.c    # optional C accelerator for Mutant fish
 │   ├── single_digit.py  # Skyscraper, 2-String Kite, Empty Rectangle
 │   ├── uniqueness.py    # Uniqueness Tests 1–6, BUG+1
 │   ├── wings.py         # XY-Wing, XYZ-Wing, W-Wing

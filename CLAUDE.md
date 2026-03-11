@@ -90,8 +90,9 @@ Not yet implemented:
 - **No threading**: skip SudokuSolverFactory/SudokuGeneratorFactory pools for now
 - **Chain encoding**: use same 32-bit bit-packed int format as Java (required for TablingSolver)
 - **Static tables**: `Sudoku2`'s lookup arrays → module-level constants in `core/grid.py`
-- **C accelerator**: `solver/_fish_accel.c` for Mutant fish cover search (auto-compiled via
-  ctypes on first import; pure Python fallback if no C compiler available)
+- **C accelerator**: `solver/_fish_accel.c` for Mutant fish cover search — a proper Python
+  C extension built via `setup.py build_ext --inplace` (add `--compiler=mingw32` on Windows
+  with MinGW). Pure Python fallback if not compiled.
 
 ## A note on porting approach and trade-offs
 
