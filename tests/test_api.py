@@ -110,10 +110,58 @@ class TestRate:
         assert rating.level == solve.level
 
     def test_incomplete_for_unsolvable(self):
-        # 17 givens but contradictory — no solution possible
-        bad = "1" * 81  # all 1s is invalid
+        # Structurally valid (no house duplicates) but logically unsolvable:
+        # row 0 has 1-8 so cell r0c8 must be 9, but box 3 already has 9 at r1c8.
+        bad = "123456780000000009000000000000000000000000000000000000000000000000000000000000000"
         result = Solver().rate(bad)
         assert result.level == DifficultyType.INCOMPLETE
+
+
+# ---------------------------------------------------------------------------
+# find_all_steps()
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# _validate_puzzle() — called by every public method
+# ---------------------------------------------------------------------------
+
+# Shared bad inputs and the substring that should appear in the error message.
+_VALIDATION_CASES = [
+    ("too_short",   "530070000" * 8,                         "81 cells"),
+    ("too_long",    "530070000" * 9 + "0",                   "81 cells"),
+    ("invalid_char","530070000600195000098000060800060003"
+                    "400803001700020006060000280000419005"
+                    "00008007X",                             "Invalid character"),
+    ("dup_in_row",  "110000000" + "0" * 72,                  "Duplicate"),
+    ("dup_in_col",  "1" + "0" * 8 + "1" + "0" * 71,         "Duplicate"),
+    ("dup_in_box",  "100" "010" "000" + "0" * 72,            "Duplicate"),
+]
+
+
+class TestValidation:
+    @pytest.mark.parametrize("name,puzzle,msg_fragment", _VALIDATION_CASES,
+                             ids=[c[0] for c in _VALIDATION_CASES])
+    def test_solve_raises(self, name, puzzle, msg_fragment):
+        with pytest.raises(ValueError, match=msg_fragment):
+            Solver().solve(puzzle)
+
+    @pytest.mark.parametrize("name,puzzle,msg_fragment", _VALIDATION_CASES,
+                             ids=[c[0] for c in _VALIDATION_CASES])
+    def test_get_hint_raises(self, name, puzzle, msg_fragment):
+        with pytest.raises(ValueError, match=msg_fragment):
+            Solver().get_hint(puzzle)
+
+    @pytest.mark.parametrize("name,puzzle,msg_fragment", _VALIDATION_CASES,
+                             ids=[c[0] for c in _VALIDATION_CASES])
+    def test_rate_raises(self, name, puzzle, msg_fragment):
+        with pytest.raises(ValueError, match=msg_fragment):
+            Solver().rate(puzzle)
+
+    @pytest.mark.parametrize("name,puzzle,msg_fragment", _VALIDATION_CASES,
+                             ids=[c[0] for c in _VALIDATION_CASES])
+    def test_find_all_steps_raises(self, name, puzzle, msg_fragment):
+        with pytest.raises(ValueError, match=msg_fragment):
+            Solver().find_all_steps(puzzle)
 
 
 # ---------------------------------------------------------------------------
