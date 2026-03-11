@@ -49,8 +49,8 @@ Each layer depends only on those above it in the list.
 | # | Layer | File | Status | Notes |
 |---|-------|------|--------|-------|
 | 20 | Generator | `generator/generator.py` | ⬜ | Backtracking solver, uniqueness validation, puzzle generation |
-| 21 | Public API | `api.py` | ⬜ | `Solver`, `Generator` classes matching the documented public surface |
-| 22 | Bad input tests | `tests/test_bad_inputs.py` | ⬜ | See note below |
+| 21 | Public API | `api.py` | ✅ | `Solver` class fully wired; `Generator` stubs remain until row 20 done |
+| 22 | Bad input tests | `tests/test_bad_inputs.py` | ✅ | 41 tests: format errors, house duplicates, edge cases — all passing |
 
 ### Bad input / edge-case tests (row 22)
 

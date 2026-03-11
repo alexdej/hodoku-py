@@ -73,7 +73,7 @@ Done (all validated against HoDoKu — 1106/1112 reglib tests passing, 6 xfail):
 - solver/templates.py — Template Set, Template Delete
 - solver/brute_force.py — last-resort guess
 - solver/solver.py — full solve loop, scoring, level computation
-- api.py — public Solver API (stub — methods defined but raise NotImplementedError)
+- api.py — public Solver API (fully wired; input validation via _validate_puzzle; Generator stubs remain)
 
 Not yet implemented:
 - generator/ — puzzle generation
