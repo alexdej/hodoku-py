@@ -1,0 +1,80 @@
+# Top1465 Parity Failures — 58 of 1465 (96% pass rate)
+
+## BUCKET 1: FORCING_NET type mismatch (41 failures)
+# Same step count, same eliminations, but ours says VERITY where hodoku says CONTRADICTION or vice versa.
+# This is a single root cause: how we classify forcing net results.
+
+p29: ours=FORCING_NET_VERITY hodoku=FORCING_NET_CONTRADICTION
+p47: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p129: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p131: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p134: ours=FORCING_NET_VERITY hodoku=FORCING_NET_CONTRADICTION
+p199: ours=FORCING_NET_VERITY hodoku=FORCING_NET_CONTRADICTION
+p203: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p223: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p228: ours=FORCING_NET_VERITY hodoku=FORCING_NET_CONTRADICTION
+p296: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p319: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p322: ours=FORCING_NET_VERITY hodoku=FORCING_NET_CONTRADICTION
+p328: ours=FORCING_NET_VERITY hodoku=FORCING_NET_CONTRADICTION
+p331: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p355: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p359: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p366: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p378: ours=FORCING_NET_VERITY hodoku=FORCING_NET_CONTRADICTION
+p402: ours=FORCING_NET_VERITY hodoku=FORCING_NET_CONTRADICTION
+p411: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p438: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p459: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p478: ours=FORCING_NET_VERITY hodoku=FORCING_NET_CONTRADICTION
+p494: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p519: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p549: ours=FORCING_NET_VERITY hodoku=FORCING_NET_CONTRADICTION
+p553: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p575: ours=FORCING_NET_VERITY hodoku=FORCING_NET_CONTRADICTION
+p593: ours=FORCING_NET_VERITY hodoku=FORCING_NET_CONTRADICTION
+p699: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p744: ours=FORCING_NET_VERITY hodoku=FORCING_NET_CONTRADICTION
+p842: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p846: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p880: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p883: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p887: ours=FORCING_NET_VERITY hodoku=FORCING_NET_CONTRADICTION
+p936: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p949: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p959: ours=FORCING_NET_CONTRADICTION hodoku=FORCING_NET_VERITY
+p973: ours=FORCING_NET_VERITY hodoku=FORCING_NET_CONTRADICTION
+p1162: ours=FORCING_NET_VERITY hodoku=FORCING_NET_CONTRADICTION
+
+## BUCKET 2: Placement divergence (15 failures)
+# At the divergence point, both solvers place a value but in different cells.
+# Likely a different technique ordering or elimination ordering issue.
+
+p1: ours=108 vs hodoku=94 steps, diverge@step 15
+p2: ours=106 vs hodoku=90 steps, diverge@step 16
+p76: ours=92 vs hodoku=79 steps, diverge@step 6
+p88: ours=92 vs hodoku=76 steps, diverge@step 16
+p112: ours=93 vs hodoku=85 steps, diverge@step 11
+p124: ours=101 vs hodoku=88 steps, diverge@step 5
+p180: ours=93 vs hodoku=89 steps, diverge@step 16
+p181: ours=101 vs hodoku=94 steps, diverge@step 9
+p186: ours=70 vs hodoku=84 steps, diverge@step 4
+p200: ours=90 vs hodoku=80 steps, diverge@step 15
+p204: ours=93 vs hodoku=105 steps, diverge@step 14
+p231: ours=87 vs hodoku=101 steps, diverge@step 13
+p245: ours=87 vs hodoku=102 steps, diverge@step 7
+p273: ours=79 vs hodoku=103 steps, diverge@step 17
+p279: ours=97 vs hodoku=79 steps, diverge@step 13
+p361: ours=92 vs hodoku=93 steps, diverge@step 8
+
+## BUCKET 3: Elimination divergence (2 failures)
+# Same technique type but different eliminations found.
+
+p361: AssertionError:   puzzle: 1..6......7.3.9.4...4.7...2.1.7....9.37...2..5.......6.....59....2.3....78..1....
+    ours (92 steps) vs hodoku (93 steps)
+    first divergence at step 8:
+      elims: ours=(
+p1276: AssertionError:   puzzle: .71..9.....5.1..3..2.....5.....2..8..1.4.86.3..6.....1.4......59...........2.3.7.
+    ours (86 steps) vs hodoku (86 steps)
+    first divergence at step 21:
+      elims: ours=

@@ -1,0 +1,870 @@
+=== test_matches_hodoku[top1465::p1] ===
+AssertionError:   puzzle: 7.8...3.....2.1...5.........4.....263...8.......1...9..9.6....4....7.5...........
+    ours (108 steps) vs hodoku (94 steps)
+    first divergence at step 15:
+      placements: ours=((1, 2),) hodoku=((42, 1),)
+      indices: ours=(1,) hodoku=(42,)
+      values: ours=(2,) hodoku=(1,)
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 7.8...3.....2.1...5.........4.....263...8.......1...9..9.6....4....7.5...........
+E       ours (108 steps) vs hodoku (94 steps)
+E       first divergence at step 15:
+E         placements: ours=((1, 2),) hodoku=((42, 1),)
+E         indices: ours=(1,) hodoku=(42,)
+E         values: ours=(2,) hodoku=(1,)
+E   assert False
+
+=== test_matches_hodoku[top1465::p2] ===
+AssertionError:   puzzle: 7.8...3.....6.1...5.........4.....263...8.......1...9..9.2....4....7.5...........
+    ours (106 steps) vs hodoku (90 steps)
+    first divergence at step 16:
+      placements: ours=((1, 6),) hodoku=((42, 1),)
+      indices: ours=(1,) hodoku=(42,)
+      values: ours=(6,) hodoku=(1,)
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 7.8...3.....6.1...5.........4.....263...8.......1...9..9.2....4....7.5...........
+E       ours (106 steps) vs hodoku (90 steps)
+E       first divergence at step 16:
+E         placements: ours=((1, 6),) hodoku=((42, 1),)
+E         indices: ours=(1,) hodoku=(42,)
+E         values: ours=(6,) hodoku=(1,)
+E   assert False
+
+=== test_matches_hodoku[top1465::p29] ===
+AssertionError:   puzzle: 2...4.5...1.....3............6...8.2.7.3.9......1.....4...5.6.....7...9...8......
+    ours (103 steps) vs hodoku (103 steps)
+    first divergence at step 23:
+      type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 2...4.5...1.....3............6...8.2.7.3.9......1.....4...5.6.....7...9...8......
+E       ours (103 steps) vs hodoku (103 steps)
+E       first divergence at step 23:
+E         type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+E   assert False
+
+=== test_matches_hodoku[top1465::p47] ===
+AssertionError:   puzzle: .6..5.4.3.2.1...........7..4.3...6..7..5........2.........8..5.6...4...........1.
+    ours (101 steps) vs hodoku (101 steps)
+    first divergence at step 27:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: .6..5.4.3.2.1...........7..4.3...6..7..5........2.........8..5.6...4...........1.
+E       ours (101 steps) vs hodoku (101 steps)
+E       first divergence at step 27:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p76] ===
+AssertionError:   puzzle: 7.....4...2..7..8...3..8..9...5..3...6..2..9...1..7..6...3..9...3..4..6...9..1..5
+    ours (92 steps) vs hodoku (79 steps)
+    first divergence at step 6:
+      placements: ours=((1, 9),) hodoku=((39, 1),)
+      indices: ours=(1,) hodoku=(39,)
+      values: ours=(9,) hodoku=(1,)
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 7.....4...2..7..8...3..8..9...5..3...6..2..9...1..7..6...3..9...3..4..6...9..1..5
+E       ours (92 steps) vs hodoku (79 steps)
+E       first divergence at step 6:
+E         placements: ours=((1, 9),) hodoku=((39, 1),)
+E         indices: ours=(1,) hodoku=(39,)
+E         values: ours=(9,) hodoku=(1,)
+E   assert False
+
+=== test_matches_hodoku[top1465::p88] ===
+AssertionError:   puzzle: ...3..5...5..1..3...7..4..12.....4...6..9......1..6..28..7..2...9..8..5...5..9..7
+    ours (92 steps) vs hodoku (76 steps)
+    first divergence at step 16:
+      placements: ours=((0, 9),) hodoku=((41, 5),)
+      indices: ours=(0,) hodoku=(41,)
+      values: ours=(9,) hodoku=(5,)
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: ...3..5...5..1..3...7..4..12.....4...6..9......1..6..28..7..2...9..8..5...5..9..7
+E       ours (92 steps) vs hodoku (76 steps)
+E       first divergence at step 16:
+E         placements: ours=((0, 9),) hodoku=((41, 5),)
+E         indices: ours=(0,) hodoku=(41,)
+E         values: ours=(9,) hodoku=(5,)
+E   assert False
+
+=== test_matches_hodoku[top1465::p112] ===
+AssertionError:   puzzle: 5..2..3......8..9...2..4..66..1..9...1.....4...7..3..87..3..4...9..7..2...5..6..9
+    ours (93 steps) vs hodoku (85 steps)
+    first divergence at step 11:
+      placements: ours=((1, 6),) hodoku=((40, 5),)
+      indices: ours=(1,) hodoku=(40,)
+      values: ours=(6,) hodoku=(5,)
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 5..2..3......8..9...2..4..66..1..9...1.....4...7..3..87..3..4...9..7..2...5..6..9
+E       ours (93 steps) vs hodoku (85 steps)
+E       first divergence at step 11:
+E         placements: ours=((1, 6),) hodoku=((40, 5),)
+E         indices: ours=(1,) hodoku=(40,)
+E         values: ours=(6,) hodoku=(5,)
+E   assert False
+
+=== test_matches_hodoku[top1465::p124] ===
+AssertionError:   puzzle: 4..6..3...1..2..6...8..7..19..8..5...4..5..1......2..75.....6...3..8..4......9..5
+    ours (101 steps) vs hodoku (88 steps)
+    first divergence at step 5:
+      placements: ours=((1, 2),) hodoku=((42, 9),)
+      indices: ours=(1,) hodoku=(42,)
+      values: ours=(2,) hodoku=(9,)
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 4..6..3...1..2..6...8..7..19..8..5...4..5..1......2..75.....6...3..8..4......9..5
+E       ours (101 steps) vs hodoku (88 steps)
+E       first divergence at step 5:
+E         placements: ours=((1, 2),) hodoku=((42, 9),)
+E         indices: ours=(1,) hodoku=(42,)
+E         values: ours=(2,) hodoku=(9,)
+E   assert False
+
+=== test_matches_hodoku[top1465::p129] ===
+AssertionError:   puzzle: 5..4..8......9..1...2..1..56..3..4...5..7......4.....83..6..7...6.....8...8..2..1
+    ours (122 steps) vs hodoku (122 steps)
+    first divergence at step 6:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 5..4..8......9..1...2..1..56..3..4...5..7......4.....83..6..7...6.....8...8..2..1
+E       ours (122 steps) vs hodoku (122 steps)
+E       first divergence at step 6:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p131] ===
+AssertionError:   puzzle: .1..3..6.8..................63.9....7..8..4......1.5...9.....1.2..7........5..7..
+    ours (112 steps) vs hodoku (99 steps)
+    first divergence at step 20:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: .1..3..6.8..................63.9....7..8..4......1.5...9.....1.2..7........5..7..
+E       ours (112 steps) vs hodoku (99 steps)
+E       first divergence at step 20:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p134] ===
+AssertionError:   puzzle: ...8...3...5...7.....1.........5.9..18.......3..4.......7..2..6....7.5...4.....1.
+    ours (123 steps) vs hodoku (123 steps)
+    first divergence at step 21:
+      type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: ...8...3...5...7.....1.........5.9..18.......3..4.......7..2..6....7.5...4.....1.
+E       ours (123 steps) vs hodoku (123 steps)
+E       first divergence at step 21:
+E         type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+E   assert False
+
+=== test_matches_hodoku[top1465::p180] ===
+AssertionError:   puzzle: 5..7.........3..7...8..5..36..1..4...8..2..9...9..8..1...4..3...6..9..4...2..6..9
+    ours (93 steps) vs hodoku (89 steps)
+    first divergence at step 16:
+      placements: ours=((1, 3),) hodoku=((41, 3),)
+      indices: ours=(1,) hodoku=(41,)
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 5..7.........3..7...8..5..36..1..4...8..2..9...9..8..1...4..3...6..9..4...2..6..9
+E       ours (93 steps) vs hodoku (89 steps)
+E       first divergence at step 16:
+E         placements: ours=((1, 3),) hodoku=((41, 3),)
+E         indices: ours=(1,) hodoku=(41,)
+E   assert False
+
+=== test_matches_hodoku[top1465::p181] ===
+AssertionError:   puzzle: ......8...7..9..1...3..7..51..6......5..2..4...8..9..74.....2...6..1..5......6..3
+    ours (101 steps) vs hodoku (94 steps)
+    first divergence at step 9:
+      placements: ours=((0, 9),) hodoku=((41, 8),)
+      indices: ours=(0,) hodoku=(41,)
+      values: ours=(9,) hodoku=(8,)
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: ......8...7..9..1...3..7..51..6......5..2..4...8..9..74.....2...6..1..5......6..3
+E       ours (101 steps) vs hodoku (94 steps)
+E       first divergence at step 9:
+E         placements: ours=((0, 9),) hodoku=((41, 8),)
+E         indices: ours=(0,) hodoku=(41,)
+E         values: ours=(9,) hodoku=(8,)
+E   assert False
+
+=== test_matches_hodoku[top1465::p186] ===
+AssertionError:   puzzle: 6.....3...5..9..8...2..6..98.....7...7..5..4......1..51..3..5...4..2..6...8..7..2
+    ours (70 steps) vs hodoku (84 steps)
+    first divergence at step 4:
+      placements: ours=((1, 8),) hodoku=((39, 6),)
+      indices: ours=(1,) hodoku=(39,)
+      values: ours=(8,) hodoku=(6,)
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 6.....3...5..9..8...2..6..98.....7...7..5..4......1..51..3..5...4..2..6...8..7..2
+E       ours (70 steps) vs hodoku (84 steps)
+E       first divergence at step 4:
+E         placements: ours=((1, 8),) hodoku=((39, 6),)
+E         indices: ours=(1,) hodoku=(39,)
+E         values: ours=(8,) hodoku=(6,)
+E   assert False
+
+=== test_matches_hodoku[top1465::p199] ===
+AssertionError:   puzzle: 6..1..7......7..8...9..8..37..4..5...3.....2...4..5..81..2..4.........5...6..9...
+    ours (101 steps) vs hodoku (101 steps)
+    first divergence at step 12:
+      type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 6..1..7......7..8...9..8..37..4..5...3.....2...4..5..81..2..4.........5...6..9...
+E       ours (101 steps) vs hodoku (101 steps)
+E       first divergence at step 12:
+E         type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+E   assert False
+
+=== test_matches_hodoku[top1465::p200] ===
+AssertionError:   puzzle: 3..5..1...7.....8...8..4..66..4..9...3..6..5...7..1..48..1..3......2..6...2..9...
+    ours (90 steps) vs hodoku (80 steps)
+    first divergence at step 15:
+      placements: ours=((1, 4),) hodoku=((39, 2),)
+      indices: ours=(1,) hodoku=(39,)
+      values: ours=(4,) hodoku=(2,)
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 3..5..1...7.....8...8..4..66..4..9...3..6..5...7..1..48..1..3......2..6...2..9...
+E       ours (90 steps) vs hodoku (80 steps)
+E       first divergence at step 15:
+E         placements: ours=((1, 4),) hodoku=((39, 2),)
+E         indices: ours=(1,) hodoku=(39,)
+E         values: ours=(4,) hodoku=(2,)
+E   assert False
+
+=== test_matches_hodoku[top1465::p203] ===
+AssertionError:   puzzle: ......94.....9...53....5.7..8.4..1..463...........7.8.8..7.....7......28.5.26....
+    ours (103 steps) vs hodoku (103 steps)
+    first divergence at step 15:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: ......94.....9...53....5.7..8.4..1..463...........7.8.8..7.....7......28.5.26....
+E       ours (103 steps) vs hodoku (103 steps)
+E       first divergence at step 15:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p204] ===
+AssertionError:   puzzle: .......4...2..4..1.7..5..9...3..7....4..6....6..1..8...2....1..85.9...6.....8...3
+    ours (93 steps) vs hodoku (105 steps)
+    first divergence at step 14:
+      placements: ours=((0, 5),) hodoku=((38, 1),)
+      indices: ours=(0,) hodoku=(38,)
+      values: ours=(5,) hodoku=(1,)
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: .......4...2..4..1.7..5..9...3..7....4..6....6..1..8...2....1..85.9...6.....8...3
+E       ours (93 steps) vs hodoku (105 steps)
+E       first divergence at step 14:
+E         placements: ours=((0, 5),) hodoku=((38, 1),)
+E         indices: ours=(0,) hodoku=(38,)
+E         values: ours=(5,) hodoku=(1,)
+E   assert False
+
+=== test_matches_hodoku[top1465::p223] ===
+AssertionError:   puzzle: ....7.94..7..9...53....5.7..874..1..463.8.........7.8.8..7.....7......28.5.268...
+    ours (98 steps) vs hodoku (98 steps)
+    first divergence at step 10:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: ....7.94..7..9...53....5.7..874..1..463.8.........7.8.8..7.....7......28.5.268...
+E       ours (98 steps) vs hodoku (98 steps)
+E       first divergence at step 10:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p228] ===
+AssertionError:   puzzle: 6..9..4...4..5..3...8..6..55..7..3...7..2......2..5..41..6.........3..8...6..2..1
+    ours (109 steps) vs hodoku (109 steps)
+    first divergence at step 20:
+      type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 6..9..4...4..5..3...8..6..55..7..3...7..2......2..5..41..6.........3..8...6..2..1
+E       ours (109 steps) vs hodoku (109 steps)
+E       first divergence at step 20:
+E         type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+E   assert False
+
+=== test_matches_hodoku[top1465::p231] ===
+AssertionError:   puzzle: 9..7..3...5..2..1...7.....93..6..7...6..5..3...2..8..61..4..6...4..6..8...6..3..4
+    ours (87 steps) vs hodoku (101 steps)
+    first divergence at step 13:
+      placements: ours=((1, 2),) hodoku=((41, 7),)
+      indices: ours=(1,) hodoku=(41,)
+      values: ours=(2,) hodoku=(7,)
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 9..7..3...5..2..1...7.....93..6..7...6..5..3...2..8..61..4..6...4..6..8...6..3..4
+E       ours (87 steps) vs hodoku (101 steps)
+E       first divergence at step 13:
+E         placements: ours=((1, 2),) hodoku=((41, 7),)
+E         indices: ours=(1,) hodoku=(41,)
+E         values: ours=(2,) hodoku=(7,)
+E   assert False
+
+=== test_matches_hodoku[top1465::p245] ===
+AssertionError:   puzzle: 9.4..5...25.6..1..31......8.7...9...4..26......147....7.......2...3..8.6.4.....9.
+    ours (87 steps) vs hodoku (102 steps)
+    first divergence at step 7:
+      placements: ours=((1, 6),) hodoku=((43, 8),)
+      indices: ours=(1,) hodoku=(43,)
+      values: ours=(6,) hodoku=(8,)
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 9.4..5...25.6..1..31......8.7...9...4..26......147....7.......2...3..8.6.4.....9.
+E       ours (87 steps) vs hodoku (102 steps)
+E       first divergence at step 7:
+E         placements: ours=((1, 6),) hodoku=((43, 8),)
+E         indices: ours=(1,) hodoku=(43,)
+E         values: ours=(6,) hodoku=(8,)
+E   assert False
+
+=== test_matches_hodoku[top1465::p273] ===
+AssertionError:   puzzle: .6.........3..15...9.8...716....2.3....75...4....9...82.1.....6..6.......8.5...4.
+    ours (79 steps) vs hodoku (103 steps)
+    first divergence at step 17:
+      placements: ours=((2, 8),) hodoku=((42, 2),)
+      indices: ours=(2,) hodoku=(42,)
+      values: ours=(8,) hodoku=(2,)
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: .6.........3..15...9.8...716....2.3....75...4....9...82.1.....6..6.......8.5...4.
+E       ours (79 steps) vs hodoku (103 steps)
+E       first divergence at step 17:
+E         placements: ours=((2, 8),) hodoku=((42, 2),)
+E         indices: ours=(2,) hodoku=(42,)
+E         values: ours=(8,) hodoku=(2,)
+E   assert False
+
+=== test_matches_hodoku[top1465::p279] ===
+AssertionError:   puzzle: 1...5.......2.1.....3.7..6.........962......7.8593.....3..6..8..7....1..5....4.7.
+    ours (97 steps) vs hodoku (79 steps)
+    first divergence at step 13:
+      placements: ours=((1, 4),) hodoku=((40, 4),)
+      indices: ours=(1,) hodoku=(40,)
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 1...5.......2.1.....3.7..6.........962......7.8593.....3..6..8..7....1..5....4.7.
+E       ours (97 steps) vs hodoku (79 steps)
+E       first divergence at step 13:
+E         placements: ours=((1, 4),) hodoku=((40, 4),)
+E         indices: ours=(1,) hodoku=(40,)
+E   assert False
+
+=== test_matches_hodoku[top1465::p296] ===
+AssertionError:   puzzle: 1....67.........32..921......4..58..87......69...6...........5..4.138.........4.3
+    ours (100 steps) vs hodoku (100 steps)
+    first divergence at step 15:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 1....67.........32..921......4..58..87......69...6...........5..4.138.........4.3
+E       ours (100 steps) vs hodoku (100 steps)
+E       first divergence at step 15:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p319] ===
+AssertionError:   puzzle: .4.3..9...7...5.2.8........6.....352..5....9...4...6.....9....8....42.7..9.16....
+    ours (114 steps) vs hodoku (114 steps)
+    first divergence at step 18:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: .4.3..9...7...5.2.8........6.....352..5....9...4...6.....9....8....42.7..9.16....
+E       ours (114 steps) vs hodoku (114 steps)
+E       first divergence at step 18:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p322] ===
+AssertionError:   puzzle: ........5.7..8..3.9...25........9..669..7..5.....1.8.7.8.2.7....61.3....3.....4..
+    ours (110 steps) vs hodoku (108 steps)
+    first divergence at step 8:
+      type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: ........5.7..8..3.9...25........9..669..7..5.....1.8.7.8.2.7....61.3....3.....4..
+E       ours (110 steps) vs hodoku (108 steps)
+E       first divergence at step 8:
+E         type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+E   assert False
+
+=== test_matches_hodoku[top1465::p328] ===
+AssertionError:   puzzle: 1...6......5..31...6...8..97.85...4....4..25......2.......9.3.2..1........3...714
+    ours (97 steps) vs hodoku (97 steps)
+    first divergence at step 18:
+      type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 1...6......5..31...6...8..97.85...4....4..25......2.......9.3.2..1........3...714
+E       ours (97 steps) vs hodoku (97 steps)
+E       first divergence at step 18:
+E         type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+E   assert False
+
+=== test_matches_hodoku[top1465::p331] ===
+AssertionError:   puzzle: .29.46...1..9..3.44..7.....5.......2..8.2..7..4........3..7...17....49....683....
+    ours (101 steps) vs hodoku (101 steps)
+    first divergence at step 17:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: .29.46...1..9..3.44..7.....5.......2..8.2..7..4........3..7...17....49....683....
+E       ours (101 steps) vs hodoku (101 steps)
+E       first divergence at step 17:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p355] ===
+AssertionError:   puzzle: 3...6.1..65.29............881..7.5....43..9....5..2..7...43..9......7..64.....8..
+    ours (84 steps) vs hodoku (80 steps)
+    first divergence at step 10:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 3...6.1..65.29............881..7.5....43..9....5..2..7...43..9......7..64.....8..
+E       ours (84 steps) vs hodoku (80 steps)
+E       first divergence at step 10:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p359] ===
+AssertionError:   puzzle: ...5.36.2.3.69..5..5.7.....7.9..2....1....9...8.9..........63....1....675..37..1.
+    ours (109 steps) vs hodoku (109 steps)
+    first divergence at step 8:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: ...5.36.2.3.69..5..5.7.....7.9..2....1....9...8.9..........63....1....675..37..1.
+E       ours (109 steps) vs hodoku (109 steps)
+E       first divergence at step 8:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p361] ===
+AssertionError:   puzzle: 1..6......7.3.9.4...4.7...2.1.7....9.37...2..5.......6.....59....2.3....78..1....
+    ours (92 steps) vs hodoku (93 steps)
+    first divergence at step 8:
+      elims: ours=() hodoku=((2, 5),)
+      placements: ours=((2, 3),) hodoku=()
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 1..6......7.3.9.4...4.7...2.1.7....9.37...2..5.......6.....59....2.3....78..1....
+E       ours (92 steps) vs hodoku (93 steps)
+E       first divergence at step 8:
+E         elims: ours=() hodoku=((2, 5),)
+E         placements: ours=((2, 3),) hodoku=()
+E   assert False
+
+=== test_matches_hodoku[top1465::p366] ===
+AssertionError:   puzzle: 1....759..7..9......64........8.....63.....4..9.54.3.232......4...9...8....1.4..7
+    ours (96 steps) vs hodoku (96 steps)
+    first divergence at step 10:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 1....759..7..9......64........8.....63.....4..9.54.3.232......4...9...8....1.4..7
+E       ours (96 steps) vs hodoku (96 steps)
+E       first divergence at step 10:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p378] ===
+AssertionError:   puzzle: .3.......8.5...4.19....1.6....93..1......6.2..4.....76....1...27..8.......135....
+    ours (95 steps) vs hodoku (95 steps)
+    first divergence at step 16:
+      type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: .3.......8.5...4.19....1.6....93..1......6.2..4.....76....1...27..8.......135....
+E       ours (95 steps) vs hodoku (95 steps)
+E       first divergence at step 16:
+E         type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+E   assert False
+
+=== test_matches_hodoku[top1465::p402] ===
+AssertionError:   puzzle: ........3.9.6.4.......1.28.....6...173....6...5.4...7...5...7..3.91.....6..97...2
+    ours (101 steps) vs hodoku (101 steps)
+    first divergence at step 12:
+      type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: ........3.9.6.4.......1.28.....6...173....6...5.4...7...5...7..3.91.....6..97...2
+E       ours (101 steps) vs hodoku (101 steps)
+E       first divergence at step 12:
+E         type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+E   assert False
+
+=== test_matches_hodoku[top1465::p411] ===
+AssertionError:   puzzle: ...4..5...7...3.....421..6..3..8.1..8..7....695.3........9....1.6.....2...3..6.84
+    ours (103 steps) vs hodoku (79 steps)
+    first divergence at step 12:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: ...4..5...7...3.....421..6..3..8.1..8..7....695.3........9....1.6.....2...3..6.84
+E       ours (103 steps) vs hodoku (79 steps)
+E       first divergence at step 12:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p438] ===
+AssertionError:   puzzle: ......1........2.568...4.....3..........73...9..6....1..29..5..1...8.7..49.1....6
+    ours (100 steps) vs hodoku (100 steps)
+    first divergence at step 17:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: ......1........2.568...4.....3..........73...9..6....1..29..5..1...8.7..49.1....6
+E       ours (100 steps) vs hodoku (100 steps)
+E       first divergence at step 17:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p459] ===
+AssertionError:   puzzle: .6.....7.9...8...6..3..91....8.95....2.4...6....21.8....5...6..3...4...8.4.....2.
+    ours (108 steps) vs hodoku (108 steps)
+    first divergence at step 25:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: .6.....7.9...8...6..3..91....8.95....2.4...6....21.8....5...6..3...4...8.4.....2.
+E       ours (108 steps) vs hodoku (108 steps)
+E       first divergence at step 25:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p478] ===
+AssertionError:   puzzle: ..3....9.8...21..6.5........6.25.74.....73..55.....2..2....7.8....49.1...9.5.....
+    ours (102 steps) vs hodoku (102 steps)
+    first divergence at step 6:
+      type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: ..3....9.8...21..6.5........6.25.74.....73..55.....2..2....7.8....49.1...9.5.....
+E       ours (102 steps) vs hodoku (102 steps)
+E       first divergence at step 6:
+E         type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+E   assert False
+
+=== test_matches_hodoku[top1465::p494] ===
+AssertionError:   puzzle: 1...9..3...2..3.5.7..8.......3..7...9.........48...6...2..........14..79...7.68..
+    ours (113 steps) vs hodoku (113 steps)
+    first divergence at step 35:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 1...9..3...2..3.5.7..8.......3..7...9.........48...6...2..........14..79...7.68..
+E       ours (113 steps) vs hodoku (113 steps)
+E       first divergence at step 35:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p519] ===
+AssertionError:   puzzle: 4.....7....68....59..72..1....26.....4.5....9.....1....85.....3.....3...7.....8.4
+    ours (107 steps) vs hodoku (107 steps)
+    first divergence at step 21:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 4.....7....68....59..72..1....26.....4.5....9.....1....85.....3.....3...7.....8.4
+E       ours (107 steps) vs hodoku (107 steps)
+E       first divergence at step 21:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p549] ===
+AssertionError:   puzzle: ..43.7.........3......8.2.141.6...9...9.3.5..7....9..8.6.....5.3.....1..5...1...7
+    ours (108 steps) vs hodoku (108 steps)
+    first divergence at step 25:
+      type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: ..43.7.........3......8.2.141.6...9...9.3.5..7....9..8.6.....5.3.....1..5...1...7
+E       ours (108 steps) vs hodoku (108 steps)
+E       first divergence at step 25:
+E         type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+E   assert False
+
+=== test_matches_hodoku[top1465::p553] ===
+AssertionError:   puzzle: ....7...6...3..97...5.62.8.3.....7.1..45.........9..........8..7..8...23..9.4....
+    ours (105 steps) vs hodoku (105 steps)
+    first divergence at step 16:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: ....7...6...3..97...5.62.8.3.....7.1..45.........9..........8..7..8...23..9.4....
+E       ours (105 steps) vs hodoku (105 steps)
+E       first divergence at step 16:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p575] ===
+AssertionError:   puzzle: ....2.68.9..3.........6.3...9...6..7.1....8..3.6..8.2......5...4.2.1.9...8.9...7.
+    ours (100 steps) vs hodoku (100 steps)
+    first divergence at step 26:
+      type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: ....2.68.9..3.........6.3...9...6..7.1....8..3.6..8.2......5...4.2.1.9...8.9...7.
+E       ours (100 steps) vs hodoku (100 steps)
+E       first divergence at step 26:
+E         type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+E   assert False
+
+=== test_matches_hodoku[top1465::p593] ===
+AssertionError:   puzzle: ..6...5....3..4...2...7.4....93...7....46....8....23...7..9..2....5...161........
+    ours (106 steps) vs hodoku (106 steps)
+    first divergence at step 20:
+      type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: ..6...5....3..4...2...7.4....93...7....46....8....23...7..9..2....5...161........
+E       ours (106 steps) vs hodoku (106 steps)
+E       first divergence at step 20:
+E         type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+E   assert False
+
+=== test_matches_hodoku[top1465::p699] ===
+AssertionError:   puzzle: ..3.5.4..7...6.....5.8...6.5....3..4.1..7..8.2..4....7.4...8.5.....4...9..6.1.2..
+    ours (99 steps) vs hodoku (99 steps)
+    first divergence at step 14:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: ..3.5.4..7...6.....5.8...6.5....3..4.1..7..8.2..4....7.4...8.5.....4...9..6.1.2..
+E       ours (99 steps) vs hodoku (99 steps)
+E       first divergence at step 14:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p744] ===
+AssertionError:   puzzle: ....7..9......8..4.42..1.7...4.....88..2.5..95.....7...7.6..13.2..8......6..3....
+    ours (104 steps) vs hodoku (104 steps)
+    first divergence at step 14:
+      type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: ....7..9......8..4.42..1.7...4.....88..2.5..95.....7...7.6..13.2..8......6..3....
+E       ours (104 steps) vs hodoku (104 steps)
+E       first divergence at step 14:
+E         type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+E   assert False
+
+=== test_matches_hodoku[top1465::p842] ===
+AssertionError:   puzzle: ..7..8.6.1...5...8...6.....7...6..35..4..7....9.2......5.4...2..7....3......16.4.
+    ours (106 steps) vs hodoku (106 steps)
+    first divergence at step 20:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: ..7..8.6.1...5...8...6.....7...6..35..4..7....9.2......5.4...2..7....3......16.4.
+E       ours (106 steps) vs hodoku (106 steps)
+E       first divergence at step 20:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p846] ===
+AssertionError:   puzzle: 8.72......4....1.2.5.....9..1...39..4...5.6.8..56............2....37.......8.9..4
+    ours (112 steps) vs hodoku (112 steps)
+    first divergence at step 19:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 8.72......4....1.2.5.....9..1...39..4...5.6.8..56............2....37.......8.9..4
+E       ours (112 steps) vs hodoku (112 steps)
+E       first divergence at step 19:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p880] ===
+AssertionError:   puzzle: 38.5...29..5.4..3.......5...2.4............8.4.9.8.2...7...6......2.....864.9.3..
+    ours (98 steps) vs hodoku (98 steps)
+    first divergence at step 22:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 38.5...29..5.4..3.......5...2.4............8.4.9.8.2...7...6......2.....864.9.3..
+E       ours (98 steps) vs hodoku (98 steps)
+E       first divergence at step 22:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p883] ===
+AssertionError:   puzzle: .69.1.7....1.2...63.....9....5..7....4.....7....9.6..5..3...54..7...3.6.8.6.....2
+    ours (107 steps) vs hodoku (107 steps)
+    first divergence at step 14:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: .69.1.7....1.2...63.....9....5..7....4.....7....9.6..5..3...54..7...3.6.8.6.....2
+E       ours (107 steps) vs hodoku (107 steps)
+E       first divergence at step 14:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p887] ===
+AssertionError:   puzzle: .3.5.......4.3..2....8.6....2..49..66..25.1....1..8.9...3..58.........7.59......4
+    ours (89 steps) vs hodoku (89 steps)
+    first divergence at step 10:
+      type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: .3.5.......4.3..2....8.6....2..49..66..25.1....1..8.9...3..58.........7.59......4
+E       ours (89 steps) vs hodoku (89 steps)
+E       first divergence at step 10:
+E         type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+E   assert False
+
+=== test_matches_hodoku[top1465::p936] ===
+AssertionError:   puzzle: ....62...4.73..........137...9.2......1..68......8..32.8...5..36.....1..79.....5.
+    ours (100 steps) vs hodoku (100 steps)
+    first divergence at step 16:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: ....62...4.73..........137...9.2......1..68......8..32.8...5..36.....1..79.....5.
+E       ours (100 steps) vs hodoku (100 steps)
+E       first divergence at step 16:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p949] ===
+AssertionError:   puzzle: 3...4..6...592...1.8.6.....97.....45......2....6.3..9.2..4.......1..5.....789....
+    ours (102 steps) vs hodoku (102 steps)
+    first divergence at step 11:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 3...4..6...592...1.8.6.....97.....45......2....6.3..9.2..4.......1..5.....789....
+E       ours (102 steps) vs hodoku (102 steps)
+E       first divergence at step 11:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p959] ===
+AssertionError:   puzzle: .......52..7..18...9.....7...2.4......3.28.6.7..1.....6..4.5..32.576..4..........
+    ours (103 steps) vs hodoku (103 steps)
+    first divergence at step 25:
+      type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: .......52..7..18...9.....7...2.4......3.28.6.7..1.....6..4.5..32.576..4..........
+E       ours (103 steps) vs hodoku (103 steps)
+E       first divergence at step 25:
+E         type: ours=SolutionType.FORCING_NET_CONTRADICTION hodoku=SolutionType.FORCING_NET_VERITY
+E   assert False
+
+=== test_matches_hodoku[top1465::p973] ===
+AssertionError:   puzzle: 8.63......4.6....9..5..74..1..7..8............84.1.6..5.......8.....37.4.39..2...
+    ours (103 steps) vs hodoku (103 steps)
+    first divergence at step 14:
+      type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: 8.63......4.6....9..5..74..1..7..8............84.1.6..5.......8.....37.4.39..2...
+E       ours (103 steps) vs hodoku (103 steps)
+E       first divergence at step 14:
+E         type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+E   assert False
+
+=== test_matches_hodoku[top1465::p1162] ===
+AssertionError:   puzzle: ..3.......5..8...7874..5.........796.18.9.......2.......63....24.16........8.43..
+    ours (89 steps) vs hodoku (89 steps)
+    first divergence at step 18:
+      type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: ..3.......5..8...7874..5.........796.18.9.......2.......63....24.16........8.43..
+E       ours (89 steps) vs hodoku (89 steps)
+E       first divergence at step 18:
+E         type: ours=SolutionType.FORCING_NET_VERITY hodoku=SolutionType.FORCING_NET_CONTRADICTION
+E   assert False
+
+=== test_matches_hodoku[top1465::p1276] ===
+AssertionError:   puzzle: .71..9.....5.1..3..2.....5.....2..8..1.4.86.3..6.....1.4......59...........2.3.7.
+    ours (86 steps) vs hodoku (86 steps)
+    first divergence at step 21:
+      elims: ours=((17, 9), (20, 9)) hodoku=((17, 9), (20, 9), (46, 9))
+assert False
+tests/parity/test_parity.py:99: in test_matches_hodoku
+    assert match, (
+E   AssertionError:   puzzle: .71..9.....5.1..3..2.....5.....2..8..1.4.86.3..6.....1.4......59...........2.3.7.
+E       ours (86 steps) vs hodoku (86 steps)
+E       first divergence at step 21:
+E         elims: ours=((17, 9), (20, 9)) hodoku=((17, 9), (20, 9), (46, 9))
+E   assert False
+
