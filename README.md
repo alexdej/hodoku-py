@@ -35,8 +35,8 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for full details and known gaps.
 ## Requirements
 
 - Python 3.11+
-- C compiler (optional) — builds the fish accelerator for large Mutant fish patterns.
-  Without it everything works in pure Python, but the Mutant Whale (size 6) reglib test is skipped.
+- (optional) C build tools (build-essential, xcode, or MSVC) to build a native extension that accelerates the search
+  for certain large Mutant fish patterns. The extension is optional but without it, certain tests in `reglib/` will be skipped.
   To build: `python setup.py build_ext --inplace` (add `--compiler=mingw32` on Windows with MinGW).
 
 ## Installation

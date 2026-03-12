@@ -7,7 +7,7 @@ class OptionalBuildExt(build_ext):
         try:
             super().build_extension(ext)
         except Exception:
-            print("Note: optional C accelerator for Mutant Fish not built (no compiler available); "
+            print("Note: optional native code accelerator for Mutant Fish not built (no build tools available); "
                   "pure Python fallback will be used.")
             ext._optional_build_failed = True
 
