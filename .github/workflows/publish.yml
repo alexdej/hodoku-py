@@ -35,4 +35,4 @@ jobs:
           prerelease: ${{ contains(github.ref_name, 'a') || contains(github.ref_name, 'b') || contains(github.ref_name, 'rc') }}
           append_body: true
           body: |
-            PyPI: ${{ steps.pypi.outputs.release-url }}
+            PyPI: https://pypi.org/project/hodoku-py/${{ github.ref_name }}/
