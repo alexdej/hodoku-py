@@ -58,17 +58,20 @@ Full details in `docs/ROADMAP.md` → "HoDoKu compatibility: elimination orderin
 
 ## Testing approach
 
-- **reglib suite** (`tests/reglib/`): Primary validation. 1112 technique-isolation tests from
+Below is an overview of test suites. Also review the available test markers in pyproject.toml
+
+- **unit tests** (`tests/ -m unit/`): Unit-level validation. First level of validation, fast, low coverage.
+- **reglib suite** (`tests/reglib/`): Full regression suite. 1112 technique-isolation tests from
   HoDoKu's reglib-1.3.txt. Each reconstructs a PM board and checks that `find_all()` returns
-  the expected eliminations. Current: 1106 passed / 0 failed / 6 xfail.
-- **parity suite** (`tests/parity/`): Secondary validation. Runs each test in the given text file 
+  the expected eliminations. Current: 1106 passed / 0 failed / 6 xfail. Second level of validation, thorough coverage but slow.
+- **parity suite** (`tests/parity/`): Compatibility suite. Runs each test in the given text file 
   through our solver and HoDoKu.jar and compares the results in detail. Solution must match precisely
-  step-by-step
-- **exemplar-1.3.txt** (`tests/parity/`): High-priority test from the parity suite. 669 example puzzles
-  that exercise all the solution rules. Must match our output exactly.
-- **IMPORTANT**: both reglib and exemplar-1.3.txt are long-running test suites. Avoid running the whole
-  suite except as necessary to confirm no regressions. Always capture the output for later analysis, and on 
-  subsequent runs, run a subset by name using `-k`.
+  step-by-step. Runs nightly and builds a report. Typically not run locally except to debug.
+- **exemplar-1.3.txt** (`tests/parity/`): The highest priority of the tests in the parity suite. 669 example puzzles
+  that exercise all the solution rules. Must match our output exactly. Large/slow. Runs nightly.
+- **IMPORTANT**: reglib and most of the parity suites are very long-running. Avoid running the whole
+  suite at once except as needed to check for regressions. Use -k to run a subset of test cases.
+  If you have to do a full run, save the output to a file so you don't lose it and have to start over.
 
 
 ## Python environment
@@ -77,11 +80,29 @@ Full details in `docs/ROADMAP.md` → "HoDoKu compatibility: elimination orderin
 - Try to keep use of python commands consistent so that the user has the option to approve each tool once for the whole session. If
   you switch between different python executables the user has to approve each time and that slows us down.
 
-## Jujutsu (jj)
+## Source control
 
-This repo uses jj for version control. Do not use git commands directly.
+- Contributors are expected to commit all changes to a branch and push to origin 
+  (which is a locally hosted bare git repo `hodoku-py.git`).
+- **IMPORTANT**: check `jj status`. If a `jj` repo is intialized, use the `jj` workflow below
+  unless explicitly instructed by the user to use `git`. Otherwise use `git`.
 
-### Key concepts
+```
+# Feature workflow with jj:
+jj new -m "description of work in progress"
+# ... make changes ...
+jj bookmark create my-branch -r @
+jj git push --bookmark my-branch
+
+# Feature workflow with git:
+git checkout -b my-branch
+# ... make changes ...
+git add <files>  # don't forget
+git commit -m "description of work"
+git push -u origin my-branch
+```
+
+### Key `jj` concepts
 - `@` is your current working copy commit, always exists, never "dirty"
 - `@-` is the parent of your working copy
 - There is no staging area -- changes are automatically tracked
@@ -97,7 +118,7 @@ This repo uses jj for version control. Do not use git commands directly.
 - `jj log` to see history
 
 ### Rules
-- Always work on a named bookmark. Do not use `main` unless explicitly asked to do so by the user.
+- Always work on a named bookmark. Do not push to `main` unless explicitly requested to do so by the user.
 - Always run unit tests before committing.
 - Do not push to origin unless asked to by the user (this will depend on context).
 - Run reglib suite before pushing to origin, if pushing to origin.
