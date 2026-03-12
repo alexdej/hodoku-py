@@ -4,6 +4,25 @@ Python port of HoDoKu's solver, hint engine, and generator — no GUI.
 
 ---
 
+## Reference implementation
+
+HoDoKu JAR is checked in at `hodoku/hodoku.jar`. [Source code mirror @ github](https://github.com/alexdej/HoDoKu)
+
+```bash
+# Solve a puzzle, print solution path
+java -Xmx512m -jar hodoku/hodoku.jar /vp /o stdout <puzzle_string>
+
+# Find ALL applicable steps (no solve, richer output)
+java -Xmx512m -jar hodoku/hodoku.jar /bsa /o stdout <puzzle_string>
+
+# Run regression tester
+java -Xmx512m -jar hodoku/hodoku.jar /test tests/reglib/reglib-1.3.txt
+
+# NOTE: file paths cannot start with '/' or they will be parsed as option flags. 
+# Unfortunate legacy of app being developed on windows. Workaround: always use relative paths.
+```
+
+
 ## Module breakdown
 
 ```
@@ -287,7 +306,7 @@ Solver.solve(puzzle_str)
 
 ---
 
-## Build order
+## Implementation strategy
 
 Implement in this sequence — each layer depends only on those above it:
 
@@ -351,3 +370,31 @@ After each subsequent phase, extend the test corpus to include puzzles requiring
 Java `Sudoku2` stores candidates as `short[81]` (9-bit masks per cell), plus `SudokuSet[10]` (per-digit bitsets of which cells have that candidate). **Both are maintained simultaneously.**
 
 The Python port must do the same: `candidates: list[int]` (per cell) and `candidate_sets: list[int]` (per digit, each a CellSet int) — keep them in sync inside `set_cell()` and `del_candidate()`.
+
+### C accelerator (`_fish_accel.c`)
+
+The Mutant fish cover-combination search has a huge search space (up to C(24,6) = 134K
+base combos × cover DFS for Whale). CPython is ~50-100x slower than Java JIT for tight
+bitwise loops, making this intractable in pure Python.
+
+`solver/_fish_accel.c` implements the cover DFS in C, loaded via `ctypes` at import time.
+81-bit candidate masks are split into lo/hi `uint64` halves (matching Java's M1/M2).
+
+When installed from source, the `.c` file *should* be compiled, but is allowed
+to fail with a warning. If the binary is not found at runtime, the code falls back
+to pure python. There is no harm in doing so, other than poor performance on certain
+mutant fish patterns (very rare in the wild, but present in the test suite).
+
+If more hot loops need C acceleration in the future, follow the same pattern:
+self-contained `.c` file, Python fallback.
+
+### Subtle ordering bugs
+
+Many of our hardest-to-fix parity bugs involved ordering of candidates or steps. 
+Pay close attention to the ordering of items returned from collections, and look
+out for java methods that should be stateless but actually change the order of 
+an underlying collection. In several places in the code we explicitly normalize
+collection iteration to match java's, and there are a handful of places where we
+don't but have commented that it's a potential risk. In order to achieve 100%
+parity, internal ordering of every data structure must match.
+

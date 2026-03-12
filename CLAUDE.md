@@ -19,65 +19,9 @@ gen = Generator()
 puzzle = gen.generate(difficulty=DifficultyType.MEDIUM)
 ```
 
-## Reference implementation
+## Context
 
-HoDoKu JAR lives at `hodoku/hodoku.jar`. Java source at `../HoDoKu/`.
-
-```bash
-# Solve a puzzle, print solution path
-java -jar hodoku/hodoku.jar /vp /o stdout <puzzle_string>
-
-# Find ALL applicable steps (no solve, richer output)
-java -jar hodoku/hodoku.jar /bsa /o stdout <puzzle_string>
-
-# Run regression tester (file path must NOT start with / — it's parsed as an option flag)
-cp tests/reglib/reglib-1.3.txt reglib-1.3.txt
-java -jar hodoku/hodoku.jar /test reglib-1.3.txt
-```
-
-Every technique implementation must be validated against HoDoKu output on the same puzzle.
-
-## Project structure
-
-```
-docs/               # ARCHITECTURE.md, ROADMAP.md, specs
-hodoku/             # HoDoKu JAR + shell wrapper
-src/hodoku/
-  core/             # Grid, CellSet, SolutionStep, types, scoring
-  solver/           # SudokuStepFinder, all specialized solvers:
-                    #   simple, single_digit, wings, coloring, fish,
-                    #   uniqueness, chains, tabling, als, misc, brute_force
-                    #   (chain_utils, table_entry — shared helpers)
-  generator/        # SudokuGenerator (stub — not yet implemented)
-  api.py            # public-facing Solver and Generator classes
-tests/
-  reglib/           # Technique-isolation tests from reglib-1.3.txt (primary validation)
-  regression/       # Full solve-path regression tests (exemplars)
-pyproject.toml
-```
-
-## Implementation status
-
-Done (all validated against HoDoKu — 1106/1112 reglib tests passing, 6 xfail):
-- core/ — Grid, CellSet, SolutionStep, types, scoring
-- solver/simple.py — Full House, Naked/Hidden Single, Locked Candidates, Subsets
-- solver/single_digit.py — Skyscraper, 2-String Kite, Empty Rectangle, Dual variants
-- solver/wings.py — XY-Wing, XYZ-Wing, W-Wing
-- solver/coloring.py — Simple Colors, Multi-Colors
-- solver/fish.py — Basic fish, Finned, Sashimi, Franken, Mutant (all sizes through Whale)
-- solver/uniqueness.py — Uniqueness 1-6, Hidden Rectangle, Avoidable Rectangle 1-2, BUG+1
-- solver/chains.py — X-Chain, XY-Chain, Remote Pair, Nice Loops, AIC, Grouped variants
-- solver/tabling.py — Forcing Chains/Nets, Grouped chains with ALS nodes
-- solver/als.py — ALS-XZ, ALS-XY-Wing, ALS-XY-Chain, Death Blossom
-- solver/misc.py — Sue de Coq
-- solver/templates.py — Template Set, Template Delete
-- solver/brute_force.py — last-resort guess
-- solver/solver.py — full solve loop, scoring, level computation
-- api.py — public Solver API (fully wired; input validation via _validate_puzzle; Generator stubs remain)
-
-Not yet implemented:
-- generator/ — puzzle generation
-- api.py — wire up Solver/Generator classes to actual implementations
+Read the project README.md, docs/ROADMAP.md, and docs/ARCHITECTURE.md before starting any task.
 
 ## Key design decisions
 
@@ -129,11 +73,32 @@ Full details in `docs/ROADMAP.md` → "HoDoKu compatibility: elimination orderin
 
 ## Python environment
 
-- Python is available directly in the PATH. Run `python` and `pytest` without any wrapper.
+- Python is available directly in the PATH. Run `python` and `pytest` without any wrapper. User uses docker containers and conda on the host to provide isolation.
 - Try to keep use of python commands consistent so that the user has the option to approve each tool once for the whole session. If
   you switch between different python executables the user has to approve each time and that slows us down.
 
-## Source control
+## Jujutsu (jj)
 
-- Use **jj** (jujutsu) for commits, not git.
-- This is not a collaborative project; all work is on one instance.
+This repo uses jj for version control. Do not use git commands directly.
+
+### Key concepts
+- `@` is your current working copy commit, always exists, never "dirty"
+- `@-` is the parent of your working copy
+- There is no staging area -- changes are automatically tracked
+- Bookmarks are like git branches
+
+### Workflow
+- `jj git clone <repo> <dir>` clone an existing repo into dir.
+- `jj status` to see working copy changes
+- `jj diff` to see what changed
+- `jj describe` to modify the current working copy commit
+- `jj new` to create a new empty commit as a child of the current commit.
+- `jj commit -m "message"` to commit -- equivalent to describe + new
+- `jj log` to see history
+
+### Rules
+- Always work on a named bookmark. Do not use `main` unless explicitly asked to do so by the user.
+- Always run unit tests before committing.
+- Do not push to origin unless asked to by the user (this will depend on context).
+- Run reglib suite before pushing to origin, if pushing to origin.
+
