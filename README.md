@@ -12,7 +12,7 @@ hodoku-py has full fidelity with HoDoKu 2.2.0: exact same solution path and scor
 
 ## Status
 
-Core solver complete through all techniques. Puzzle generator and public API not yet implemented.
+Core solver complete through all techniques. Public API (`Solver.solve`, `get_hint`, `rate`) implemented. Puzzle generator not yet implemented.
 
 | Layer | Techniques | Status |
 |-------|-----------|--------|
@@ -28,7 +28,8 @@ Core solver complete through all techniques. Puzzle generator and public API not
 | Forcing chains/nets | Contradiction + Verity | ✅ |
 | Misc | Sue de Coq | ✅ |
 | Templates | Template Set/Delete | ✅ |
-| Generator + public API | Puzzle generation, `Solver`/`Generator` classes | ⬜ |
+| Public API | `Solver.solve`, `get_hint`, `rate`, `find_all_steps` | ✅ |
+| Generator | Puzzle generation | ⬜ |
 
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) for full details and known gaps.
 
