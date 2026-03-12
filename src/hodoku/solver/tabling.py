@@ -1401,12 +1401,13 @@ class TablingSolver:
         for i in range(len(self._min_indexes)):
             self._min_indexes[i] = 0
 
-        # Build the main chain
+        # Build the main chain — tracks cells in _chain_set for min termination
+        self._build_chain_set = 0  # 81-bit bitmask of main chain cells
         self._chain_index = self._build_chain_inner(
             entry, index, self._chain, False
         )
 
-        # Build net parts
+        # Build net parts — mins terminate when reaching a main chain cell
         min_index = 0
         while min_index < self._act_min:
             entry_val = self._mins[min_index][0]
@@ -1431,6 +1432,11 @@ class TablingSolver:
 
         Returns the number of entries written to act_chain.
         Mirrors the inner buildChain() in Java.
+
+        When is_min is False (main chain), records cell indices in
+        self._build_chain_set.  When is_min is True (net branch), terminates
+        early when reaching a cell+entry already in the main chain — matching
+        Java's chainSet-based termination.
         """
         act_chain_index = 0
         act_chain[act_chain_index] = entry.entries[entry_index]
@@ -1466,6 +1472,31 @@ class TablingSolver:
                     if ret_idx < len(entry.entries):
                         act_chain[act_chain_index] = entry.entries[ret_idx]
                         act_chain_index += 1
+                        if not is_min:
+                            # Record cell in chain set (main chain only)
+                            ci = get_cell_index(entry.entries[ret_idx])
+                            self._build_chain_set |= 1 << ci
+                            nt = get_node_type(entry.entries[ret_idx])
+                            if nt == GROUP_NODE:
+                                ci2 = get_cell_index2(entry.entries[ret_idx])
+                                if ci2 != -1:
+                                    self._build_chain_set |= 1 << ci2
+                                ci3 = get_cell_index3(entry.entries[ret_idx])
+                                if ci3 != -1:
+                                    self._build_chain_set |= 1 << ci3
+                            elif nt == ALS_NODE:
+                                aidx = get_als_index(entry.entries[ret_idx])
+                                if aidx < len(self._alses):
+                                    self._build_chain_set |= self._alses[aidx].indices
+                        else:
+                            # Min chain: check if we reached the main chain
+                            ci = get_cell_index(entry.entries[ret_idx])
+                            if self._build_chain_set & (1 << ci):
+                                # Cell is in main chain — check if exact entry matches
+                                entry_val = entry.entries[ret_idx]
+                                for j in range(self._chain_index):
+                                    if self._chain[j] == entry_val:
+                                        return act_chain_index
                     else:
                         break
                 else:
@@ -1595,13 +1626,10 @@ class TablingSolver:
     def _adjust_type(self, step: SolutionStep) -> None:
         """Upgrade FORCING_CHAIN to FORCING_NET if the step is a net.
 
-        In net mode, the tables contain net-derived implications, so any step
-        that uses them is a net step. Java checks is_net() which looks for
-        negative chain entries (net branch markers). We use is_net() OR the
-        _nets_mode flag since our chain reconstruction may not produce negative
-        entries.
+        Only promotes if step.is_net() returns True (chains contain negative
+        entries / net branch markers). Matches Java's adjustType().
         """
-        if self._nets_mode or step.is_net():
+        if step.is_net():
             if step.type == SolutionType.FORCING_CHAIN_CONTRADICTION:
                 step.type = SolutionType.FORCING_NET_CONTRADICTION
             elif step.type == SolutionType.FORCING_CHAIN_VERITY:
@@ -1616,8 +1644,13 @@ class TablingSolver:
         step = self._global_step
         self._adjust_type(step)
 
-        # In net mode, chain-only steps were already found by chain mode.
-        # Note: _adjust_type already upgraded all steps to NET type in net mode.
+        # In net mode, discard steps that weren't promoted to NET type.
+        # These are chain-only steps already found in chain mode.
+        if self._nets_mode and step.type in (
+            SolutionType.FORCING_CHAIN_CONTRADICTION,
+            SolutionType.FORCING_CHAIN_VERITY,
+        ):
+            return
 
         # Determine the dedup key
         if step.candidates_to_delete:

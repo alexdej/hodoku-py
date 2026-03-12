@@ -90,7 +90,7 @@ def _load_puzzle_file(path: Path, count: int | None, seed: int, *, file_stem: st
             idx = section_counts.get(section, 0)
             section_counts[section] = idx + 1
             slug = re.sub(r'\s+', '_', section) if section else None
-            local_id = f"{slug}/p{idx}" if slug else f"p{idx}"
+            local_id = f"{slug}/p{idx:04d}" if slug else f"p{idx:04d}"
             test_id = f"{file_stem}::{local_id}" if file_stem else local_id
             entries.append(PuzzleEntry(puzzle=puzzle, section=section, test_id=test_id))
 
