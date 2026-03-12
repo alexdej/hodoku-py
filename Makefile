@@ -9,10 +9,10 @@ build:
 sdist:
 	$(PYTHON) -m build --sdist
 
-upload: build
+pypi: sdist
 	$(TWINE) upload dist/*
 
-upload-test: build
+testpypi: sdist
 	$(TWINE) upload --repository testpypi dist/*
 
 clean:
