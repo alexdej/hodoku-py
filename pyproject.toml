@@ -23,6 +23,7 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = ["pytest", "py4j"]
+publish = ["build", "twine"]
 
 [tool.setuptools.package-dir]
 "" = "src"
