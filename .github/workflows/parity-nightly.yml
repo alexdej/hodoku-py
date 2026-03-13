@@ -29,10 +29,12 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - run: pip install -e . && pip install pytest py4j
+      - run: pip install -e . && pip install pytest pytest-cov py4j
 
       - name: Run parity tests
-        run: pytest tests/parity/ --puzzle-file ${{ matrix.puzzle-file }} -v --tb=short --junitxml=parity-results.xml
+        run: >
+          pytest tests/parity/ --puzzle-file ${{ matrix.puzzle-file }} -v --tb=short --junitxml=parity-results.xml
+          ${{ matrix.puzzle-file == 'exemplars-1.0' && '--cov=src/hodoku --cov-report=xml' || '' }}
 
       - name: Upload results
         if: always()
@@ -40,6 +42,15 @@ jobs:
         with:
           name: parity-${{ matrix.puzzle-file }}
           path: parity-results.xml
+
+      - name: Upload coverage to Codecov
+        if: matrix.puzzle-file == 'exemplars-1.0'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+          name: hodoku-py
+          flags: nightly
 
   report:
     name: Generate report
