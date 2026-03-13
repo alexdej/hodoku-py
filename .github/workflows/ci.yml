@@ -10,13 +10,40 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - run: pip install flake8
-      - run: flake8 src/
+      - run: pip install flake8 anybadge
+
+      - name: Run flake8
+        id: flake8
+        run: flake8 src/
+        continue-on-error: true
+
+      - name: Generate badge
+        run: |
+          mkdir -p site/badges
+          if [ "${{ steps.flake8.outcome }}" = "success" ]; then
+            python -c "import anybadge; b = anybadge.Badge('flake8', 'passing', default_color='brightgreen'); b.write_badge('site/badges/flake8.svg', overwrite=True)"
+          else
+            python -c "import anybadge; b = anybadge.Badge('flake8', 'failing', default_color='red'); b.write_badge('site/badges/flake8.svg', overwrite=True)"
+          fi
+
+      - name: Publish badge
+        if: github.event_name == 'push'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: site/
+          keep_files: true
+
+      - name: Fail if flake8 failed
+        if: steps.flake8.outcome == 'failure'
+        run: exit 1
 
   unit:
     name: Unit tests
