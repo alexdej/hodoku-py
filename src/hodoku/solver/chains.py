@@ -536,16 +536,20 @@ class ChainSolver:
             if strong_only and not link_is_strong:
                 continue  # must use strong link here
 
+            is_loop = False
             if nb == start:
-                continue  # nice loop — not an X-Chain
-            if nb in chain_set:
+                # Loop back to start — still valid as an X-Chain ending
+                # (Java: isLoop = true, falls through to chain check).
+                is_loop = True
+            elif nb in chain_set:
                 continue  # lasso: revisiting a middle cell
 
             # When !strong_only: a strong link is treated as weak (no chain check).
             effective_strong = link_is_strong and strong_only
 
             chain.append(nb)
-            chain_set.add(nb)
+            if not is_loop:
+                chain_set.add(nb)
 
             # Valid chain end: ended on a strong link, at least 3 nodes total.
             if effective_strong and len(chain) > 2:
@@ -553,18 +557,21 @@ class ChainSolver:
                 if elim:
                     self._record(digit, sol_type, chain, elim, deletes_map)
 
-            self._dfs_x(
-                digit, links, chain, chain_set,
-                strong_only=not strong_only,
-                start=start,
-                start_buddies=start_buddies,
-                deletes_map=deletes_map,
-                sol_type=sol_type,
-                max_nodes=max_nodes,
-            )
+            # Don't recurse further if this was a loop (Java: isLoop → stop)
+            if not is_loop:
+                self._dfs_x(
+                    digit, links, chain, chain_set,
+                    strong_only=not strong_only,
+                    start=start,
+                    start_buddies=start_buddies,
+                    deletes_map=deletes_map,
+                    sol_type=sol_type,
+                    max_nodes=max_nodes,
+                )
 
             chain.pop()
-            chain_set.discard(nb)
+            if not is_loop:
+                chain_set.discard(nb)
 
     # ------------------------------------------------------------------
     # XY-Chain
