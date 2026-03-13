@@ -69,5 +69,11 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - run: pip install -e . && pip install pytest
-      - run: pytest tests/reglib/ -v
+      - run: pip install -e . && pip install pytest pytest-cov
+      - run: pytest tests/reglib/ -v --cov=hodoku --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
