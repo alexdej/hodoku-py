@@ -354,6 +354,20 @@ def _als_index_count(step: SolutionStep) -> int:
     return sum(bin(a[0]).count('1') for a in step.alses)
 
 
+def _als_index_summe(candidates: list) -> int:
+    """Weighted sum matching Java's getIndexSumme().
+
+    Java sorts candidatesToDelete by (value, index) before computing:
+    sum += index * offset + value, with offset starting at 1, incrementing by 80.
+    """
+    total = 0
+    offset = 1
+    for c in sorted(candidates, key=lambda c: (c.value, c.index)):
+        total += c.index * offset + c.value
+        offset += 80
+    return total
+
+
 def _als_cmp(s1: SolutionStep, s2: SolutionStep) -> int:
     # 1. Most eliminations (descending)
     d = len(s2.candidates_to_delete) - len(s1.candidates_to_delete)
@@ -363,9 +377,9 @@ def _als_cmp(s1: SolutionStep, s2: SolutionStep) -> int:
     k1 = tuple(sorted((c.index, c.value) for c in s1.candidates_to_delete))
     k2 = tuple(sorted((c.index, c.value) for c in s2.candidates_to_delete))
     if k1 != k2:
-        # Not equivalent: sort by sum of deletion cell indices (ascending)
-        return (sum(c.index for c in s1.candidates_to_delete)
-                - sum(c.index for c in s2.candidates_to_delete))
+        # Not equivalent: sort by weighted index sum (ascending), matching Java's getIndexSumme
+        return (_als_index_summe(s1.candidates_to_delete)
+                - _als_index_summe(s2.candidates_to_delete))
     # Equivalent: 3. Fewer ALSes
     d = len(s1.alses) - len(s2.alses)
     if d:
