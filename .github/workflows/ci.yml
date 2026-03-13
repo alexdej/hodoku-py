@@ -84,5 +84,6 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          name: hodoku-py
           files: coverage.xml
           flags: reglib
