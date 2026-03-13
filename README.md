@@ -81,14 +81,6 @@ pytest tests/parity/ --puzzle-file top1465 --puzzle-count 50 --puzzle-seed 7 -v
 Puzzle files are plain text (one puzzle per line) sourced from [`tests/testdata/`](tests/testdata/).
 
 
-## CI
-
-| Workflow | Trigger | What it does |
-|----------|---------|-------------|
-| **CI** | push/PR to main | Unit tests (Python 3.11–3.13) → Reglib suite |
-| **Parity** | manual / nightly | Full solve-path comparison per puzzle file |
-| **Parity (ad-hoc)** | manual | Single puzzle file with optional count/seed |
-
 ## Project structure
 
 ```

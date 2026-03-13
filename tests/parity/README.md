@@ -32,7 +32,19 @@ pytest tests/parity/ --puzzle-file top1465 --puzzle-count 50 --puzzle-seed 7 -v
 
 # Filter by section or test name
 pytest tests/parity/ --puzzle-file exemplars-1.0 -k "XY_Wing" -v
+
+# Use the batch CLI backend instead of the default Py4J persistent JVM
+pytest tests/parity/ --puzzle-file exemplars-1.0 --hodoku-backend batch -v
 ```
+
+## Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--puzzle-file` | *(required)* | Puzzle file to run. Accepts a bare stem, project-relative path, or absolute path. |
+| `--puzzle-count N` | all | Randomly sample N puzzles from the file. |
+| `--puzzle-seed N` | 42 | RNG seed for `--puzzle-count` sampling. |
+| `--hodoku-backend` | `py4j` | HoDoKu backend: `py4j` (persistent JVM via Py4J) or `batch` (CLI subprocess per chunk). |
 
 `--puzzle-file` accepts:
 - A bare stem like `exemplars-1.0` (looked up in `tests/testdata/exemplars-1.0.txt`)
