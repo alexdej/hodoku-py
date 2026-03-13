@@ -484,11 +484,13 @@ class TablingSolver:
                         ri_idx += 1
             else:
                 # Hidden single: depends on elimination of cand from house peers
-                # Find house with smallest number of original candidates
+                # Find house with smallest number of candidates in current grid
+                # (Java uses sudoku.getFree(), not savedSudoku — must be done
+                # before the cell is set)
                 best_free = 999
                 best_constr = CELL_CONSTRAINTS[cell_index][0]
                 for constr in CELL_CONSTRAINTS[cell_index]:
-                    f = saved_grid.free[constr][cand]
+                    f = grid.free[constr][cand]
                     if f < best_free:
                         best_free = f
                         best_constr = constr
