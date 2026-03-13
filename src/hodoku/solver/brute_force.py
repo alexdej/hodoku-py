@@ -96,13 +96,14 @@ class BruteForceSolver:
         if not self._ensure_solution():
             return None
 
-        # Pick the first empty cell and return a placement step for it
-        for i in range(81):
-            if self.grid.values[i] == 0:
-                digit = self._solution[i]
-                step = SolutionStep(type=SolutionType.BRUTE_FORCE)
-                step.indices.append(i)
-                step.values.append(digit)
-                return step
+        # Collect all unsolved cells, then pick the middle one (matches Java)
+        unsolved = [i for i in range(81) if self.grid.values[i] == 0]
+        if not unsolved:
+            return None  # grid is already solved
 
-        return None  # grid is already solved
+        index = unsolved[len(unsolved) // 2]
+        digit = self._solution[index]
+        step = SolutionStep(type=SolutionType.BRUTE_FORCE)
+        step.indices.append(index)
+        step.values.append(digit)
+        return step
