@@ -215,7 +215,7 @@ def _check_als_recursive(
                 seen.add(new_index_set)
                 alses.append(Als(new_index_set, new_cands))
         _check_als_recursive(anzahl, i + 1, unit, n, grid, alses, seen,
-                              new_index_set, new_cands)
+                             new_index_set, new_cands)
 
 
 # ---------------------------------------------------------------------------
@@ -698,7 +698,6 @@ class AlsSolver:
                 first_try_local = True
                 continue
 
-            is_first = (len(chain) == 0)
             chain.append(rc)
             als_in_chain[rc.als2] = True
 
@@ -831,7 +830,6 @@ class AlsSolver:
         self, alses: list[Als],
     ) -> list[_RCForDeathBlossom | None]:
         """Build per-cell index of which ALSes cover each candidate."""
-        grid = self.grid
         rcdb: list[_RCForDeathBlossom | None] = [None] * 81
 
         for i, als in enumerate(alses):

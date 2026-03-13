@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Literal
 
 from hodoku.core.grid import ALL_UNITS, Grid
-from hodoku.core.scoring import SOLVER_STEPS, STEP_CONFIG
+from hodoku.core.scoring import SOLVER_STEPS
 from hodoku.core.solution_step import SolutionStep
-from hodoku.core.types import DifficultyType, SolutionType
+from hodoku.core.types import DifficultyType
 from hodoku.solver.solver import SudokuSolver
 from hodoku.solver.step_finder import SudokuStepFinder
 

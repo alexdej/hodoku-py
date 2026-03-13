@@ -14,7 +14,6 @@ import copy
 
 from hodoku.core.grid import (
     ALL_UNIT_MASKS,
-    ALL_UNITS,
     BLOCK_MASKS,
     BUDDIES,
     CELL_CONSTRAINTS,
@@ -23,7 +22,7 @@ from hodoku.core.grid import (
     LINE_MASKS,
     Grid,
 )
-from hodoku.core.solution_step import Candidate, SolutionStep
+from hodoku.core.solution_step import SolutionStep
 from hodoku.core.types import SolutionType
 from hodoku.solver.als import Als, _collect_alses
 from hodoku.solver.chain_utils import (
@@ -873,7 +872,7 @@ class TablingSolver:
                         continue
                     if als.indices & k_als.indices:
                         continue  # overlapping
-                    for l in range(1, 10):
+                    for l in range(1, 10):  # noqa: E741
                         if not als_elims[l]:
                             continue
                         if not k_als.indices_per_cand[l]:
@@ -914,7 +913,7 @@ class TablingSolver:
                     if cand_count <= 2:
                         continue
                     remaining = grid.candidates[cell]
-                    for l in range(1, 10):
+                    for l in range(1, 10):  # noqa: E741
                         if als_elims[l] and (als_elims[l] & (1 << cell)):
                             remaining &= ~DIGIT_MASKS[l]
                     if remaining.bit_count() == 1:
@@ -1232,7 +1231,6 @@ class TablingSolver:
         self, entry: TableEntry, house_masks: tuple[int, ...], entity_type: int,
     ) -> None:
         """Check if all instances of a candidate are deleted from a house."""
-        grid = self.grid
         premise_cell = entry.get_cell_index(0)
         premise_cand = entry.get_candidate(0)
         premise_strong = entry.is_strong(0)
@@ -1857,7 +1855,7 @@ class TablingSolver:
             # Cell with two strong links → eliminate all except strong link cands
             if (i == 0 and first_link_strong and last_link_strong) or \
                (i > 0 and is_strong(nl_chain[i]) and i <= nl_chain_index - 2
-                and get_cell_index(nl_chain[i - 1]) != get_cell_index(nl_chain[i])):
+                and get_cell_index(nl_chain[i - 1]) != get_cell_index(nl_chain[i])):  # noqa: E129
 
                 if i == 0 or (
                     not is_strong(nl_chain[i + 1])
@@ -2315,7 +2313,7 @@ def _compare_candidates_to_delete(o1: SolutionStep, o2: SolutionStep) -> int:
     return 0
 
 
-import functools
+import functools  # noqa: E402
 _tabling_sort_key = functools.cmp_to_key(_tabling_sort_cmp)
 _fc_sort_key = functools.cmp_to_key(_fc_sort_cmp)
 

@@ -6,7 +6,7 @@ Port of HoDoKu's MiscellaneousSolver.java.
 from __future__ import annotations
 
 from hodoku.core.grid import (
-    Grid, LINES, COLS, BLOCKS,
+    Grid, LINES, COLS,
     LINE_MASKS, COL_MASKS, BLOCK_MASKS,
 )
 from hodoku.core.solution_step import Candidate, SolutionStep
@@ -173,7 +173,6 @@ class MiscSolver:
         if not nb_source:
             return None
         source_list = list(_iter_bits(nb_source))
-        max_cells = len(source_list)
 
         # Iterative subset enumeration (matching Java's stack approach)
         # We try all subsets of source_list, from size 1 upward.

@@ -788,7 +788,6 @@ class ChainSolver:
         # Even node-pair indices (0,2,4,...) are the "entry" candidates.
         # Pairs with opposite polarity: i and j where (j-i) ≡ 2 (mod 4) and j-i >= 6.
         step = SolutionStep(SolutionType.REMOTE_PAIR)
-        start_cell = chain[0][0]
         other_cand = chain[1][1]  # the other start candidate
 
         step.add_value(start_cand)

@@ -1,14 +1,16 @@
 # hodoku-py
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org)
+[![PyPI](https://img.shields.io/pypi/v/hodoku-py)](https://pypi.org/project/hodoku-py/)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](https://www.gnu.org/licenses/gpl-3.0.html)
 [![CI](https://github.com/alexdej/hodoku-py/actions/workflows/ci.yml/badge.svg)](https://github.com/alexdej/hodoku-py/actions/workflows/ci.yml)
 [![Nightly](https://github.com/alexdej/hodoku-py/actions/workflows/parity-nightly.yml/badge.svg)](https://github.com/alexdej/hodoku-py/actions/workflows/parity-nightly.yml)
-[![Parity](https://alexdej.github.io/hodoku-py/badges/exemplars-1.0.svg)](https://alexdej.github.io/hodoku-py/)
 
 A pure Python port of [HoDoKu](https://hodoku.sourceforge.net/) — Sudoku solver, hint engine, and difficulty rater minus the GUI.
 
 hodoku-py has full fidelity with HoDoKu 2.2.0: exact same solution path and score across all tested puzzles, in pure python (well, one small bit in c).
+
+**[Nightly parity test results](https://alexdej.github.io/hodoku-py/)** — head-to-head comparison against HoDoKu across thousands of puzzles.
 
 ## Status
 
@@ -80,6 +82,7 @@ pytest tests/parity/ --puzzle-file top1465 --puzzle-count 50 --puzzle-seed 7 -v
 
 Puzzle files are plain text (one puzzle per line) sourced from [`tests/testdata/`](tests/testdata/).
 
+The full parity suite runs nightly. [Latest results](https://alexdej.github.io/hodoku-py/).
 
 ## Project structure
 

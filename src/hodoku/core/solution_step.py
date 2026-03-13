@@ -49,7 +49,7 @@ class SolutionStep:
     color_candidates: dict[int, int] = field(default_factory=dict)
 
     # ALS-specific
-    alses: list[tuple[int, int]] = field(default_factory=list) # (CellSet bits, candidate mask)
+    alses: list[tuple[int, int]] = field(default_factory=list)  # (CellSet bits, candidate mask)
     restricted_commons: list[tuple[int, int, int, int]] = field(default_factory=list)  # (als1, als2, cand1, cand2)
 
     # Progress scoring (filled in by SudokuSolver when requested)

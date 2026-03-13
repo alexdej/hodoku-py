@@ -6,7 +6,7 @@ Mirrors Java's UniquenessSolver.
 
 from __future__ import annotations
 
-from hodoku.core.grid import ALL_UNITS, BLOCKS, BUDDIES, COLS, CONSTRAINTS, Grid, LINES
+from hodoku.core.grid import BLOCKS, BUDDIES, COLS, CONSTRAINTS, Grid, LINES
 from hodoku.core.solution_step import Candidate, SolutionStep
 from hodoku.core.types import SolutionType
 

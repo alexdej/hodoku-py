@@ -25,13 +25,10 @@ from itertools import combinations
 
 from hodoku.core.grid import (
     ALL_UNIT_MASKS,
-    BLOCK_MASKS,
     BUDDIES,
     COL_MASKS,
-    COLS,
     Grid,
     LINE_MASKS,
-    LINES,
 )
 
 # All 81 cells mask
@@ -58,8 +55,10 @@ def _fin_buddies(fin_mask: int) -> int:
         common &= BUDDIES[lsb.bit_length() - 1]
         tmp ^= lsb
     return common
-from hodoku.core.solution_step import Entity, SolutionStep
-from hodoku.core.types import SolutionType
+
+
+from hodoku.core.solution_step import Entity, SolutionStep  # noqa: E402
+from hodoku.core.types import SolutionType  # noqa: E402
 
 # Entity type constants (mirror Java's Sudoku2.LINE / COL / BLOCK)
 _LINE  = 0
@@ -174,7 +173,7 @@ def _classify_fish(base_type_bits: int, cover_type_bits: int) -> int:
         return _CAT_BASIC
     # Franken: base ⊆ {LINE,BLOCK} and cover ⊆ {COL,BLOCK}, or vice versa
     if (((base_type_bits & ~(_BIT_LINE | _BIT_BLOCK)) == 0 and
-             (cover_type_bits & ~(_BIT_COL | _BIT_BLOCK)) == 0) or
+             (cover_type_bits & ~(_BIT_COL | _BIT_BLOCK)) == 0) or  # noqa: E127
             ((base_type_bits & ~(_BIT_COL | _BIT_BLOCK)) == 0 and
              (cover_type_bits & ~(_BIT_LINE | _BIT_BLOCK)) == 0)):
         return _CAT_FRANKEN
@@ -514,7 +513,6 @@ class FishSolver:
             for row_mode in (True, False):
                 unit_masks  = LINE_MASKS if row_mode else COL_MASKS
                 cover_masks = COL_MASKS  if row_mode else LINE_MASKS
-                units       = LINES      if row_mode else COLS
 
                 # Collect candidate base units (those with 2..n occurrences)
                 eligible: list[int] = []

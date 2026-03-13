@@ -61,8 +61,8 @@ DEFAULT_STEPS: tuple[StepConfig, ...] = (
     # Intersections
     StepConfig(1000, _S.LOCKED_PAIR,        _D.MEDIUM, _C.INTERSECTIONS,  40, True,  True),
     StepConfig(1100, _S.LOCKED_TRIPLE,      _D.MEDIUM, _C.INTERSECTIONS,  60, True,  True),
-    StepConfig(1200, _S.LOCKED_CANDIDATES_1,_D.MEDIUM, _C.INTERSECTIONS,  50, True,  True),
-    StepConfig(1210, _S.LOCKED_CANDIDATES_2,_D.MEDIUM, _C.INTERSECTIONS,  50, True,  True),
+    StepConfig(1200, _S.LOCKED_CANDIDATES_1, _D.MEDIUM, _C.INTERSECTIONS,  50, True,  True),
+    StepConfig(1210, _S.LOCKED_CANDIDATES_2, _D.MEDIUM, _C.INTERSECTIONS,  50, True,  True),
     # Subsets
     StepConfig(1300, _S.NAKED_PAIR,         _D.MEDIUM, _C.SUBSETS,        60, True,  True),
     StepConfig(1400, _S.NAKED_TRIPLE,       _D.MEDIUM, _C.SUBSETS,        80, True,  True),
@@ -122,7 +122,7 @@ DEFAULT_STEPS: tuple[StepConfig, ...] = (
     StepConfig(5400, _S.X_CHAIN,                    _D.UNFAIR, _C.CHAINS_AND_LOOPS, 260, True, True),
     StepConfig(5500, _S.XY_CHAIN,                   _D.UNFAIR, _C.CHAINS_AND_LOOPS, 260, True, True),
     StepConfig(5600, _S.CONTINUOUS_NICE_LOOP,        _D.UNFAIR, _C.CHAINS_AND_LOOPS, 280, True, True),
-    StepConfig(5650, _S.GROUPED_CONTINUOUS_NICE_LOOP,_D.UNFAIR, _C.CHAINS_AND_LOOPS, 300, True, True),
+    StepConfig(5650, _S.GROUPED_CONTINUOUS_NICE_LOOP, _D.UNFAIR, _C.CHAINS_AND_LOOPS, 300, True, True),
     # Almost locked sets
     StepConfig(5700, _S.ALS_XZ,             _D.UNFAIR, _C.ALMOST_LOCKED_SETS, 300, True,  True),
     StepConfig(5800, _S.ALS_XY_WING,        _D.UNFAIR, _C.ALMOST_LOCKED_SETS, 320, True,  True),

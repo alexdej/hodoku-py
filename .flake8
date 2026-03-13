@@ -1,0 +1,6 @@
+[flake8]
+max-line-length = 120
+# E241/E221/E272: multiple spaces for alignment — intentional in lookup tables
+# W503/W504: conflicting line-break style rules — pick neither
+extend-ignore = E241,E221,E272,W503,W504
+exclude = build,dist,.git,__pycache__,*.egg-info

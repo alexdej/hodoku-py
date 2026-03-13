@@ -524,9 +524,6 @@ class SingleDigitSolver:
 
                     # Line part: block candidates in ER row, excluding ER col intersection
                     line_full = block_cands & LINE_MASKS[er_line]
-                    not_enough = True
-                    if line_full.bit_count() >= 2:
-                        not_enough = False
                     line_part = line_full & ~COL_MASKS[er_col]
                     if not line_part:
                         continue

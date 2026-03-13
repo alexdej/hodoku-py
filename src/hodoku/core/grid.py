@@ -35,6 +35,7 @@ BLOCKS: tuple[tuple[int, ...], ...] = tuple(
 )
 ALL_UNITS: tuple[tuple[int, ...], ...] = LINES + COLS + BLOCKS
 
+
 # For each cell: (row_index, col_index, box_index) — all 0-based within their type
 def _build_constraints() -> tuple[tuple[int, int, int], ...]:
     result = []
@@ -45,12 +46,14 @@ def _build_constraints() -> tuple[tuple[int, int, int], ...]:
         result.append((r, c, b))
     return tuple(result)
 
+
 CONSTRAINTS: tuple[tuple[int, int, int], ...] = _build_constraints()
 
 # For each cell: indices into ALL_UNITS — (row_idx, col_idx+9, box_idx+18)
 CELL_CONSTRAINTS: tuple[tuple[int, int, int], ...] = tuple(
     (r, c + 9, b + 18) for r, c, b in CONSTRAINTS
 )
+
 
 # Buddy sets: for each cell, the int bitmask of its 20 peers
 def _build_buddies() -> tuple[int, ...]:
@@ -69,6 +72,7 @@ def _build_buddies() -> tuple[int, ...]:
                 mask |= 1 << j
         buddies.append(mask)
     return tuple(buddies)
+
 
 BUDDIES: tuple[int, ...] = _build_buddies()
 

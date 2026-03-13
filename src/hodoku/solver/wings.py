@@ -5,7 +5,7 @@ Mirrors Java's WingSolver.
 
 from __future__ import annotations
 
-from hodoku.core.grid import BUDDIES, CONSTRAINTS, Grid
+from hodoku.core.grid import BUDDIES, Grid
 from hodoku.core.solution_step import Candidate, SolutionStep
 from hodoku.core.types import SolutionType
 

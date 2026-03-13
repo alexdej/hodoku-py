@@ -22,7 +22,7 @@ requires-python = ">=3.11"  # int.bit_count() (popcount on CellSet bitsets) requ
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest", "py4j"]
+dev = ["pytest", "py4j", "flake8"]
 publish = ["build", "twine"]
 
 [tool.setuptools.package-dir]
