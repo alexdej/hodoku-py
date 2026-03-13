@@ -1631,13 +1631,10 @@ class TablingSolver:
     def _adjust_type(self, step: SolutionStep) -> None:
         """Upgrade FORCING_CHAIN to FORCING_NET if the step is a net.
 
-        In net mode, the tables contain net-derived implications, so any step
-        that uses them is a net step. Java checks is_net() which looks for
-        negative chain entries (net branch markers). We use is_net() OR the
-        _nets_mode flag since our chain reconstruction may not produce negative
-        entries.
+        Mirrors Java's adjustType() which checks step.isNet() — true when
+        any chain entry is negative (net branch marker).
         """
-        if self._nets_mode or step.is_net():
+        if step.is_net():
             if step.type == SolutionType.FORCING_CHAIN_CONTRADICTION:
                 step.type = SolutionType.FORCING_NET_CONTRADICTION
             elif step.type == SolutionType.FORCING_CHAIN_VERITY:
@@ -1652,8 +1649,14 @@ class TablingSolver:
         step = self._global_step
         self._adjust_type(step)
 
-        # In net mode, chain-only steps were already found by chain mode.
-        # Note: _adjust_type already upgraded all steps to NET type in net mode.
+        # In net mode, discard steps that are still CHAIN type (not promoted
+        # to NET by adjustType). These were already found during chain mode.
+        # Mirrors Java lines 1007-1011 in replaceOrCopyStep().
+        if self._nets_mode and step.type in (
+            SolutionType.FORCING_CHAIN_CONTRADICTION,
+            SolutionType.FORCING_CHAIN_VERITY,
+        ):
+            return
 
         # Determine the dedup key
         if step.candidates_to_delete:
