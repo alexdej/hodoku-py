@@ -122,7 +122,7 @@ The chain lengths increased in every case, suggesting the 1.3 metadata was
 understated and was corrected during 2.3 development. Since we don't validate
 the `extra` field in our tests, this has no effect on pass/fail.
 
-**We ship reglib-1.3.txt** (copied into `tests/reglib/`) as our test data,
+**We ship reglib-1.3.txt** (copied into [`tests/reglib/`](../tests/reglib/README.md)) as our test data,
 matching 2.2.0 fidelity.
 
 ## Key 2.3 Change: ALS Reglib Test Harness (r140)

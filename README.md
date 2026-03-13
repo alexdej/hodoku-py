@@ -39,6 +39,7 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for full details and known gaps.
 - (optional) C build tools (build-essential, xcode, or MSVC) to build a native extension that accelerates the search
   for certain large Mutant fish patterns. The extension is optional but without it, certain tests in `reglib/` will be skipped.
   To build: `python setup.py build_ext --inplace` (add `--compiler=mingw32` on Windows with MinGW).
+  See [Implementation notes](#implementation-notes) for details.
 
 ## Installation
 
@@ -48,13 +49,13 @@ pip install -e ".[dev]"
 
 ## Testing
 
-### Unit tests (fast, pure Python)
+### Unit tests
 
 ```bash
 pytest -m unit -v
 ```
 
-### [reglib](tests/reglib/) — HoDoKu's built-in regression suite (~2 min, ~1100 tests, pure Python)
+### [reglib](tests/reglib/) — HoDoKu's built-in regression suite (~2 min, ~1100 tests)
 
 Each test reconstructs a fixed pencilmark board and asserts that one specific technique fires with the expected eliminations.
 
@@ -77,13 +78,8 @@ pytest tests/parity/ --puzzle-file exemplars-1.0 -v
 pytest tests/parity/ --puzzle-file top1465 --puzzle-count 50 --puzzle-seed 7 -v
 ```
 
-Puzzle files are plain text (one puzzle per line) sourced from `tests/testdata/`.
+Puzzle files are plain text (one puzzle per line) sourced from [`tests/testdata/`](tests/testdata/).
 
-### Skip the tests that require Java
-
-```bash
-pytest tests/ -m "not java"   # pure-Python tests only
-```
 
 ## CI
 
@@ -115,7 +111,7 @@ src/hodoku/
 │   └── templates.py     # Template Set/Delete
 └── generator/     # Not yet implemented
 
-hodoku/            # Bundled HoDoKu 2.2.0 JAR (validation only)
+hodoku/            # Bundled HoDoKu 2.2.0 JAR (for validation)
 docs/              # Architecture, roadmap, specs
 tests/
 ├── reglib/        # Technique-isolation regression suite (pure Python)
@@ -126,6 +122,17 @@ tests/
 ## Validation approach
 
 Every technique is validated by solving the puzzle and comparing the solution with HoDoKu's in detail — same list of techniques, eliminations, and placements, in the same order. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for internals and porting notes.
+
+## Implementation notes
+
+### C accelerator for large Fish variants
+
+The Mutant and Franken variants of the largest Fish (Squirmbag - size 5, 
+Whale - size 6, and Leviathan - size 7) have enormous search spaces.
+CPython is ~50-100x slower than Java JIT for tight bitwise loops. The cover
+DFS for Mutant and Franken Fish (and their Finned variations) is implemented in C (`solver/_fish_accel.c`) 
+and loaded via ctypes, with a pure Python fallback. 
+See [docs/ROADMAP.md](../../docs/ROADMAP.md) for details.
 
 
 ## Why?

@@ -4,9 +4,33 @@ Python port of HoDoKu's solver, hint engine, and generator — no GUI.
 
 ---
 
+## Goals
+
+### Parity
+
+We are targeting 100% parity with HoDoKu `v2.2.0` at the solver level: for any given puzzle input, `hodoku-py` should provide the exact 
+same solution, score, and hints.
+
+Optimizing or improving on what HoDoKu does is explicitly *NOT* a goal.
+
+### Pythonic
+
+We favor standard python idioms over a strict line-by-line port of the Java code. The library should feel like it was designed for Python,
+not brought over from Java.
+
+### No GUI
+
+We see no point in porting the HoDoKu GUI to python since you can just run HoDoKu directly if you want a GUI app. That said, it must be _possible_ to write a full-featured HoDoKu clone using `hodoku-py` as its solving engine. This means in practice that the `hodoku-py` API surface must expose the same set of options as HoDoKu does in the UI.
+
+### Fast enough
+ 
+HoDoKu was not designed to be particularly fast, and equivalent python code will run slower than Java in most cases, so we do not have
+high expectations for the performance of our port. That said, in cases where performance is so bad it makes validation difficult,
+we will bend our "no optimizations" rule as needed to make testing tractable. (Looking at you, Mutant Leviathan).
+
 ## Reference implementation
 
-HoDoKu JAR is checked in at `hodoku/hodoku.jar`. [Source code mirror @ github](https://github.com/alexdej/HoDoKu)
+HoDoKu 2.2 is checked in at `hodoku/hodoku.jar`. [Source code mirror @ github](https://github.com/alexdej/HoDoKu)
 
 ```bash
 # Solve a puzzle, print solution path

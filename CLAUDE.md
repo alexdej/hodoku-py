@@ -67,7 +67,7 @@ Below is an overview of test suites. Also review the available test markers in p
 - **parity suite** (`tests/parity/`): Compatibility suite. Runs each test in the given text file 
   through our solver and HoDoKu.jar and compares the results in detail. Solution must match precisely
   step-by-step. Runs nightly and builds a report. Typically not run locally except to debug.
-- **exemplar-1.3.txt** (`tests/parity/`): The highest priority of the tests in the parity suite. 669 example puzzles
+- **exemplars-1.0.txt** (`tests/testdata/`): The highest priority of the tests in the parity suite. 669 example puzzles
   that exercise all the solution rules. Must match our output exactly. Large/slow. Runs nightly.
 - **IMPORTANT**: reglib and most of the parity suites are very long-running. Avoid running the whole
   suite at once except as needed to check for regressions. Use -k to run a subset of test cases.

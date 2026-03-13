@@ -223,6 +223,7 @@ class ReglibEntry:
     technique_code: str                                    # normalised 4-char code, e.g. "0901"
     variant: int | None                                    # 1, 2, … or None
     fail_case: bool                                        # True if variant == 'x'
+    commented_out: bool                                    # True if line starts with '#:' in reglib file
     candidates_field: str                                  # "3" or "34" (targeted digits)
     givens_placed: str                                     # 81-char string, ready for set_sudoku
     deleted_candidates: tuple[tuple[int, int, int], ...]  # (digit, row, col) 1-indexed
@@ -312,7 +313,13 @@ def parse_reglib(path: Path = REGLIB_FILE) -> list[ReglibEntry]:
 
     for line_num, line in enumerate(lines, 1):
         line = line.strip()
-        if not line or line.startswith("#"):
+        if not line:
+            continue
+        commented_out = False
+        if line.startswith("#:"):
+            commented_out = True
+            line = line[1:]
+        elif line.startswith("#"):
             continue
         if not line.startswith(":"):
             continue
@@ -343,6 +350,7 @@ def parse_reglib(path: Path = REGLIB_FILE) -> list[ReglibEntry]:
             technique_code=code,
             variant=variant,
             fail_case=fail_case,
+            commented_out=commented_out,
             candidates_field=candidates_field,
             givens_placed=givens_placed,
             deleted_candidates=_parse_cell_list(deleted_raw),

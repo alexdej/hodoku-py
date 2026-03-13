@@ -99,6 +99,9 @@ def _find_all_steps(
 def test_reglib_technique(reglib_entry: ReglibEntry) -> None:
     entry = reglib_entry
 
+    if entry.commented_out:
+        pytest.skip("Commented out in reglib-1.3.txt (also fails in HoDoKu v2.2.0)")
+
     if entry.line_num in _JAVA_XFAIL_LINES:
         pytest.xfail("Also fails in Java HoDoKu v2.2.0 (chain search limitations)")
 
