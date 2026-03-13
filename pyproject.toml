@@ -28,6 +28,9 @@ publish = ["build", "twine"]
 [tool.setuptools.package-dir]
 "" = "src"
 
+[tool.setuptools.package-data]
+hodoku = ["py.typed"]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
