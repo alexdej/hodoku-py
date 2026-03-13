@@ -61,11 +61,12 @@ jobs:
       - run: pytest -m unit -v --cov=src/hodoku --cov-report=xml
 
       - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.12'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.xml
-          flags: unit-py${{ matrix.python-version }}
+          flags: unit
 
   reglib:
     name: Reglib regression suite
