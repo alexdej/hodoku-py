@@ -28,9 +28,9 @@ jobs:
         run: |
           mkdir -p site/badges
           if [ "${{ steps.flake8.outcome }}" = "success" ]; then
-            python -c "import anybadge; b = anybadge.Badge('flake8', 'passing', default_color='brightgreen'); b.write_badge('site/badges/flake8.svg', overwrite=True)"
+            python -c "import anybadge; b = anybadge.Badge('flake8', 'passing', default_color='green'); b.write_badge('site/badges/flake8.svg', overwrite=True)"
           else
-            python -c "import anybadge; b = anybadge.Badge('flake8', 'failing', default_color='red'); b.write_badge('site/badges/flake8.svg', overwrite=True)"
+            python -c "import anybadge; b = anybadge.Badge('flake8', 'failing', default_color='bright_red'); b.write_badge('site/badges/flake8.svg', overwrite=True)"
           fi
 
       - name: Publish badge
