@@ -121,6 +121,7 @@ class TablingSolver:
 
         # Chain cell tracking (for nice loop lasso detection)
         self._chain_set: int = 0  # 81-bit bitmask of cells in current chain
+        self._build_chain_set: int = 0  # cells in main chain (for min early termination)
 
         # Nice loop filter flag
         self._only_grouped_nice_loops: bool = False
@@ -1401,12 +1402,15 @@ class TablingSolver:
         for i in range(len(self._min_indexes)):
             self._min_indexes[i] = 0
 
-        # Build the main chain
+        # Build the main chain — collect cells in _build_chain_set for
+        # early termination when building net parts (mirrors Java's tmpSetC)
+        self._build_chain_set = 0
         self._chain_index = self._build_chain_inner(
             entry, index, self._chain, False
         )
 
-        # Build net parts
+        # Build net parts — reuse _build_chain_set so mins stop when
+        # they reach a cell already in the main chain
         min_index = 0
         while min_index < self._act_min:
             entry_val = self._mins[min_index][0]
@@ -1431,6 +1435,12 @@ class TablingSolver:
 
         Returns the number of entries written to act_chain.
         Mirrors the inner buildChain() in Java.
+
+        Uses self._build_chain_set (an 81-bit cell bitmask) to track cells
+        in the main chain.  When *is_min* is True the walk stops early as
+        soon as it reaches a cell that is already in the main chain AND the
+        exact entry matches an entry in self._chain (mirrors Java's
+        chainSet pre-selection + linear search).
         """
         act_chain_index = 0
         act_chain[act_chain_index] = entry.entries[entry_index]
@@ -1468,6 +1478,32 @@ class TablingSolver:
                         act_chain_index += 1
                     else:
                         break
+
+                    if not is_min:
+                        # Main chain: record cell in chain_set
+                        cell_idx = get_cell_index(entry.entries[ret_idx])
+                        self._build_chain_set |= 1 << cell_idx
+                        node_type = get_node_type(entry.entries[ret_idx])
+                        if node_type == GROUP_NODE:
+                            ci2 = get_cell_index2(entry.entries[ret_idx])
+                            if ci2 != -1:
+                                self._build_chain_set |= 1 << ci2
+                            ci3 = get_cell_index3(entry.entries[ret_idx])
+                            if ci3 != -1:
+                                self._build_chain_set |= 1 << ci3
+                        elif node_type == ALS_NODE:
+                            als_idx = get_als_index(entry.entries[ret_idx])
+                            if als_idx < len(self._alses):
+                                self._build_chain_set |= self._alses[als_idx].indices
+                    else:
+                        # Min chain: check if we've reached the main chain
+                        cell_idx = get_cell_index(entry.entries[ret_idx])
+                        if self._build_chain_set & (1 << cell_idx):
+                            # Pre-selection hit — search main chain for exact match
+                            entry_val = entry.entries[ret_idx]
+                            for j in range(self._chain_index):
+                                if self._chain[j] == entry_val:
+                                    return act_chain_index
                 else:
                     # Net branch (multiple inference)
                     if ret_idx != 0 and not is_min:
