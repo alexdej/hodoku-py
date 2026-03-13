@@ -547,9 +547,16 @@ class TablingSolver:
 
         # Hidden singles — iterate hsQueue
         # Java uses singleFound[] to avoid duplicate cells
+        # Java also removes stale entries from the queue (deleteHiddenSingle)
+        # when free increases from 1→2 or when the cell loses the candidate.
+        # Since Python's deque doesn't remove stale entries, we must verify
+        # the cell still has the candidate before accepting a hidden single.
         single_found: set[int] = set()
         for cell, digit in grid.hs_queue:
             if grid.values[cell] == 0 and cell not in single_found:
+                # Check cell still has the candidate (stale queue guard)
+                if not (grid.candidates[cell] & DIGIT_MASKS[digit]):
+                    continue
                 # Verify the constraint still has free==1 for this digit
                 for constr in CELL_CONSTRAINTS[cell]:
                     if grid.free[constr][digit] == 1:
