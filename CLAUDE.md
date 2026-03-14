@@ -120,6 +120,6 @@ git push -u origin my-branch
 ### Rules
 - Always work on a named bookmark. Do not push to `main` unless explicitly requested to do so by the user.
 - Always run unit tests before committing.
-- Do not push to origin unless asked to by the user (this will depend on context).
+- Do not push `main` to `origin` unless asked to by the user (this will depend on context).
 - Run reglib suite before pushing to origin, if pushing to origin.
 
