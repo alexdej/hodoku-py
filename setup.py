@@ -23,7 +23,12 @@ setup(
             "hodoku.solver._fish_accel",
             sources=["src/hodoku/solver/_fish_accel.c"],
             extra_link_args=["-static-libgcc"],
-        )
+        ),
+        Extension(
+            "hodoku.generator._gen_accel",
+            sources=["src/hodoku/generator/_gen_accel.c"],
+            extra_link_args=["-static-libgcc"],
+        ),
     ],
     cmdclass={"build_ext": OptionalBuildExt},
 )
