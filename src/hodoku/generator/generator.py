@@ -105,6 +105,11 @@ def _set_cell_valid(grid: Grid, index: int, value: int) -> bool:
     grid.values[index] = value
 
     # --- Step 1: eliminate *value* from every buddy ---
+    # Note: we do NOT short-circuit when valid becomes False. Java's setCell
+    # also continues removing candidates from all buddies even after a
+    # contradiction is found. This matches Java's behavior but means we do
+    # unnecessary work after hitting contradictions. Potential optimization
+    # target if backtracker performance becomes an issue.
     buddies = BUDDIES[index]
     while buddies:
         lsb = buddies & -buddies
