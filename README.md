@@ -132,9 +132,24 @@ and loaded via ctypes, with a pure Python fallback.
 See [docs/ROADMAP.md](../../docs/ROADMAP.md) for details.
 
 
+## Quick demo
+
+```python
+from hodoku import Solver
+
+solver = Solver()
+result = solver.solve(
+    "530070000600195000098000060800060003400803001700020006060000280000419005000080079"
+)
+print(f"Difficulty: {result.level.name} (score {result.score})")
+print(f"Solved in {len(result.steps)} steps")
+# Difficulty: EASY (score 204)
+# Solved in 51 steps
+```
+
 ## Why?
 
-Good question. I was curious whether one could use Claude Code to port a complex code base from java to python. Turns out one could. 
+Good question. I was curious whether one could use Claude Code to port a complex code base from java to python. Turns out one could.
 
 ## License
 
