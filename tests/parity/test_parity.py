@@ -23,8 +23,6 @@ from tests.parity.conftest import PuzzleEntry, HodokuResults, _load_puzzle_file,
 
 pytestmark = [pytest.mark.parity, pytest.mark.java]
 
-SOLVE_TIMEOUT = 30  # seconds — puzzles exceeding this are marked FAILED
-
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     if "entry" not in metafunc.fixturenames:
@@ -43,6 +41,7 @@ def test_matches_hodoku(
     entry: PuzzleEntry,
     hodoku_parity_results: HodokuResults,
     record_property,
+    request: pytest.FixtureRequest,
 ) -> None:
     """Our solver's solution path must match HoDoKu's step-for-step."""
     record_property("puzzle", entry.puzzle)
@@ -58,15 +57,16 @@ def test_matches_hodoku(
     record_property("hodoku_level_name", hodoku_result.level.name)
 
     solver = SudokuSolver()
+    puzzle_timeout = request.config.getoption("--puzzle-timeout")
 
     if sys.platform != "win32":
         import signal
 
         def _timeout_handler(signum, frame):
-            raise TimeoutError(f"Solver exceeded {SOLVE_TIMEOUT}s timeout")
+            raise TimeoutError(f"Solver exceeded {puzzle_timeout}s timeout")
 
         old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
-        signal.alarm(SOLVE_TIMEOUT)
+        signal.alarm(puzzle_timeout)
         try:
             our_result = solver.solve(entry.puzzle)
         finally:

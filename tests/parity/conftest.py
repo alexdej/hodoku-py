@@ -125,6 +125,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         choices=["py4j", "batch"],
         help="HoDoKu backend: 'py4j' (default, persistent JVM) or 'batch' (CLI subprocess).",
     )
+    parser.addoption(
+        "--puzzle-timeout",
+        type=int,
+        default=30,
+        help="Per-puzzle solver timeout in seconds (default: 30). Not enforced on Windows.",
+    )
 
 
 # ---------------------------------------------------------------------------
