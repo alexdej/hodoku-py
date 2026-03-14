@@ -324,7 +324,7 @@ class SudokuGenerator:
             else:
                 # Find the unsolved cell with fewest candidates (MRV)
                 index = -1
-                best_count = 10
+                best_count = 9  # Java uses anzCand=9; cells with 9 cands are skipped
                 grid = stack[level].grid
                 for i in range(LENGTH):
                     cands = grid.candidates[i]

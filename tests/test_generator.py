@@ -82,9 +82,17 @@ class TestSolveString:
         assert gen.get_solution_count() == 1
         assert gen.get_solution_as_string() == SOLVED_GRID
 
-    def test_empty_grid_multiple_solutions(self):
+    def test_empty_grid_no_solutions(self):
+        # Java's MRV uses anzCand=9, so cells with 9 candidates are skipped.
+        # An empty grid has all cells at 9 candidates → index=-1 → count=0.
         gen = SudokuGenerator()
         gen.solve_string("0" * 81)
+        assert gen.get_solution_count() == 0
+
+    def test_multiple_solutions(self):
+        # A puzzle with too few clues to be unique (just digit 1 in cell 0)
+        gen = SudokuGenerator()
+        gen.solve_string("1" + "0" * 80)
         assert gen.get_solution_count() == 2
 
     def test_invalid_puzzle(self):
@@ -133,10 +141,18 @@ class TestGridAPI:
         grid.set_sudoku(puzzle)
         assert gen.get_number_of_solutions(grid) == 1
 
-    def test_number_of_solutions_multiple(self):
+    def test_number_of_solutions_empty_grid(self):
+        # Java's MRV skips cells with 9 candidates → returns 0 for empty grid
         gen = SudokuGenerator()
         grid = Grid()
         grid.set_sudoku("0" * 81)
+        assert gen.get_number_of_solutions(grid) == 0
+
+    def test_number_of_solutions_multiple(self):
+        # A puzzle with too few clues to be unique
+        gen = SudokuGenerator()
+        grid = Grid()
+        grid.set_sudoku("1" + "0" * 80)
         assert gen.get_number_of_solutions(grid) == 2
 
     def test_solution_stored_on_grid(self):
