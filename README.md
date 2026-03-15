@@ -8,15 +8,15 @@
 [![flake8](https://alexdej.github.io/hodoku-py/badges/flake8.svg)](https://github.com/alexdej/hodoku-py/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/alexdej/hodoku-py/graph/badge.svg)](https://codecov.io/gh/alexdej/hodoku-py)
 
-A pure Python port of [HoDoKu](https://hodoku.sourceforge.net/) — Sudoku solver, hint engine, and difficulty rater minus the GUI.
+A pure Python port of [HoDoKu](https://hodoku.sourceforge.net/) — Sudoku solver, hint engine, puzzle generator, and difficulty rater minus the GUI.
 
-hodoku-py has full fidelity with HoDoKu 2.2.0: exact same solution path and score across all tested puzzles, in pure python (well, one small bit in c).
+hodoku-py has full fidelity with HoDoKu 2.2.0: exact same solution path and score across all tested puzzles, in pure python (well, a couple small bits in c).
 
 **[Nightly parity test results](https://alexdej.github.io/hodoku-py/)** — head-to-head comparison against HoDoKu across thousands of puzzles.
 
 ## Status
 
-Core solver complete through all techniques. Public API (`Solver.solve`, `get_hint`, `rate`) implemented. Puzzle generator not yet implemented.
+Core solver complete through all techniques. Public API (`Solver.solve`, `get_hint`, `rate`) implemented. Puzzle generator implemented with symmetric and pattern-based generation.
 
 | Layer | Techniques | Status |
 |-------|-----------|--------|
@@ -33,17 +33,17 @@ Core solver complete through all techniques. Public API (`Solver.solve`, `get_hi
 | Misc | Sue de Coq | ✅ |
 | Templates | Template Set/Delete | ✅ |
 | Public API | `Solver.solve`, `get_hint`, `rate`, `find_all_steps` | ✅ |
-| Generator | Puzzle generation | ⬜ |
+| Generator | Puzzle generation | ✅ |
 
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) for full details and known gaps.
 
 ## Requirements
 
 - Python 3.11+
-- (optional) C build tools (build-essential, xcode, or MSVC) to build a native extension that accelerates the search
-  for certain large Mutant fish patterns. The extension is optional but without it, certain tests in `reglib/` will be skipped.
-  To build: `python setup.py build_ext --inplace` (add `--compiler=mingw32` on Windows with MinGW).
-  See [Implementation notes](#implementation-notes) for details.
+- (optional) C build tools (build-essential, xcode, or MSVC) to build native extensions that accelerate
+  large Mutant fish searches and the backtracking solver used for generation/uniqueness checking.
+  Both are optional with pure Python fallbacks. To build: `python setup.py build_ext --inplace`
+  (add `--compiler=mingw32` on Windows with MinGW). See [Implementation notes](#implementation-notes) for details.
 
 ## Installation
 
@@ -106,13 +106,17 @@ src/hodoku/
 │   ├── als.py           # ALS-XZ, ALS-XY-Wing, ALS-XY-Chain, Death Blossom
 │   ├── misc.py          # Sue de Coq
 │   └── templates.py     # Template Set/Delete
-└── generator/     # Not yet implemented
+└── generator/     # Backtracking solver, uniqueness checker, puzzle generation
+    ├── generator.py     # SudokuGenerator — backtracking solver + puzzle generation
+    ├── _gen_accel.c      # optional C accelerator for backtracking solver
+    └── pattern.py       # GeneratorPattern for pattern-constrained generation
 
 hodoku/            # Bundled HoDoKu 2.2.0 JAR (for validation)
 docs/              # Architecture, roadmap, specs
 tests/
 ├── reglib/        # Technique-isolation regression suite (pure Python)
 ├── parity/        # Head-to-head parity suite (requires Java + py4j)
+├── generator/     # Generator unit, integration, and parity tests
 └── testdata/      # Puzzle files for parity testing
 ```
 
@@ -122,21 +126,25 @@ Every technique is validated by solving the puzzle and comparing the solution wi
 
 ## Implementation notes
 
-### C accelerator for large Fish variants
+### C accelerators
 
-The Mutant and Franken variants of the largest Fish (Squirmbag - size 5, 
-Whale - size 6, and Leviathan - size 7) have enormous search spaces.
-CPython is ~50-100x slower than Java JIT for tight bitwise loops. The cover
-DFS for Mutant and Franken Fish (and their Finned variations) is implemented in C (`solver/_fish_accel.c`) 
-and loaded via ctypes, with a pure Python fallback. 
-See [docs/ROADMAP.md](../../docs/ROADMAP.md) for details.
+CPython is ~50-100x slower than Java JIT for tight bitwise loops, so two optional
+C extensions accelerate the most performance-sensitive code paths:
+
+- **Fish cover search** (`solver/_fish_accel.c`): The Mutant and Franken variants of the largest Fish
+  (Squirmbag, Whale, Leviathan) have enormous search spaces. The cover DFS is implemented in C.
+- **Backtracking solver** (`generator/_gen_accel.c`): The backtracking solver used for uniqueness
+  checking and puzzle generation runs ~10x faster with the C accelerator.
+
+Both are built via `python setup.py build_ext --inplace` and have pure Python fallbacks.
 
 
 ## Quick demo
 
 ```python
-from hodoku import Solver
+from hodoku import Solver, Generator, DifficultyType
 
+# Solve a puzzle
 solver = Solver()
 result = solver.solve(
     "530070000600195000098000060800060003400803001700020006060000280000419005000080079"
@@ -145,6 +153,11 @@ print(f"Difficulty: {result.level.name} (score {result.score})")
 print(f"Solved in {len(result.steps)} steps")
 # Difficulty: EASY (score 204)
 # Solved in 51 steps
+
+# Generate a puzzle
+gen = Generator()
+puzzle = gen.generate(difficulty=DifficultyType.HARD)
+print(puzzle)  # 81-char string, 0s for empty cells
 ```
 
 ## Why?

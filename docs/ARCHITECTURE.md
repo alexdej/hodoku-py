@@ -77,7 +77,8 @@ hodoku/
 │   └── brute_force.py      # Last-resort guess
 └── generator/
     ├── __init__.py
-    ├── generator.py        # Backtracking solver + puzzle generation
+    ├── generator.py        # SudokuGenerator — backtracking solver + puzzle generation
+    ├── _gen_accel.c         # Optional C accelerator for backtracking solver (~10x speedup)
     └── pattern.py          # GeneratorPattern for pattern-constrained generation
 ```
 
@@ -280,9 +281,12 @@ class Generator:
     def generate(
         self,
         difficulty: DifficultyType = DifficultyType.MEDIUM,
-        pattern: list[int] | None = None,   # fixed clue positions (0-80)
+        symmetric: bool = True,
+        pattern: list[int] | GeneratorPattern | None = None,
+        max_tries: int | None = None,
     ) -> str:
-        """Generate a puzzle string at the requested difficulty."""
+        """Generate a puzzle string at the requested difficulty.
+        Raises RuntimeError if no matching puzzle is found within max_tries."""
 
     def validate(self, puzzle: str) -> Literal["valid", "invalid", "multiple"]:
         """Check uniqueness of a puzzle."""
@@ -395,22 +399,23 @@ Java `Sudoku2` stores candidates as `short[81]` (9-bit masks per cell), plus `Su
 
 The Python port must do the same: `candidates: list[int]` (per cell) and `candidate_sets: list[int]` (per digit, each a CellSet int) — keep them in sync inside `set_cell()` and `del_candidate()`.
 
-### C accelerator (`_fish_accel.c`)
+### C accelerators
 
-The Mutant fish cover-combination search has a huge search space (up to C(24,6) = 134K
-base combos × cover DFS for Whale). CPython is ~50-100x slower than Java JIT for tight
-bitwise loops, making this intractable in pure Python.
+CPython is ~50-100x slower than Java JIT for tight bitwise loops. Two optional C
+extensions accelerate the most performance-sensitive code paths, both following the
+same pattern: self-contained `.c` file, loaded via `ctypes`, with a pure Python fallback.
 
-`solver/_fish_accel.c` implements the cover DFS in C, loaded via `ctypes` at import time.
+**Fish cover search** (`solver/_fish_accel.c`): The Mutant fish cover-combination search
+has a huge search space (up to C(24,6) = 134K base combos × cover DFS for Whale).
 81-bit candidate masks are split into lo/hi `uint64` halves (matching Java's M1/M2).
 
-When installed from source, the `.c` file *should* be compiled, but is allowed
-to fail with a warning. If the binary is not found at runtime, the code falls back
-to pure python. There is no harm in doing so, other than poor performance on certain
-mutant fish patterns (very rare in the wild, but present in the test suite).
+**Backtracking solver** (`generator/_gen_accel.c`): The backtracking solver used for
+uniqueness checking during puzzle generation. Provides ~10x speedup over the pure Python
+implementation.
 
-If more hot loops need C acceleration in the future, follow the same pattern:
-self-contained `.c` file, Python fallback.
+When installed from source, both `.c` files *should* be compiled, but are allowed
+to fail with a warning. If a binary is not found at runtime, the code falls back
+to pure Python.
 
 ### Subtle ordering bugs
 
