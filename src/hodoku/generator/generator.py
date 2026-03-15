@@ -25,6 +25,20 @@ from hodoku.core.grid import (
 )
 
 # ---------------------------------------------------------------------------
+# Optional C accelerator
+# ---------------------------------------------------------------------------
+
+try:
+    from hodoku.generator import _gen_accel
+    _gen_accel.init_tables(
+        list(BUDDIES),
+        list(CELL_CONSTRAINTS),
+        list(ALL_UNIT_MASKS),
+    )
+except ImportError:
+    _gen_accel = None
+
+# ---------------------------------------------------------------------------
 # Precomputed lookup: candidate-mask → list of digits present
 # ---------------------------------------------------------------------------
 
@@ -244,6 +258,13 @@ class SudokuGenerator:
 
     def solve_string(self, sudoku_string: str) -> None:
         """Solve a puzzle given as an 81-character string."""
+        if _gen_accel is not None:
+            sol_count, sol = _gen_accel.solve_string(sudoku_string)
+            self._solution_count = sol_count
+            if sol_count >= 1:
+                self._solution[:] = sol
+            return
+
         s0 = self._stack[0]
         s0.grid.__init__()  # reset to empty
         s0.candidates = ()
@@ -266,6 +287,13 @@ class SudokuGenerator:
         set all values without propagation, rebuild internal data, then
         propagate singles once.
         """
+        if _gen_accel is not None:
+            sol_count, sol = _gen_accel.solve_values(cell_values)
+            self._solution_count = sol_count
+            if sol_count >= 1:
+                self._solution[:] = sol
+            return
+
         s0 = self._stack[0]
         s0.grid.__init__()  # reset to empty
         s0.candidates = ()
@@ -300,6 +328,34 @@ class SudokuGenerator:
 
     def _solve(self) -> None:
         """Iterative backtracking solver.
+
+        Mirrors ``SudokuGenerator.solve()`` (the private no-arg version).
+        Uses the C accelerator if available, otherwise falls back to pure Python.
+        """
+        if _gen_accel is not None:
+            self._solve_c()
+        else:
+            self._solve_py()
+
+    def _solve_c(self) -> None:
+        """C-accelerated solve path."""
+        grid = self._stack[0].grid
+        ns_q = list(grid.ns_queue)
+        hs_q = list(grid.hs_queue)
+        sol_count, sol = _gen_accel.solve(
+            list(grid.values),
+            list(grid.candidates),
+            list(grid.candidate_sets),
+            [list(row) for row in grid.free],
+            ns_q,
+            hs_q,
+        )
+        self._solution_count = sol_count
+        if sol_count >= 1:
+            self._solution[:] = sol
+
+    def _solve_py(self) -> None:
+        """Pure Python iterative backtracking solver.
 
         Mirrors ``SudokuGenerator.solve()`` (the private no-arg version).
         """
