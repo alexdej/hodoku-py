@@ -6,6 +6,7 @@
 [![CI](https://github.com/alexdej/hodoku-py/actions/workflows/ci.yml/badge.svg)](https://github.com/alexdej/hodoku-py/actions/workflows/ci.yml)
 [![Nightly](https://github.com/alexdej/hodoku-py/actions/workflows/parity-nightly.yml/badge.svg)](https://github.com/alexdej/hodoku-py/actions/workflows/parity-nightly.yml)
 [![flake8](https://alexdej.github.io/hodoku-py/badges/flake8.svg)](https://github.com/alexdej/hodoku-py/actions/workflows/ci.yml)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/aec1c3179f4e4ad8a8c1008197378227)](https://app.codacy.com/gh/alexdej/hodoku-py/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![codecov](https://codecov.io/gh/alexdej/hodoku-py/graph/badge.svg)](https://codecov.io/gh/alexdej/hodoku-py)
 
 A pure Python port of [HoDoKu](https://hodoku.sourceforge.net/) — Sudoku solver, hint engine, and difficulty rater minus the GUI.
