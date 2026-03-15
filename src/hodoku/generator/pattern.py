@@ -8,7 +8,6 @@ Reference: ``generator/GeneratorPattern.java``.
 
 from __future__ import annotations
 
-import copy
 from dataclasses import dataclass, field
 
 from hodoku.core.grid import LENGTH
