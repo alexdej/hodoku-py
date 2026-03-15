@@ -266,15 +266,15 @@ class SudokuGenerator:
 
         Mirrors ``SudokuGenerator.generateSudoku(boolean, boolean[])``.
         """
-        MAX_TRIES = 100_000
-
-        self._generate_full_grid()
+        MAX_PATTERN_TRIES = 1_000_000
 
         if pattern is None:
+            self._generate_full_grid()
             self._generate_init_pos(symmetric)
         else:
             ok = False
-            for attempt in range(MAX_TRIES):
+            for attempt in range(MAX_PATTERN_TRIES):
+                self._generate_full_grid()
                 if self._generate_init_pos_pattern(pattern):
                     ok = True
                     break

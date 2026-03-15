@@ -10,6 +10,7 @@ from hodoku.core.scoring import DIFFICULTY_MAX_SCORE, SOLVER_STEPS
 from hodoku.core.solution_step import SolutionStep
 from hodoku.core.types import DifficultyType
 from hodoku.generator.generator import SudokuGenerator
+from hodoku.generator.pattern import GeneratorPattern
 from hodoku.solver.solver import SudokuSolver
 from hodoku.solver.step_finder import SudokuStepFinder
 
@@ -140,7 +141,7 @@ class Generator:
         self,
         difficulty: DifficultyType = DifficultyType.MEDIUM,
         symmetric: bool = True,
-        pattern: list[int] | None = None,
+        pattern: list[int] | GeneratorPattern | None = None,
         max_tries: int | None = None,
     ) -> str:
         """Generate an 81-character puzzle string at the requested difficulty.
@@ -152,7 +153,9 @@ class Generator:
             max_tries = self.MAX_TRIES
 
         bool_pattern: list[bool] | None = None
-        if pattern is not None:
+        if isinstance(pattern, GeneratorPattern):
+            bool_pattern = pattern.pattern
+        elif pattern is not None:
             bool_pattern = [bool(p) for p in pattern]
 
         for _ in range(max_tries):
