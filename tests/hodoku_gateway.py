@@ -139,3 +139,63 @@ class HodokuGateway:
             steps=steps,
             solved=solved,
         )
+
+    def valid_solution(self, puzzle: str) -> tuple[bool, list[int]]:
+        """Check if *puzzle* has exactly one solution via Java's backtracker.
+
+        Returns ``(is_unique, solution_values)``.  *solution_values* is an
+        81-element list of ints (0 for unsolved) — only meaningful when unique.
+        """
+        jvm = self._jvm
+        sudoku = jvm.sudoku.Sudoku2()
+        sudoku.setSudoku(puzzle)
+
+        generator = jvm.generator.SudokuGeneratorFactory.getDefaultGeneratorInstance()
+        unique = bool(generator.validSolution(sudoku))
+
+        solution = [0] * 81
+        if unique:
+            sol_arr = sudoku.getSolution()
+            for i in range(81):
+                solution[i] = int(sol_arr[i])
+
+        return unique, solution
+
+    def get_number_of_solutions(self, puzzle: str) -> tuple[int, list[int]]:
+        """Return (solution_count, first_solution) via Java's backtracker.
+
+        *solution_count* is 0, 1, or 2 (capped at 2).
+        *first_solution* is only meaningful when count >= 1.
+        """
+        jvm = self._jvm
+        sudoku = jvm.sudoku.Sudoku2()
+        sudoku.setSudoku(puzzle)
+
+        generator = jvm.generator.SudokuGeneratorFactory.getDefaultGeneratorInstance()
+        count = int(generator.getNumberOfSolutions(sudoku))
+
+        solution = [0] * 81
+        if count >= 1:
+            sol_arr = generator.getSolution()
+            for i in range(81):
+                solution[i] = int(sol_arr[i])
+
+        return count, solution
+
+    def solve_backtracker(self, puzzle: str) -> tuple[int, list[int]]:
+        """Solve *puzzle* with Java's backtracker (string entry point).
+
+        Returns ``(solution_count, solution)``.
+        """
+        jvm = self._jvm
+        generator = jvm.generator.SudokuGeneratorFactory.getDefaultGeneratorInstance()
+        generator.solve(puzzle)
+
+        count = int(generator.getSolutionCount())
+        solution = [0] * 81
+        if count >= 1:
+            sol_arr = generator.getSolution()
+            for i in range(81):
+                solution[i] = int(sol_arr[i])
+
+        return count, solution
