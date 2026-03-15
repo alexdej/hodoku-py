@@ -6,10 +6,10 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-from hodoku.core.grid import Grid
-from hodoku.core.types import SolutionType
-from hodoku.solver.brute_force import BruteForceSolver
-from hodoku.solver.solver import SudokuSolver
+from hodoku.core.grid import Grid  # noqa: E402
+from hodoku.core.types import SolutionType  # noqa: E402
+from hodoku.solver.brute_force import BruteForceSolver  # noqa: E402
+from hodoku.solver.solver import SudokuSolver  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -64,7 +64,6 @@ def test_brute_force_produces_valid_solution() -> None:
     solver = BruteForceSolver(grid)
 
     # Drain all steps into the grid
-    from hodoku.solver.solver import _apply_step, _PLACEMENT_TYPES
     for _ in range(80):
         step = solver.get_step(SolutionType.BRUTE_FORCE)
         if step is None:

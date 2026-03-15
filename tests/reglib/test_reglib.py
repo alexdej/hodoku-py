@@ -31,7 +31,7 @@ import pytest
 from hodoku.core.grid import Grid
 from hodoku.core.types import SolutionType
 from hodoku.solver.step_finder import SudokuStepFinder, _ALS_TYPES
-from tests.reglib.reglib_parser import REGLIB_FILE, ReglibEntry
+from tests.reglib.reglib_parser import ReglibEntry
 
 # Tests that also fail in Java HoDoKu v2.2.0 (reglib-1.3.txt).
 # ALS-XY-Chain: needs bidirectional RC traversal or chain length >6,
@@ -46,6 +46,7 @@ _CROSS_TYPE_SIAMESE_XFAIL = frozenset({724})
 # Tests with search spaces too large for pure Python (require C accelerator).
 # Finned Mutant Whale (size 6): C(24,6)=134K base combos × cover search.
 _NEEDS_C_ACCEL_LINES = frozenset({763})
+
 
 def _has_c_accel() -> bool:
     from hodoku.solver.fish import _accel

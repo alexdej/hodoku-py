@@ -395,7 +395,7 @@ if __name__ == "__main__":
             print(f"  {i:3}. {step.technique} -> r{r}c{c}={step.values[0]}  [{st}]")
         else:
             elim_summary = ", ".join(
-                f"r{e[0]//9+1}c{e[0]%9+1}<>{e[1]}" for e in step.eliminations[:3]
+                f"r{e[0] // 9 + 1}c{e[0] % 9 + 1}<>{e[1]}" for e in step.eliminations[:3]
             )
             if len(step.eliminations) > 3:
                 elim_summary += f" (+{len(step.eliminations)-3} more)"

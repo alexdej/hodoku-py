@@ -89,8 +89,16 @@ def test_matches_hodoku(
             if not steps_match(o, t):
                 record_property("divergence", json.dumps({
                     "step": i + 1,
-                    "ours":   {"type": o.type.value if o.type else None, "elims": list(o.eliminations), "placements": list(o.placements)},
-                    "hodoku": {"type": t.type.value if t.type else None, "elims": list(t.eliminations), "placements": list(t.placements)},
+                    "ours": {
+                        "type": o.type.value if o.type else None,
+                        "elims": list(o.eliminations),
+                        "placements": list(o.placements),
+                    },
+                    "hodoku": {
+                        "type": t.type.value if t.type else None,
+                        "elims": list(t.eliminations),
+                        "placements": list(t.placements),
+                    },
                 }))
                 break
 

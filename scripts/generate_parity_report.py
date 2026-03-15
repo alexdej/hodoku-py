@@ -66,41 +66,45 @@ def parse_junit(xml_path: Path) -> tuple[dict, list[dict]]:
 
     cases = []
     for tc in root.findall(".//testcase"):
-            raw_name = tc.get("name", "")
-            # Strip pytest wrapper: test_foo[...] -> ...
-            if raw_name.endswith("]") and "[" in raw_name:
-                name = raw_name[raw_name.index("[") + 1:-1]
-            else:
-                name = raw_name
+        raw_name = tc.get("name", "")
+        # Strip pytest wrapper: test_foo[...] -> ...
+        if raw_name.endswith("]") and "[" in raw_name:
+            name = raw_name[raw_name.index("[") + 1:-1]
+        else:
+            name = raw_name
 
-            failure = tc.find("failure")
-            skipped = tc.find("skipped")
-            if failure is not None:
-                status = "failed"
-                message = (failure.text or failure.get("message", "")).strip()
-                summary = extract_failure_summary(message)
-            elif skipped is not None:
-                status = "skipped"
-                message = skipped.get("message", "").strip()
-                summary = message
-            else:
-                status = "passed"
-                message = ""
-                summary = ""
+        failure = tc.find("failure")
+        skipped = tc.find("skipped")
+        if failure is not None:
+            status = "failed"
+            message = (failure.text or failure.get("message", "")).strip()
+            summary = extract_failure_summary(message)
+        elif skipped is not None:
+            status = "skipped"
+            message = skipped.get("message", "").strip()
+            summary = message
+        else:
+            status = "passed"
+            message = ""
+            summary = ""
 
-            puzzle = ""
-            score = ""
-            level = ""
-            for prop in tc.findall("properties/property"):
-                pname = prop.get("name")
-                if pname == "puzzle":
-                    puzzle = prop.get("value", "")
-                elif pname == "hodoku_score":
-                    score = prop.get("value", "")
-                elif pname == "hodoku_level_name":
-                    level = prop.get("value", "")
+        puzzle = ""
+        score = ""
+        level = ""
+        for prop in tc.findall("properties/property"):
+            pname = prop.get("name")
+            if pname == "puzzle":
+                puzzle = prop.get("value", "")
+            elif pname == "hodoku_score":
+                score = prop.get("value", "")
+            elif pname == "hodoku_level_name":
+                level = prop.get("value", "")
 
-            cases.append({"name": name, "status": status, "message": message, "summary": summary, "puzzle": puzzle, "score": score, "level": level})
+        cases.append({
+            "name": name, "status": status, "message": message,
+            "summary": summary, "puzzle": puzzle, "score": score,
+            "level": level,
+        })
 
     n_failures = sum(1 for c in cases if c["status"] == "failed")
     n_skipped = sum(1 for c in cases if c["status"] == "skipped")
@@ -215,7 +219,6 @@ def generate_dataset_html(name: str, stats: dict, cases: list, now: str) -> str:
         msg = case["message"]
         summary = case.get("summary", "") or msg
         msg_short = (summary[:200] + "…") if len(summary) > 200 else summary
-        msg_attr = html.escape(msg, quote=True)
         msg_display = html.escape(msg_short)
 
         puzzle = case.get("puzzle", "")

@@ -7,9 +7,11 @@ puzzles = [
     # grab a few medium, hard, extreme from your test corpus
 ]
 
+
 def solve(p):
-  solver = SudokuSolver()
-  solver.solve(p)
+    solver = SudokuSolver()
+    solver.solve(p)
+
 
 N = 100
 for diff, p in puzzles:
@@ -18,5 +20,3 @@ for diff, p in puzzles:
     print(f"{diff}:")
     print(f"{N} iterations in {ms:.4f} ms")
     print(f"{avg:.4f} ms per solve")
-
-

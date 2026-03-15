@@ -4,3 +4,6 @@ max-line-length = 120
 # W503/W504: conflicting line-break style rules — pick neither
 extend-ignore = E241,E221,E272,W503,W504
 exclude = build,dist,.git,__pycache__,*.egg-info
+# HTML report generator — inline HTML/CSS templates exceed 120 chars
+per-file-ignores =
+    scripts/generate_parity_report.py: E501

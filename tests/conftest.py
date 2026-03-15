@@ -11,6 +11,7 @@ import pytest
 PROJECT_ROOT = Path(__file__).parent.parent
 HODOKU_JAR = PROJECT_ROOT / "hodoku" / "hodoku.jar"
 
+
 def pytest_collection_modifyitems(items: list) -> None:
     """Re-order collected tests: unit tests first, then reglib, then parity."""
     def _sort_key(item):

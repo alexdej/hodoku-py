@@ -88,7 +88,7 @@ def main() -> None:
     fixed = sorted(before_set - after_set)
     added = sorted(after_set - before_set)
 
-    print(f"\nknown_failures.txt updated.")
+    print("\nknown_failures.txt updated.")
     print(f"  Before : {len(before_set):4d} known failures")
     print(f"  After  : {len(after_set):4d} known failures")
     if fixed:

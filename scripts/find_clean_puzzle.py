@@ -29,6 +29,7 @@ from pathlib import Path
 # Inline minimal backtracking generator (no external deps)
 # ---------------------------------------------------------------------------
 
+
 def _backtrack(grid: list[int]) -> bool:
     for i in range(81):
         if grid[i] == 0:

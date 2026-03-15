@@ -11,9 +11,8 @@ from __future__ import annotations
 
 import argparse
 import re
-import sys
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
