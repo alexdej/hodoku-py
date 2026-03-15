@@ -1,4 +1,4 @@
-"""Backtracking solver for puzzle generation and solution counting.
+"""Backtracking solver and puzzle generator.
 
 Port of Java's ``SudokuGenerator`` — a bit-based backtracking solver that uses
 the Grid's naked-single / hidden-single queues to propagate constraints during
@@ -6,7 +6,7 @@ search.  Used by the generator to:
 
 * Check uniqueness (``valid_solution`` / ``get_number_of_solutions``).
 * Produce the solution array stored on the Grid.
-* (Later tasks) Generate full grids and derive puzzles by clue removal.
+* Generate full grids and derive puzzles by symmetric clue removal.
 
 Reference: ``generator/SudokuGenerator.java`` lines 40–747.
 """
@@ -14,6 +14,7 @@ Reference: ``generator/SudokuGenerator.java`` lines 40–747.
 from __future__ import annotations
 
 import collections
+import random
 
 from hodoku.core.grid import (
     ALL_UNIT_MASKS,
@@ -201,10 +202,14 @@ def _set_all_exposed_singles(grid: Grid) -> bool:
 class SudokuGenerator:
     """Bit-based backtracking solver for generation and uniqueness checking."""
 
-    def __init__(self) -> None:
+    def __init__(self, rng: random.Random | None = None) -> None:
         self._stack: list[_StackEntry] = [_StackEntry() for _ in range(82)]
         self._solution: list[int] = [0] * LENGTH
         self._solution_count: int = 0
+        self._rand: random.Random = rng if rng is not None else random.Random()
+        self._generate_indices: list[int] = list(range(LENGTH))
+        self._new_full_sudoku: list[int] = [0] * LENGTH
+        self._new_valid_sudoku: list[int] = [0] * LENGTH
 
     # ------------------------------------------------------------------
     # Public API
@@ -243,6 +248,209 @@ class SudokuGenerator:
     def get_solution_as_string(self) -> str:
         """Return the solution as an 81-character digit string."""
         return "".join(str(d) for d in self._solution)
+
+    # ------------------------------------------------------------------
+    # Puzzle generation
+    # ------------------------------------------------------------------
+
+    def generate_sudoku(
+        self,
+        symmetric: bool = True,
+        pattern: list[bool] | None = None,
+    ) -> str | None:
+        """Generate a new puzzle and return it as an 81-character string.
+
+        If *pattern* is given, uses a fixed given-pattern (may return ``None``
+        if no valid puzzle is found in MAX_TRIES attempts).  Otherwise uses
+        random symmetric clue removal.
+
+        Mirrors ``SudokuGenerator.generateSudoku(boolean, boolean[])``.
+        """
+        MAX_TRIES = 100_000
+
+        self._generate_full_grid()
+
+        if pattern is None:
+            self._generate_init_pos(symmetric)
+        else:
+            ok = False
+            for attempt in range(MAX_TRIES):
+                if self._generate_init_pos_pattern(pattern):
+                    ok = True
+                    break
+            if not ok:
+                return None
+
+        return "".join(str(d) for d in self._new_valid_sudoku)
+
+    def _generate_full_grid(self) -> None:
+        """Retry wrapper for full-grid generation.
+
+        Mirrors ``SudokuGenerator.generateFullGrid()``.
+        """
+        while not self._do_generate_full_grid():
+            pass
+
+    def _do_generate_full_grid(self) -> bool:
+        """Generate a random full sudoku grid via backtracking.
+
+        Mirrors ``SudokuGenerator.doGenerateFullGrid()``.  Cells are visited
+        in a random order.  If more than 100 backtrack levels are explored,
+        the attempt is aborted and the caller retries with a new shuffle.
+        """
+        act_tries = 0
+        rand = self._rand
+        indices = self._generate_indices
+
+        # Fisher–Yates-style shuffle (Java's pairwise-swap variant)
+        max_len = len(indices)
+        for i in range(max_len):
+            indices[i] = i
+        for i in range(max_len):
+            idx1 = rand.randrange(max_len)
+            idx2 = rand.randrange(max_len)
+            while idx1 == idx2:
+                idx2 = rand.randrange(max_len)
+            indices[idx1], indices[idx2] = indices[idx2], indices[idx1]
+
+        # Start with empty grid
+        stack = self._stack
+        stack[0].grid.__init__()
+        level = 0
+        stack[0].index = -1
+
+        while True:
+            if stack[level].grid.values.count(0) == 0:
+                # Full grid generated
+                self._new_full_sudoku[:] = stack[level].grid.values
+                return True
+
+            # Find first unsolved cell in random order
+            index = -1
+            vals = stack[level].grid.values
+            for i in range(LENGTH):
+                act_try = indices[i]
+                if vals[act_try] == 0:
+                    index = act_try
+                    break
+
+            level += 1
+            stack[level].index = index
+            stack[level].candidates = _POSSIBLE_VALUES[
+                stack[level - 1].grid.candidates[index]
+            ]
+            stack[level].cand_index = 0
+
+            # Limit backtracking depth
+            act_tries += 1
+            if act_tries > 100:
+                return False
+
+            # Try candidates at this level
+            done = False
+            while True:
+                while stack[level].cand_index >= len(stack[level].candidates):
+                    level -= 1
+                    if level <= 0:
+                        done = True
+                        break
+                if done:
+                    break
+
+                next_cand = stack[level].candidates[stack[level].cand_index]
+                stack[level].cand_index += 1
+
+                _copy_state(stack[level].grid, stack[level - 1].grid)
+
+                if not _set_cell_valid(
+                    stack[level].grid, stack[level].index, next_cand
+                ):
+                    continue
+
+                if _set_all_exposed_singles(stack[level].grid):
+                    break
+
+            if done:
+                break
+
+        return False
+
+    def _generate_init_pos(self, is_symmetric: bool) -> None:
+        """Remove clues from a full grid to create a puzzle.
+
+        Mirrors ``SudokuGenerator.generateInitPos(boolean)``.
+        Scan-forward random cell selection with 180-degree symmetry.
+        """
+        max_pos_to_fill = 17  # minimum 17 givens
+        used = [False] * 81
+        used_count = 81
+        rand = self._rand
+
+        full = self._new_full_sudoku
+        valid = self._new_valid_sudoku
+        valid[:] = full
+
+        remaining_clues = 81
+
+        while remaining_clues > max_pos_to_fill and used_count > 1:
+            # Scan forward from a random position to find an untried cell
+            i = rand.randrange(81)
+            while True:
+                i = i + 1 if i < 80 else 0
+                if not used[i]:
+                    break
+            used[i] = True
+            used_count -= 1
+
+            if valid[i] == 0:
+                # Already deleted (by symmetric partner)
+                continue
+
+            # For symmetric mode: skip if the symmetric partner is already gone
+            # (unless this IS the center cell)
+            is_center = (i // 9 == 4 and i % 9 == 4)
+            symm = 9 * (8 - i // 9) + (8 - i % 9)
+
+            if is_symmetric and not is_center and valid[symm] == 0:
+                continue
+
+            # Delete cell
+            valid[i] = 0
+            remaining_clues -= 1
+
+            # Also delete symmetric partner (unless center cell)
+            if is_symmetric and not is_center:
+                valid[symm] = 0
+                used[symm] = True
+                used_count -= 1
+                remaining_clues -= 1
+
+            # Check uniqueness
+            self.solve_values(valid)
+
+            if self._solution_count > 1:
+                # Restore — deletion would break uniqueness
+                valid[i] = full[i]
+                remaining_clues += 1
+                if is_symmetric and not is_center:
+                    valid[symm] = full[symm]
+                    remaining_clues += 1
+
+    def _generate_init_pos_pattern(self, pattern: list[bool]) -> bool:
+        """Remove clues per a fixed pattern and check uniqueness.
+
+        Mirrors ``SudokuGenerator.generateInitPos(boolean[])``.
+        Returns ``True`` if the resulting puzzle has a unique solution.
+        """
+        valid = self._new_valid_sudoku
+        valid[:] = self._new_full_sudoku
+
+        for i in range(len(pattern)):
+            if not pattern[i]:
+                valid[i] = 0
+
+        self.solve_values(valid)
+        return self._solution_count <= 1
 
     # ------------------------------------------------------------------
     # Solve entry points
