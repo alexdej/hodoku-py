@@ -9,6 +9,7 @@ from hodoku.core.grid import ALL_UNITS, Grid
 from hodoku.core.scoring import SOLVER_STEPS
 from hodoku.core.solution_step import SolutionStep
 from hodoku.core.types import DifficultyType
+from hodoku.generator.generator import SudokuGenerator
 from hodoku.solver.solver import SudokuSolver
 from hodoku.solver.step_finder import SudokuStepFinder
 
@@ -123,16 +124,70 @@ class Solver:
 
 
 class Generator:
-    """Generates valid sudoku puzzles."""
+    """Generates valid sudoku puzzles at a requested difficulty level.
+
+    Mirrors Java's ``BackgroundGenerator``: repeatedly generates random
+    symmetric puzzles and rates them until one matches the target difficulty.
+    """
+
+    MAX_TRIES = 20_000
+
+    def __init__(self) -> None:
+        self._generator = SudokuGenerator()
+        self._solver = SudokuSolver()
 
     def generate(
         self,
         difficulty: DifficultyType = DifficultyType.MEDIUM,
+        symmetric: bool = True,
         pattern: list[int] | None = None,
+        max_tries: int | None = None,
     ) -> str:
-        """Generate an 81-character puzzle string at the requested difficulty."""
-        raise NotImplementedError
+        """Generate an 81-character puzzle string at the requested difficulty.
+
+        Raises ``RuntimeError`` if no puzzle matching the difficulty is found
+        within *max_tries* attempts (default ``MAX_TRIES``).
+        """
+        if max_tries is None:
+            max_tries = self.MAX_TRIES
+
+        bool_pattern: list[bool] | None = None
+        if pattern is not None:
+            bool_pattern = [bool(p) for p in pattern]
+
+        for _ in range(max_tries):
+            puzzle = self._generator.generate_sudoku(
+                symmetric=symmetric, pattern=bool_pattern,
+            )
+            if puzzle is None:
+                # Pattern-based generation failed entirely
+                raise RuntimeError(
+                    "Could not generate a puzzle with the given pattern"
+                )
+
+            # Rate the puzzle
+            result = self._solver.solve(puzzle)
+            if result.solved and result.level == difficulty:
+                return puzzle
+
+        raise RuntimeError(
+            f"Could not generate a {difficulty.name} puzzle in "
+            f"{max_tries} attempts"
+        )
 
     def validate(self, puzzle: str) -> Literal["valid", "invalid", "multiple"]:
-        """Check whether a puzzle has exactly one solution."""
-        raise NotImplementedError
+        """Check whether a puzzle has exactly one solution.
+
+        Returns ``"valid"`` (unique), ``"invalid"`` (no solution),
+        or ``"multiple"`` (more than one solution).
+        """
+        _validate_puzzle(puzzle)
+        grid = Grid()
+        grid.set_sudoku(puzzle)
+        count = self._generator.get_number_of_solutions(grid)
+        if count == 0:
+            return "invalid"
+        elif count == 1:
+            return "valid"
+        else:
+            return "multiple"
