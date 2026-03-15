@@ -42,7 +42,7 @@ from hodoku.generator.generator import (
 # Helpers
 # ---------------------------------------------------------------------------
 
-TESTDATA_DIR = Path(__file__).parent / "testdata"
+TESTDATA_DIR = Path(__file__).parent.parent / "testdata"
 
 
 def _solve_python(puzzle: str) -> tuple[int, list[int]]:

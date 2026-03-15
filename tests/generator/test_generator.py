@@ -5,6 +5,8 @@ import pytest
 from hodoku.core.grid import Grid
 from hodoku.generator.generator import SudokuGenerator
 
+pytestmark = pytest.mark.unit
+
 
 # ---------------------------------------------------------------------------
 # Helpers

@@ -7,6 +7,8 @@ import pytest
 from hodoku.generator.generator import SudokuGenerator
 from hodoku.generator.pattern import GeneratorPattern
 
+pytestmark = pytest.mark.unit
+
 
 # ---------------------------------------------------------------------------
 # Helpers
