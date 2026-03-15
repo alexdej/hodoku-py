@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from hodoku.core.grid import ALL_UNITS, Grid
-from hodoku.core.scoring import SOLVER_STEPS
+from hodoku.core.scoring import DIFFICULTY_MAX_SCORE, SOLVER_STEPS
 from hodoku.core.solution_step import SolutionStep
 from hodoku.core.types import DifficultyType
 from hodoku.generator.generator import SudokuGenerator
@@ -167,8 +167,17 @@ class Generator:
 
             # Rate the puzzle
             result = self._solver.solve(puzzle)
-            if result.solved and result.level == difficulty:
-                return puzzle
+            if not result.solved or result.level != difficulty:
+                continue
+
+            # Reject if score is below the previous level's max_score
+            # (mirrors Java's rejectTooLowScore logic)
+            if difficulty.value > DifficultyType.EASY.value:
+                prev_level = DifficultyType(difficulty.value - 1)
+                if result.score < DIFFICULTY_MAX_SCORE[prev_level]:
+                    continue
+
+            return puzzle
 
         raise RuntimeError(
             f"Could not generate a {difficulty.name} puzzle in "
