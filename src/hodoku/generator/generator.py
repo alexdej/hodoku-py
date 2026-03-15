@@ -13,7 +13,6 @@ Reference: ``generator/SudokuGenerator.java`` lines 40–747.
 
 from __future__ import annotations
 
-import collections
 import random
 
 from hodoku.core.grid import (
