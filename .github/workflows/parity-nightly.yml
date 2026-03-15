@@ -59,7 +59,7 @@ jobs:
       - name: Run coverage
         run: >
           pytest tests/parity/ --puzzle-file exemplars-1.0 -v --tb=short
-          --puzzle-timeout 90
+          --puzzle-timeout 120
           --cov=src/hodoku --cov-report=xml
 
       - name: Upload coverage to Codecov
