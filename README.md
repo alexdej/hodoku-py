@@ -1,5 +1,6 @@
 # hodoku-py
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/7cfd184f399a45fe81e11b9a8727b1eb)](https://app.codacy.com/gh/alexdej/hodoku-py?utm_source=github.com&utm_medium=referral&utm_content=alexdej/hodoku-py&utm_campaign=Badge_Grade)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org)
 [![PyPI](https://img.shields.io/pypi/v/hodoku-py)](https://pypi.org/project/hodoku-py/)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](https://www.gnu.org/licenses/gpl-3.0.html)
