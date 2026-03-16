@@ -8,7 +8,7 @@ class OptionalBuildExt(build_ext):
             super().build_extension(ext)
         except Exception:
             print("Note: optional native code accelerator for Mutant Fish not built (no build tools available); "
-                  "pure Python fallback will be used.")
+                  "Python fallback will be used.")
             ext._optional_build_failed = True
 
     def copy_extensions_to_source(self):

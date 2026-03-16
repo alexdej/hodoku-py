@@ -118,8 +118,8 @@ typedef struct {
 
 static inline void ns_clear(GridState *g) { g->ns_head = g->ns_tail = 0; }
 static inline void hs_clear(GridState *g) { g->hs_head = g->hs_tail = 0; }
-static inline int ns_empty(GridState *g) { return g->ns_head == g->ns_tail; }
-static inline int hs_empty(GridState *g) { return g->hs_head == g->hs_tail; }
+static inline int ns_empty(const GridState *g) { return g->ns_head == g->ns_tail; }
+static inline int hs_empty(const GridState *g) { return g->hs_head == g->hs_tail; }
 
 static inline void ns_push(GridState *g, int index, int value) {
     if (g->ns_tail < QUEUE_CAP) {
@@ -187,15 +187,10 @@ static int del_cand_valid(GridState *g, int index, int digit) {
 
     uint16_t remaining = g->candidates[index];
     if (remaining != 0 && (remaining & (remaining - 1)) == 0) {
-        /* Exactly one candidate left → naked single */
-        int d;
-        /* bit_length equivalent: find position of the single set bit + 1,
-           but we need the digit value which is bit_position + 1.
-           For a power of 2, __builtin_ctz gives the bit position. */
-        if (remaining) {
-            d = __builtin_ctz(remaining) + 1;
-            ns_push(g, index, d);
-        }
+        /* Exactly one candidate left → naked single.
+           __builtin_ctz gives the bit position; digit = position + 1. */
+        int d = __builtin_ctz(remaining) + 1;
+        ns_push(g, index, d);
     }
 
     return 1;

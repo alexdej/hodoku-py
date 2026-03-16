@@ -1,5 +1,6 @@
 PYTHON ?= python
 TWINE  ?= twine
+CC     ?= gcc
 
 .PHONY: build upload upload-test clean lint
 
@@ -25,11 +26,11 @@ lint:
 		--check-level=exhaustive --error-exitcode=1 \
 		--suppress=missingIncludeSystem \
 		$(C_SOURCES)
-	@echo "=== gcc -Wall -Wextra ==="
-	gcc -fsyntax-only -Wall -Wextra -Wpedantic -Werror \
+	@echo "=== $(CC) -Wall -Wextra ==="
+	$(CC) -fsyntax-only -Wall -Wextra -Wpedantic -Werror \
 		-Wno-unused-parameter -Wno-missing-field-initializers \
 		-I$(PY_INCLUDE) \
-		$(C_SOURCES)
+	 	$(C_SOURCES)
 	@echo "lint: all checks passed"
 
 clean:
