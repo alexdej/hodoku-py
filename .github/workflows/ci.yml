@@ -24,6 +24,11 @@ jobs:
         run: flake8 src/
         continue-on-error: true
 
+      - name: Lint C extensions
+        id: lint_c
+        run: make lint
+        continue-on-error: true
+
       - name: Generate badge
         run: |
           mkdir -p site/badges
@@ -43,6 +48,10 @@ jobs:
 
       - name: Fail if flake8 failed
         if: steps.flake8.outcome == 'failure'
+        run: exit 1
+
+      - name: Fail if lint-c failed
+        if: steps.lint_c.outcome == 'failure'
         run: exit 1
 
   unit:
