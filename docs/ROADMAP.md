@@ -48,8 +48,8 @@ Each layer depends only on those above it in the list.
 
 | # | Layer | File | Status | Notes |
 |---|-------|------|--------|-------|
-| 20 | Generator | `generator/generator.py` | ⬜ | Backtracking solver, uniqueness validation, puzzle generation |
-| 21 | Public API | `api.py` | ✅ | `Solver` class fully wired; `Generator` stubs remain until row 20 done |
+| 20 | Generator | `generator/generator.py` | ✅ | Backtracking solver, uniqueness validation, puzzle generation (symmetric + pattern-based). Optional C accelerator (`_gen_accel.c`) for ~10x speedup. |
+| 21 | Public API | `api.py` | ✅ | `Solver` and `Generator` classes fully wired |
 | 22 | Bad input tests | `tests/test_bad_inputs.py` | ✅ | 41 tests: format errors, house duplicates, edge cases — all passing |
 
 ### Bad input / edge-case tests (row 22)
