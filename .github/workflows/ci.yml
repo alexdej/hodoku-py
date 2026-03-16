@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - run: pip install flake8 anybadge
+      - run: pip install flake8 anybadge cppcheck
 
       - name: Run flake8
         id: flake8
