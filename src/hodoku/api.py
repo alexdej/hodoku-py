@@ -116,6 +116,10 @@ class Solver:
         _validate_puzzle(puzzle)
         grid = Grid()
         grid.set_sudoku(puzzle)
+        return self._find_all_on_grid(grid)
+
+    def _find_all_on_grid(self, grid: Grid) -> list[SolutionStep]:
+        """Return every applicable technique on a pre-built grid."""
         finder = SudokuStepFinder(grid)
         steps: list[SolutionStep] = []
         for cfg in SOLVER_STEPS:

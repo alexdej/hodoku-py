@@ -5,11 +5,18 @@ from dataclasses import dataclass, field
 from hodoku.core.types import SolutionType
 
 
+def _cell_name(index: int) -> str:
+    return f"r{index // 9 + 1}c{index % 9 + 1}"
+
+
 @dataclass(frozen=True)
 class Candidate:
     """A (cell, digit) pair — used in candidates_to_delete lists."""
     index: int  # 0-80
     value: int  # 1-9
+
+    def __str__(self) -> str:
+        return f"{_cell_name(self.index)}<>{self.value}"
 
 
 @dataclass(frozen=True)
@@ -125,6 +132,19 @@ class SolutionStep:
         parts = sorted(zip(self.indices, self.values))
         cells_str = ",".join(f"{i}={v}" for i, v in parts)
         return f"{self.type.name}: {cells_str}"
+
+    def __str__(self) -> str:
+        name = self.type.value
+        if self.indices:
+            cells = ", ".join(
+                f"{_cell_name(i)}={v}"
+                for i, v in zip(self.indices, self.values)
+            )
+            return f"{name}: {cells}"
+        if self.candidates_to_delete:
+            cells = ", ".join(str(c) for c in self.candidates_to_delete)
+            return f"{name}: {cells}"
+        return name
 
     def __repr__(self) -> str:
         return f"SolutionStep({self.type.name}, indices={self.indices}, values={self.values})"
