@@ -84,7 +84,10 @@ def _load_puzzle_file(path: Path, count: int | None, seed: int, *, file_stem: st
                 section = content or None
             continue
         # Handle lines with trailing comments: "puzzle # annotation"
+        # Also handle CSV lines where puzzle is the first comma-separated field
         puzzle_part = stripped.split("#")[0].strip()
+        if not _PUZZLE_RE.match(puzzle_part):
+            puzzle_part = puzzle_part.split(",")[0].strip()
         if _PUZZLE_RE.match(puzzle_part):
             puzzle = puzzle_part
             idx = section_counts.get(section, 0)
