@@ -7,6 +7,20 @@ import pytest
 from hodoku.core.solution_step import Candidate, SolutionStep
 from hodoku.core.types import SolutionType
 
+
+class TestSolutionTypeIsSingle:
+    def test_full_house_is_single(self):
+        assert SolutionType.FULL_HOUSE.is_single() is True
+
+    def test_hidden_single_is_single(self):
+        assert SolutionType.HIDDEN_SINGLE.is_single() is True
+
+    def test_naked_single_is_single(self):
+        assert SolutionType.NAKED_SINGLE.is_single() is True
+
+    def test_non_single(self):
+        assert SolutionType.NAKED_PAIR.is_single() is False
+
 pytestmark = pytest.mark.unit
 
 
