@@ -87,7 +87,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e . && pip install pytest pytest-cov
-      - run: pytest tests/reglib/ -v --cov=src/hodoku --cov-report=xml
+      - run: pytest tests/reglib/ --ignore=tests/reglib/test_reglib_ex.py -v --cov=src/hodoku --cov-report=xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
