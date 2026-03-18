@@ -1,0 +1,36 @@
+name: Nightly Accel Fallback
+
+on:
+  schedule:
+    - cron: "0 7 * * *"  # daily at 07:00 UTC (after coverage-nightly)
+  workflow_dispatch:
+
+jobs:
+  fallback:
+    name: Pure-Python fallback (no C extensions)
+    runs-on: ubuntu-latest
+    env:
+      HODOKU_NO_ACCEL: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install -e . && pip install pytest pytest-cov
+
+      - name: Unit tests (generator fallback)
+        run: pytest -m unit -v --cov=src/hodoku --cov-report=xml --cov-append
+
+      - name: Generator API tests (generate/validate fallback)
+        run: pytest tests/generator/test_generator_api.py -v --cov=src/hodoku --cov-report=xml --cov-append
+
+      - name: Reglib suite (fish fallback)
+        run: pytest tests/reglib/ --ignore=tests/reglib/test_reglib_ex.py -v --cov=src/hodoku --cov-report=xml --cov-append
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+          name: hodoku-py
+          flags: fallback

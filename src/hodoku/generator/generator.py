@@ -13,6 +13,7 @@ Reference: ``generator/SudokuGenerator.java`` lines 40–747.
 
 from __future__ import annotations
 
+import os
 import random
 
 from hodoku.core.grid import (
@@ -29,6 +30,8 @@ from hodoku.core.grid import (
 # ---------------------------------------------------------------------------
 
 try:
+    if os.environ.get("HODOKU_NO_ACCEL"):
+        raise ImportError("disabled by HODOKU_NO_ACCEL")
     from hodoku.generator import _gen_accel
     _gen_accel.init_tables(
         list(BUDDIES),

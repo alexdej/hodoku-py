@@ -21,6 +21,7 @@ handled identically to external fins when computing eliminations.
 
 from __future__ import annotations
 
+import os
 from itertools import combinations
 
 from hodoku.core.grid import (
@@ -37,6 +38,8 @@ _ALL_CELLS = (1 << 81) - 1
 # ---- C accelerator for cover search (optional, huge speedup) ----
 
 try:
+    if os.environ.get("HODOKU_NO_ACCEL"):
+        raise ImportError("disabled by HODOKU_NO_ACCEL")
     from hodoku.solver import _fish_accel as _accel
     _accel.set_buddies(list(BUDDIES))
 except ImportError:
