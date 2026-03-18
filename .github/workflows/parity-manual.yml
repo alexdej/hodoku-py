@@ -69,8 +69,8 @@ jobs:
       - name: Download parity results
         uses: actions/download-artifact@v8
         with:
-          pattern: parity-*
-          path: parity-results/
+          name: parity-${{ github.event.inputs.puzzle-file }}
+          path: parity-results/parity-${{ github.event.inputs.puzzle-file }}/
 
       - name: Generate report
         run: python scripts/generate_parity_report.py --results-dir parity-results/ --output-dir site/
