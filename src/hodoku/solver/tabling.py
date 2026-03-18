@@ -11,6 +11,7 @@ including support for ALS nodes in grouped chains.
 from __future__ import annotations
 
 import copy
+from dataclasses import dataclass
 
 from hodoku.core.grid import (
     ALL_UNIT_MASKS,
@@ -18,6 +19,7 @@ from hodoku.core.grid import (
     BUDDIES,
     CELL_CONSTRAINTS,
     COL_MASKS,
+    CONSTRAINTS,
     DIGIT_MASKS,
     LINE_MASKS,
     Grid,
@@ -42,8 +44,81 @@ from hodoku.solver.chain_utils import (
     make_entry_als,
     make_entry_simple,
 )
-from hodoku.solver.chains import _collect_group_nodes, _GroupNode
 from hodoku.solver.table_entry import MAX_TABLE_ENTRY_LENGTH, TableEntry
+
+# ---------------------------------------------------------------------------
+# Group nodes (used by TablingSolver for Grouped Nice Loop / AIC)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class _GroupNode:
+    """A group node for digit d: 2–3 cells sharing a block and a row or col."""
+    digit: int
+    cells: int    # bitmask of cells in group
+    buddies: int  # intersection of BUDDIES of all cells (cells that see ALL group cells)
+    block: int    # block index 0–8
+    line: int     # row index 0–8, or -1 if not row-aligned
+    col: int      # col index 0–8, or -1 if not col-aligned
+    index1: int   # first cell index
+    index2: int   # second cell index
+    index3: int   # third cell index, or -1 for 2-cell groups
+
+
+def _make_group_node(digit: int, cells_mask: int, block_idx: int) -> _GroupNode:
+    """Construct a _GroupNode from a bitmask of 2–3 cells."""
+    indices: list[int] = []
+    tmp = cells_mask
+    while tmp:
+        lsb = tmp & -tmp
+        indices.append(lsb.bit_length() - 1)
+        tmp ^= lsb
+    index1, index2 = indices[0], indices[1]
+    index3 = indices[2] if len(indices) > 2 else -1
+    r1, c1, _ = CONSTRAINTS[index1]
+    r2, c2, _ = CONSTRAINTS[index2]
+    line = r1 if r1 == r2 else -1
+    col  = c1 if c1 == c2 else -1
+    buddies = BUDDIES[index1] & BUDDIES[index2]
+    if index3 >= 0:
+        buddies &= BUDDIES[index3]
+    return _GroupNode(
+        digit=digit, cells=cells_mask, buddies=buddies,
+        block=block_idx, line=line, col=col,
+        index1=index1, index2=index2, index3=index3,
+    )
+
+
+def _collect_group_nodes(grid: Grid) -> list[_GroupNode]:
+    """Return all group nodes for the current grid state.
+
+    Mirrors GroupNode.getGroupNodes(): rows first, then cols, each crossed
+    with all 9 blocks, for each digit 1–9.
+    """
+    gns: list[_GroupNode] = []
+    # Lines (rows) first
+    for line_idx in range(9):
+        lmask = LINE_MASKS[line_idx]
+        for cand in range(1, 10):
+            cand_in_house = grid.candidate_sets[cand] & lmask
+            if not cand_in_house:
+                continue
+            for block_idx in range(9):
+                tmp = cand_in_house & BLOCK_MASKS[block_idx]
+                if tmp.bit_count() >= 2:
+                    gns.append(_make_group_node(cand, tmp, block_idx))
+    # Columns next
+    for col_idx in range(9):
+        cmask = COL_MASKS[col_idx]
+        for cand in range(1, 10):
+            cand_in_house = grid.candidate_sets[cand] & cmask
+            if not cand_in_house:
+                continue
+            for block_idx in range(9):
+                tmp = cand_in_house & BLOCK_MASKS[block_idx]
+                if tmp.bit_count() >= 2:
+                    gns.append(_make_group_node(cand, tmp, block_idx))
+    return gns
+
 
 # ---------------------------------------------------------------------------
 # Helpers
