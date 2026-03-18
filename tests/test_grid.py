@@ -109,3 +109,44 @@ def test_unsolved_count():
     g.set_sudoku(EASY_PUZZLE)
     zeros = EASY_PUZZLE.count("0")
     assert g.unsolved_count() == zeros
+
+
+def test_set_sudoku_plus_prefix():
+    # '+D' marks a cell as placed (not a given); value still set on grid
+    plus_puzzle = "+5" + EASY_PUZZLE[1:]
+    g = Grid()
+    g.set_sudoku(plus_puzzle)
+    assert g.get_value(0) == 5
+    assert not g.is_fixed(0)   # placed cell, not a given
+    assert g.is_fixed(1)       # cell 1 ('3') is a normal given
+
+
+def test_get_candidates():
+    g = Grid()
+    g.set_sudoku("." * 81)
+    # blank grid: all 9 digits are candidates for every cell
+    assert g.get_candidates(0) == list(range(1, 10))
+    g.set_cell(0, 5)
+    assert 5 not in g.get_candidates(1)
+
+
+def test_unsolved_candidates_count():
+    g = Grid()
+    g.set_sudoku("." * 81)
+    # blank grid: 81 cells * 9 candidates each
+    assert g.unsolved_candidates_count() == 81 * 9
+
+
+def test_get_solution():
+    g = Grid()
+    g.set_sudoku(EASY_PUZZLE)
+    solution = [int(c) for c in EASY_SOLUTION]
+    g.set_solution(solution)
+    assert g.get_solution(0) == 5
+    assert g.get_solution(80) == 9
+
+
+def test_repr():
+    g = Grid()
+    g.set_sudoku(EASY_PUZZLE)
+    assert repr(g) == f"Grid({EASY_PUZZLE})"

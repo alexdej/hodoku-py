@@ -135,10 +135,18 @@ _VALIDATION_CASES = [
     ("dup_in_row",  "110000000" + "0" * 72,                  "Duplicate"),
     ("dup_in_col",  "1" + "0" * 8 + "1" + "0" * 71,         "Duplicate"),
     ("dup_in_box",  "100" "010" "000" + "0" * 72,            "Duplicate"),
+    ("invalid_after_plus", "+X" + "0" * 79,                  "Invalid character after"),
 ]
 
 
 class TestValidation:
+    def test_plus_prefix_notation_accepted(self):
+        # '+D' notation: '+' precedes the digit; cell count still 81
+        # "+5" counts as one cell (r0c0=5), then the remaining 80 chars of EASY_PUZZLE
+        plus_puzzle = "+5" + EASY_PUZZLE[1:]
+        result = Solver().solve(plus_puzzle)
+        assert result.solved is True
+
     @pytest.mark.parametrize("name,puzzle,msg_fragment", _VALIDATION_CASES,
                              ids=[c[0] for c in _VALIDATION_CASES])
     def test_solve_raises(self, name, puzzle, msg_fragment):

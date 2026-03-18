@@ -61,6 +61,7 @@ class TestGenerateDifficulty:
 # ---------------------------------------------------------------------------
 
 class TestValidate:
+    pytestmark = pytest.mark.unit
 
     @pytest.fixture(scope="class")
     def generator(self):
@@ -78,3 +79,9 @@ class TestValidate:
         """A puzzle with too few clues returns 'multiple'."""
         puzzle = "1" + "0" * 80
         assert generator.validate(puzzle) == "multiple"
+
+    def test_invalid_puzzle(self, generator):
+        """A contradictory puzzle (no solution) returns 'invalid'."""
+        # r0 has 1-8, so r0c8 must be 9; but col 8 already has 9 at r1c8
+        puzzle = "123456780000000009" + "0" * 63
+        assert generator.validate(puzzle) == "invalid"

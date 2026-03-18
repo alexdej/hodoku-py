@@ -49,3 +49,9 @@ class TestSolutionStepStr:
     def test_no_indices_no_eliminations(self):
         step = SolutionStep(SolutionType.HIDDEN_SINGLE)
         assert str(step) == "Hidden Single"
+
+    def test_repr(self):
+        step = SolutionStep(SolutionType.FULL_HOUSE)
+        step.add_index(8)
+        step.add_value(9)
+        assert repr(step) == "SolutionStep(FULL_HOUSE, indices=[8], values=[9])"
