@@ -50,6 +50,7 @@ from hodoku.solver.table_entry import MAX_TABLE_ENTRY_LENGTH, TableEntry
 # Group nodes (used by TablingSolver for Grouped Nice Loop / AIC)
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class _GroupNode:
     """A group node for digit d: 2–3 cells sharing a block and a row or col."""
