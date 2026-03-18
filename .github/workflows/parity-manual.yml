@@ -14,6 +14,10 @@ on:
         description: "Random seed for sampling (only used with puzzle-count)"
         required: false
         default: "0"
+      puzzle-timeout:
+        description: "Per-puzzle solver timeout in seconds"
+        required: false
+        default: "30"
 
 jobs:
   parity:
@@ -39,7 +43,7 @@ jobs:
           if [ "${{ github.event.inputs.puzzle-seed }}" != "0" ]; then
             ARGS="$ARGS --puzzle-seed ${{ github.event.inputs.puzzle-seed }}"
           fi
-          pytest $ARGS --junitxml=parity-results.xml
+          pytest $ARGS --puzzle-timeout ${{ github.event.inputs.puzzle-timeout }} --junitxml=parity-results.xml
 
       - name: Upload results
         if: always()
