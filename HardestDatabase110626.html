@@ -58,15 +58,15 @@
   <div id="puzzle-tooltip"></div>
   <h1>hodoku-py parity — HardestDatabase110626</h1>
   <p class="summary">
-    371 passed &nbsp;·&nbsp; 4 failed &nbsp;·&nbsp;
-    0 skipped &nbsp;·&nbsp; 98.9%
-    &nbsp;&nbsp;<img src="badges/HardestDatabase110626.svg" alt="98.9%" style="vertical-align:middle">
+    372 passed &nbsp;·&nbsp; 3 failed &nbsp;·&nbsp;
+    0 skipped &nbsp;·&nbsp; 99.2%
+    &nbsp;&nbsp;<img src="badges/HardestDatabase110626.svg" alt="99.2%" style="vertical-align:middle">
   </p>
   <div class="controls">
     <input type="text" id="search" placeholder="Filter by name…" autocomplete="off">
     <button class="toggle active" data-status="all">All (375)</button>
-    <button class="toggle" data-status="passed">Pass (371)</button>
-    <button class="toggle" data-status="failed">Fail (4)</button>
+    <button class="toggle" data-status="passed">Pass (372)</button>
+    <button class="toggle" data-status="failed">Fail (3)</button>
     <button class="toggle" data-status="skipped">Skip (0)</button>
     <span id="visible-count"></span>
   </div>
@@ -224,15 +224,9 @@ src/hodoku/solver/brute_force.py:60: in _solve_bt
 src/hodoku/solver/brute_force.py:60: in _solve_bt
     if _solve_bt(values):
        ^^^^^^^^^^^^^^^^^
-src/hodoku/solver/brute_force.py:60: in _solve_bt
-    if _solve_bt(values):
-       ^^^^^^^^^^^^^^^^^
-src/hodoku/solver/brute_force.py:58: in _solve_bt
-    if _allowed(values, i, d):
-       ^^^^^^^^^^^^^^^^^^^^^^
-src/hodoku/solver/brute_force.py:47: in _allowed
-    if values[p] == digit:
-       ^^^^^^^^^^^^^^^^^^
+src/hodoku/solver/brute_force.py:56: in _solve_bt
+    if values[i] == 0:
+       ^^^^^^^^^^^^^^
 tests/parity/test_parity.py:66: in _timeout_handler
     raise TimeoutError(f&quot;Solver exceeded {puzzle_timeout}s timeout&quot;)
 E   TimeoutError: Solver exceeded 30s timeout</pre><button class="copy-btn" onclick="event.stopPropagation(); copyEl(this.previousElementSibling)" title="Copy to clipboard"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="9" height="12" rx="1.5"/><path d="M2 5H1.5A.5.5 0 0 0 1 5.5v9A.5.5 0 0 0 1.5 15H10a.5.5 0 0 0 .5-.5V14"/><rect x="7.5" y="1" width="4" height="2.5" rx="0.75" fill="currentColor" stroke="none"/></svg></button></div></td></tr>
@@ -266,33 +260,7 @@ E   TimeoutError: Solver exceeded 30s timeout</pre><button class="copy-btn" oncl
         <tr data-status="passed" data-name="hardestdatabase110626::!sudoku_-c1,puzzler,label,poster,q1,q2,er,ep,ed,sx9,sxt/p0045" data-order="45"><td class="order">45</td><td><span class="badge badge-pass">pass</span></td><td class="name" onclick="toggleCell(this)" style="cursor:pointer"><button class="puzzle-toggle">+</button> HardestDatabase110626::!sudoku_-c1,PuzzleR,Label,Poster,q1,q2,ER,EP,ED,Sx9,Sxt/p0045<span class="puzzle-string" hidden><code>........2..1...7...3..5..9......6.4...3.4.8...4.5.9....9..6..3...2...1..7....3...</code> <button class="copy-btn" onclick="event.stopPropagation(); copyEl(this.previousElementSibling)" title="Copy to clipboard"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="9" height="12" rx="1.5"/><path d="M2 5H1.5A.5.5 0 0 0 1 5.5v9A.5.5 0 0 0 1.5 15H10a.5.5 0 0 0 .5-.5V14"/><rect x="7.5" y="1" width="4" height="2.5" rx="0.75" fill="currentColor" stroke="none"/></svg></button></span></td><td class="level"><span style="color:#d02020;font-weight:500">EXTREME</span></td><td class="score">13046</td><td class="message"></td></tr>
         <tr data-status="passed" data-name="hardestdatabase110626::!sudoku_-c1,puzzler,label,poster,q1,q2,er,ep,ed,sx9,sxt/p0046" data-order="46"><td class="order">46</td><td><span class="badge badge-pass">pass</span></td><td class="name" onclick="toggleCell(this)" style="cursor:pointer"><button class="puzzle-toggle">+</button> HardestDatabase110626::!sudoku_-c1,PuzzleR,Label,Poster,q1,q2,ER,EP,ED,Sx9,Sxt/p0046<span class="puzzle-string" hidden><code>..8.......5...8..11.9.4........3......5..9..4.4.6...7.......6..5....4.29.2..7..3.</code> <button class="copy-btn" onclick="event.stopPropagation(); copyEl(this.previousElementSibling)" title="Copy to clipboard"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="9" height="12" rx="1.5"/><path d="M2 5H1.5A.5.5 0 0 0 1 5.5v9A.5.5 0 0 0 1.5 15H10a.5.5 0 0 0 .5-.5V14"/><rect x="7.5" y="1" width="4" height="2.5" rx="0.75" fill="currentColor" stroke="none"/></svg></button></span></td><td class="level"><span style="color:#d02020;font-weight:500">EXTREME</span></td><td class="score">34444</td><td class="message"></td></tr>
         <tr data-status="passed" data-name="hardestdatabase110626::!sudoku_-c1,puzzler,label,poster,q1,q2,er,ep,ed,sx9,sxt/p0047" data-order="47"><td class="order">47</td><td><span class="badge badge-pass">pass</span></td><td class="name" onclick="toggleCell(this)" style="cursor:pointer"><button class="puzzle-toggle">+</button> HardestDatabase110626::!sudoku_-c1,PuzzleR,Label,Poster,q1,q2,ER,EP,ED,Sx9,Sxt/p0047<span class="puzzle-string" hidden><code>..5...7...8...6.4.9.......2.4...3......65.......4.8.1.2.......9.1.8...3...7...5..</code> <button class="copy-btn" onclick="event.stopPropagation(); copyEl(this.previousElementSibling)" title="Copy to clipboard"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="9" height="12" rx="1.5"/><path d="M2 5H1.5A.5.5 0 0 0 1 5.5v9A.5.5 0 0 0 1.5 15H10a.5.5 0 0 0 .5-.5V14"/><rect x="7.5" y="1" width="4" height="2.5" rx="0.75" fill="currentColor" stroke="none"/></svg></button></span></td><td class="level"><span style="color:#d02020;font-weight:500">EXTREME</span></td><td class="score">29864</td><td class="message"></td></tr>
-        <tr data-status="failed" data-name="hardestdatabase110626::!sudoku_-c1,puzzler,label,poster,q1,q2,er,ep,ed,sx9,sxt/p0048" data-order="48"><td class="order">48</td><td><span class="badge badge-fail">fail</span></td><td class="name" onclick="toggleCell(this)" style="cursor:pointer"><button class="puzzle-toggle">+</button> HardestDatabase110626::!sudoku_-c1,PuzzleR,Label,Poster,q1,q2,ER,EP,ED,Sx9,Sxt/p0048<span class="puzzle-string" hidden><code>..8...3...7...9.4.1.......2.6...4......98.......7.6.5.2.......1.9.4...6...3...8..</code> <button class="copy-btn" onclick="event.stopPropagation(); copyEl(this.previousElementSibling)" title="Copy to clipboard"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="9" height="12" rx="1.5"/><path d="M2 5H1.5A.5.5 0 0 0 1 5.5v9A.5.5 0 0 0 1.5 15H10a.5.5 0 0 0 .5-.5V14"/><rect x="7.5" y="1" width="4" height="2.5" rx="0.75" fill="currentColor" stroke="none"/></svg></button></span></td><td class="level"><span style="color:#d02020;font-weight:500">EXTREME</span></td><td class="score">33228</td><td class="message" onclick="toggleMsg(this)" style="cursor:pointer"><button class="msg-toggle">+</button> <span class="msg-short">tests/parity/test_parity.py:71: in test_matches_hodoku
-    our_result = solver.solve(entry.puzzle)
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-src/hodoku/solver/solver.py:72: in solve
-    step = self.</span><div class="msg-full" hidden><pre>tests/parity/test_parity.py:71: in test_matches_hodoku
-    our_result = solver.solve(entry.puzzle)
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-src/hodoku/solver/solver.py:72: in solve
-    step = self._find_next_step(finder)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-src/hodoku/solver/solver.py:102: in _find_next_step
-    step = finder.get_step(cfg.solution_type)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-src/hodoku/solver/step_finder.py:211: in get_step
-    return self._tabling.get_step(sol_type)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-src/hodoku/solver/tabling.py:250: in get_step
-    self._get_forcing_chains()
-src/hodoku/solver/tabling.py:360: in _get_forcing_chains
-    self._expand_tables(self.on_table)
-src/hodoku/solver/tabling.py:1114: in _expand_tables
-    dest.set_expanded(new_idx)
-src/hodoku/solver/table_entry.py:208: in set_expanded
-    def set_expanded(self, idx: int) -&gt; None:
-tests/parity/test_parity.py:66: in _timeout_handler
-    raise TimeoutError(f&quot;Solver exceeded {puzzle_timeout}s timeout&quot;)
-E   TimeoutError: Solver exceeded 30s timeout</pre><button class="copy-btn" onclick="event.stopPropagation(); copyEl(this.previousElementSibling)" title="Copy to clipboard"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="9" height="12" rx="1.5"/><path d="M2 5H1.5A.5.5 0 0 0 1 5.5v9A.5.5 0 0 0 1.5 15H10a.5.5 0 0 0 .5-.5V14"/><rect x="7.5" y="1" width="4" height="2.5" rx="0.75" fill="currentColor" stroke="none"/></svg></button></div></td></tr>
+        <tr data-status="passed" data-name="hardestdatabase110626::!sudoku_-c1,puzzler,label,poster,q1,q2,er,ep,ed,sx9,sxt/p0048" data-order="48"><td class="order">48</td><td><span class="badge badge-pass">pass</span></td><td class="name" onclick="toggleCell(this)" style="cursor:pointer"><button class="puzzle-toggle">+</button> HardestDatabase110626::!sudoku_-c1,PuzzleR,Label,Poster,q1,q2,ER,EP,ED,Sx9,Sxt/p0048<span class="puzzle-string" hidden><code>..8...3...7...9.4.1.......2.6...4......98.......7.6.5.2.......1.9.4...6...3...8..</code> <button class="copy-btn" onclick="event.stopPropagation(); copyEl(this.previousElementSibling)" title="Copy to clipboard"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="9" height="12" rx="1.5"/><path d="M2 5H1.5A.5.5 0 0 0 1 5.5v9A.5.5 0 0 0 1.5 15H10a.5.5 0 0 0 .5-.5V14"/><rect x="7.5" y="1" width="4" height="2.5" rx="0.75" fill="currentColor" stroke="none"/></svg></button></span></td><td class="level"><span style="color:#d02020;font-weight:500">EXTREME</span></td><td class="score">33228</td><td class="message"></td></tr>
         <tr data-status="passed" data-name="hardestdatabase110626::!sudoku_-c1,puzzler,label,poster,q1,q2,er,ep,ed,sx9,sxt/p0049" data-order="49"><td class="order">49</td><td><span class="badge badge-pass">pass</span></td><td class="name" onclick="toggleCell(this)" style="cursor:pointer"><button class="puzzle-toggle">+</button> HardestDatabase110626::!sudoku_-c1,PuzzleR,Label,Poster,q1,q2,ER,EP,ED,Sx9,Sxt/p0049<span class="puzzle-string" hidden><code>..9...4...7.3...2.8...6...71..8....6....1..7.....56...3....5..1.4.....9...2...7..</code> <button class="copy-btn" onclick="event.stopPropagation(); copyEl(this.previousElementSibling)" title="Copy to clipboard"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="9" height="12" rx="1.5"/><path d="M2 5H1.5A.5.5 0 0 0 1 5.5v9A.5.5 0 0 0 1.5 15H10a.5.5 0 0 0 .5-.5V14"/><rect x="7.5" y="1" width="4" height="2.5" rx="0.75" fill="currentColor" stroke="none"/></svg></button></span></td><td class="level"><span style="color:#d02020;font-weight:500">EXTREME</span></td><td class="score">45072</td><td class="message"></td></tr>
         <tr data-status="passed" data-name="hardestdatabase110626::!sudoku_-c1,puzzler,label,poster,q1,q2,er,ep,ed,sx9,sxt/p0050" data-order="50"><td class="order">50</td><td><span class="badge badge-pass">pass</span></td><td class="name" onclick="toggleCell(this)" style="cursor:pointer"><button class="puzzle-toggle">+</button> HardestDatabase110626::!sudoku_-c1,PuzzleR,Label,Poster,q1,q2,ER,EP,ED,Sx9,Sxt/p0050<span class="puzzle-string" hidden><code>1.......9.4...3.8...2...6...7..58.......2.......7.4.5...6...2...3.8...7.9.......1</code> <button class="copy-btn" onclick="event.stopPropagation(); copyEl(this.previousElementSibling)" title="Copy to clipboard"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="9" height="12" rx="1.5"/><path d="M2 5H1.5A.5.5 0 0 0 1 5.5v9A.5.5 0 0 0 1.5 15H10a.5.5 0 0 0 .5-.5V14"/><rect x="7.5" y="1" width="4" height="2.5" rx="0.75" fill="currentColor" stroke="none"/></svg></button></span></td><td class="level"><span style="color:#d02020;font-weight:500">EXTREME</span></td><td class="score">44554</td><td class="message"></td></tr>
         <tr data-status="passed" data-name="hardestdatabase110626::!sudoku_-c1,puzzler,label,poster,q1,q2,er,ep,ed,sx9,sxt/p0051" data-order="51"><td class="order">51</td><td><span class="badge badge-pass">pass</span></td><td class="name" onclick="toggleCell(this)" style="cursor:pointer"><button class="puzzle-toggle">+</button> HardestDatabase110626::!sudoku_-c1,PuzzleR,Label,Poster,q1,q2,ER,EP,ED,Sx9,Sxt/p0051<span class="puzzle-string" hidden><code>..2...6...4...5.1.3.......8.9...4......52.......1.7.4.8.......3.5.7...9...6...2..</code> <button class="copy-btn" onclick="event.stopPropagation(); copyEl(this.previousElementSibling)" title="Copy to clipboard"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="9" height="12" rx="1.5"/><path d="M2 5H1.5A.5.5 0 0 0 1 5.5v9A.5.5 0 0 0 1.5 15H10a.5.5 0 0 0 .5-.5V14"/><rect x="7.5" y="1" width="4" height="2.5" rx="0.75" fill="currentColor" stroke="none"/></svg></button></span></td><td class="level"><span style="color:#d02020;font-weight:500">EXTREME</span></td><td class="score">34714</td><td class="message"></td></tr>
@@ -378,20 +346,13 @@ src/hodoku/solver/solver.py:102: in _find_next_step
 src/hodoku/solver/step_finder.py:211: in get_step
     return self._tabling.get_step(sol_type)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-src/hodoku/solver/tabling.py:250: in get_step
-    self._get_forcing_chains()
-src/hodoku/solver/tabling.py:364: in _get_forcing_chains
-    self._check_forcing_chains()
-src/hodoku/solver/tabling.py:1151: in _check_forcing_chains
-    self._check_one_chain(self.on_table[i])
-src/hodoku/solver/tabling.py:1246: in _check_one_chain
-    self._check_house_set(entry, LINE_MASKS, 1)   # LINE
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-src/hodoku/solver/tabling.py:1301: in _check_house_set
-    if _bit_count(tmp) &gt; 1:
-       ^^^^^^^^^^^^^^^
-src/hodoku/solver/tabling.py:139: in _bit_count
-    def _bit_count(mask: int) -&gt; int:
+src/hodoku/solver/tabling.py:241: in get_step
+    return self._get_nice_loops(
+src/hodoku/solver/tabling.py:338: in _get_nice_loops
+    self._expand_tables(self.off_table)
+src/hodoku/solver/tabling.py:1069: in _expand_tables
+    for k in range(1, src.index):
+             ^^^^^^^^^^^^^^^^^^^
 tests/parity/test_parity.py:66: in _timeout_handler
     raise TimeoutError(f&quot;Solver exceeded {puzzle_timeout}s timeout&quot;)
 E   TimeoutError: Solver exceeded 30s timeout</pre><button class="copy-btn" onclick="event.stopPropagation(); copyEl(this.previousElementSibling)" title="Copy to clipboard"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="9" height="12" rx="1.5"/><path d="M2 5H1.5A.5.5 0 0 0 1 5.5v9A.5.5 0 0 0 1.5 15H10a.5.5 0 0 0 .5-.5V14"/><rect x="7.5" y="1" width="4" height="2.5" rx="0.75" fill="currentColor" stroke="none"/></svg></button></div></td></tr>
@@ -653,7 +614,7 @@ E   TimeoutError: Solver exceeded 30s timeout</pre><button class="copy-btn" oncl
         <tr data-status="passed" data-name="hardestdatabase110626::!sudoku_-c1,puzzler,label,poster,q1,q2,er,ep,ed,sx9,sxt/p0374" data-order="374"><td class="order">374</td><td><span class="badge badge-pass">pass</span></td><td class="name" onclick="toggleCell(this)" style="cursor:pointer"><button class="puzzle-toggle">+</button> HardestDatabase110626::!sudoku_-c1,PuzzleR,Label,Poster,q1,q2,ER,EP,ED,Sx9,Sxt/p0374<span class="puzzle-string" hidden><code>5..6......2.....4...1.2.3..9..8.......7.4.1.......9..6..4.7.2...3.....1......5..8</code> <button class="copy-btn" onclick="event.stopPropagation(); copyEl(this.previousElementSibling)" title="Copy to clipboard"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="9" height="12" rx="1.5"/><path d="M2 5H1.5A.5.5 0 0 0 1 5.5v9A.5.5 0 0 0 1.5 15H10a.5.5 0 0 0 .5-.5V14"/><rect x="7.5" y="1" width="4" height="2.5" rx="0.75" fill="currentColor" stroke="none"/></svg></button></span></td><td class="level"><span style="color:#d02020;font-weight:500">EXTREME</span></td><td class="score">36280</td><td class="message"></td></tr>
     </tbody>
   </table>
-  <p class="footer">Generated 2026-03-22 07:39 UTC &nbsp;·&nbsp; <a href="index.html">← back to index</a></p>
+  <p class="footer">Generated 2026-03-23 07:48 UTC &nbsp;·&nbsp; <a href="index.html">← back to index</a></p>
   <script>
     const rows = Array.from(document.querySelectorAll('#tbody tr'));
     const searchInput = document.getElementById('search');
