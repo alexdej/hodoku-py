@@ -21,6 +21,7 @@ from hodoku.solver.solver import SudokuSolver
 from tests.compare import first_divergence, hodoku_steps, our_steps, paths_match, steps_match
 from tests.parity.conftest import PuzzleEntry, HodokuResults, _load_puzzle_file, _resolve_puzzle_path
 
+
 pytestmark = [pytest.mark.parity, pytest.mark.java]
 
 

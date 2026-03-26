@@ -22,7 +22,13 @@ requires-python = ">=3.11"  # int.bit_count() (popcount on CellSet bitsets) requ
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-cov", "py4j", "flake8", "cppcheck"]
+test = [
+    "pytest",
+    "pytest-cov",
+    "pytest-flake8>=1.3.0",
+    "pytest-cppcheck>=0.1.2",
+]
+test-parity = ["py4j"]
 
 [tool.setuptools.package-dir]
 "" = "src"
@@ -34,7 +40,12 @@ hodoku = ["py.typed"]
 where = ["src"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+addopts = "--cppcheck"
+testpaths = ["src", "tests"]
+cppcheck_args = [
+    "--enable=warning,style,performance,portability",
+     "--check-level=exhaustive"
+]
 junit_family = "legacy"
 markers = [
     "unit: fast unit tests (no solver, no Java)",

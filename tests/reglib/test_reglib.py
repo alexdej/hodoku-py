@@ -110,7 +110,7 @@ def test_reglib_technique(reglib_entry: ReglibEntry) -> None:
         pytest.xfail("Requires cross-type siamese (basic+finned in one pass)")
 
     if entry.line_num in _NEEDS_C_ACCEL_LINES and not _has_c_accel():
-        pytest.skip("Requires C accelerator; run: pip install -e . (needs a C compiler)")
+        pytest.skip("Requires C accelerator; run: pip install -e . (with a C compiler)")
 
     if not entry.solution_types:
         pytest.fail(f"Technique {entry.technique_code} not yet implemented")

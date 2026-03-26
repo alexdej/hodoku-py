@@ -21,6 +21,7 @@ from hodoku.generator.generator import SudokuGenerator
 
 TESTDATA = Path(__file__).parent.parent / "testdata"
 
+
 # Load puzzles from HardestDatabase110626.txt (skip header line)
 def _load_hardest(n: int = 200) -> list[str]:
     path = TESTDATA / "HardestDatabase110626.txt"

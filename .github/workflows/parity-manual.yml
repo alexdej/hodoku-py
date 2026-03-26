@@ -32,7 +32,7 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - run: pip install -e . && pip install pytest py4j
+      - run: pip install -e .[test,test-parity]
 
       - name: Run parity tests
         run: |

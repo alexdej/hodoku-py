@@ -17,11 +17,11 @@ pytestmark = pytest.mark.unit
 def _is_valid_sudoku(values: list[int]) -> bool:
     """Verify a solved sudoku has no duplicates in any row/col/box."""
     for r in range(9):
-        row = values[r * 9 : r * 9 + 9]
+        row = values[r*9:r*9+9]
         if sorted(row) != list(range(1, 10)):
             return False
     for c in range(9):
-        col = [values[r * 9 + c] for r in range(9)]
+        col = [values[r*9+c] for r in range(9)]
         if sorted(col) != list(range(1, 10)):
             return False
     for br in range(3):
@@ -169,11 +169,6 @@ class TestPatternGeneration:
         pat = [False] * 81
         for i in range(5):
             pat[i] = True
-
-        # Monkey-patch a small limit so the test doesn't run forever.
-        # The real constant is 1_000_000 but we don't want to wait.
-        import hodoku.generator.generator as gen_mod
-        orig_source = gen.generate_sudoku
 
         # Call directly with a short loop
         gen._generate_full_grid()

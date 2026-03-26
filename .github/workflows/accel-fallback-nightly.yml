@@ -16,7 +16,11 @@ jobs:
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
         with:
           python-version: "3.12"
-      - run: pip install -e . && pip install pytest pytest-cov
+      - name: Install package with test dependencies
+        run: pip install -e .[test]
+
+      - name: Lint
+        run: pytest --cppcheck --flake8 -m "flake8 or cppcheck"
 
       - name: Unit tests (generator fallback)
         run: pytest -m unit -v --cov=src/hodoku --cov-report=xml --cov-append

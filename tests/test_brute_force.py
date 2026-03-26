@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-pytestmark = pytest.mark.unit
-
 from hodoku.core.grid import Grid  # noqa: E402
 from hodoku.core.types import SolutionType  # noqa: E402
 from hodoku.solver.brute_force import BruteForceSolver  # noqa: E402
 from hodoku.solver.solver import SudokuSolver  # noqa: E402
+
+pytestmark = pytest.mark.unit
 
 
 # ---------------------------------------------------------------------------

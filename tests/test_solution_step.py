@@ -7,6 +7,8 @@ import pytest
 from hodoku.core.solution_step import Candidate, SolutionStep
 from hodoku.core.types import SolutionType
 
+pytestmark = pytest.mark.unit
+
 
 class TestSolutionTypeIsSingle:
     def test_full_house_is_single(self):
@@ -20,8 +22,6 @@ class TestSolutionTypeIsSingle:
 
     def test_non_single(self):
         assert SolutionType.NAKED_PAIR.is_single() is False
-
-pytestmark = pytest.mark.unit
 
 
 class TestCandidateStr:
