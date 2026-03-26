@@ -31,11 +31,7 @@ except ImportError:
 
 from hodoku.generator.generator import (
     SudokuGenerator,
-    _POSSIBLE_VALUES,
-    _copy_state,
-    _rebuild_internal,
     _set_all_exposed_singles,
-    _set_cell_valid,
 )
 
 # ---------------------------------------------------------------------------

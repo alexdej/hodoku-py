@@ -25,7 +25,7 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - run: pip install -e . && pip install pytest py4j
+      - run: pip install -e .[test,test-parity]
 
       - name: Run parity tests
         run: pytest tests/parity/ --puzzle-file ${{ matrix.puzzle-file }} -v --tb=short --junitxml=parity-results.xml

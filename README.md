@@ -48,10 +48,16 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for full details and known gaps.
 ## Installation
 
 ```bash
-pip install -e ".[dev]"
+pip install -e .
 ```
 
 ## Testing
+
+### Install test dependencies
+
+```bash
+pip install -e ".[test]
+```
 
 ### Unit tests
 
@@ -76,6 +82,11 @@ pytest tests/reglib/ --reglib-section 09 -v
 ### [parity](tests/parity/) — head-to-head HoDoKu comparison (requires Java JRE installation)
 
 Comparison of full solution solve path against HoDoKu.jar via [Py4J](https://www.py4j.org/).
+
+```bash
+pip install .[test-parity]
+```
+
 
 ```bash
 pytest tests/parity/ --puzzle-file exemplars-1.0 -v

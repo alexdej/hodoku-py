@@ -30,7 +30,7 @@ from hodoku.solver.brute_force import BruteForceSolver
 def _is_valid_sudoku(values: list[int]) -> bool:
     """Verify a solved sudoku has no duplicates in any row/col/box."""
     for r in range(9):
-        row = values[r * 9 : r * 9 + 9]
+        row = values[r*9:r*9+9]
         if sorted(row) != list(range(1, 10)):
             return False
     for c in range(9):

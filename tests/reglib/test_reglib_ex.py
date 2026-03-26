@@ -39,7 +39,6 @@ import pytest
 
 from hodoku import Solver
 from hodoku.core.grid import Grid
-from hodoku.core.types import SolutionType
 from tests.reglib.reglib_parser import ReglibEntry, parse_reglib, REGLIB_FILE
 
 
