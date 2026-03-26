@@ -24,9 +24,9 @@ jobs:
         run: flake8 src/
         continue-on-error: true
 
-      - name: Lint C extensions
-        id: lint_c
-        run: make lint
+      - name: Run cppcheck on c extensions
+        id: cppcheck
+        run: make cppcheck
         continue-on-error: true
 
       - name: Generate badge
@@ -50,8 +50,8 @@ jobs:
         if: steps.flake8.outcome == 'failure'
         run: exit 1
 
-      - name: Fail if lint-c failed
-        if: steps.lint_c.outcome == 'failure'
+      - name: Fail if cppcheck failed
+        if: steps.cppcheck.outcome == 'failure'
         run: exit 1
 
   unit:

@@ -23,7 +23,6 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-cov", "py4j", "flake8", "cppcheck"]
-publish = ["build", "twine"]
 
 [tool.setuptools.package-dir]
 "" = "src"
