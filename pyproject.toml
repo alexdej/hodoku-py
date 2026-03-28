@@ -27,6 +27,7 @@ test = [
     "pytest-cov",
     "pytest-flake8>=1.3.0",
     "pytest-cppcheck>=0.1.2",
+    "pytest-clang-tidy>=0.2.0",
 ]
 test-parity = ["py4j"]
 
@@ -46,6 +47,7 @@ cppcheck_args = [
     "--enable=warning,style,performance,portability",
      "--check-level=exhaustive"
 ]
+clang_tidy_include_python_headers = true
 junit_family = "legacy"
 markers = [
     "unit: fast unit tests (no solver, no Java)",
