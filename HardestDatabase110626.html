@@ -106,17 +106,15 @@ src/hodoku/solver/solver.py:72: in solve
 src/hodoku/solver/solver.py:102: in _find_next_step
     step = finder.get_step(cfg.solution_type)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-src/hodoku/solver/step_finder.py:211: in get_step
-    return self._tabling.get_step(sol_type)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-src/hodoku/solver/tabling.py:241: in get_step
-    return self._get_nice_loops(
-src/hodoku/solver/tabling.py:337: in _get_nice_loops
-    self._expand_tables(self.on_table)
-src/hodoku/solver/tabling.py:1114: in _expand_tables
-    dest.set_expanded(new_idx)
-src/hodoku/solver/table_entry.py:208: in set_expanded
-    def set_expanded(self, idx: int) -&gt; None:
+src/hodoku/solver/step_finder.py:203: in get_step
+    return self._fish.get_step(sol_type)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/hodoku/solver/fish.py:310: in get_step
+    return self._find_finned_fish(sol_type, sashimi=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/hodoku/solver/fish.py:620: in _find_finned_fish
+    cover_mask |= cover_masks[ci]
+    ^^^^^^^^^^
 tests/parity/test_parity.py:67: in _timeout_handler
     raise TimeoutError(f&quot;Solver exceeded {puzzle_timeout}s timeout&quot;)
 E   TimeoutError: Solver exceeded 30s timeout</pre><button class="copy-btn" onclick="event.stopPropagation(); copyEl(this.previousElementSibling)" title="Copy to clipboard"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="9" height="12" rx="1.5"/><path d="M2 5H1.5A.5.5 0 0 0 1 5.5v9A.5.5 0 0 0 1.5 15H10a.5.5 0 0 0 .5-.5V14"/><rect x="7.5" y="1" width="4" height="2.5" rx="0.75" fill="currentColor" stroke="none"/></svg></button></div></td></tr>
@@ -216,12 +214,38 @@ src/hodoku/solver/brute_force.py:60: in _solve_bt
 src/hodoku/solver/brute_force.py:60: in _solve_bt
     if _solve_bt(values):
        ^^^^^^^^^^^^^^^^^
+src/hodoku/solver/brute_force.py:60: in _solve_bt
+    if _solve_bt(values):
+       ^^^^^^^^^^^^^^^^^
+src/hodoku/solver/brute_force.py:60: in _solve_bt
+    if _solve_bt(values):
+       ^^^^^^^^^^^^^^^^^
+src/hodoku/solver/brute_force.py:60: in _solve_bt
+    if _solve_bt(values):
+       ^^^^^^^^^^^^^^^^^
+src/hodoku/solver/brute_force.py:60: in _solve_bt
+    if _solve_bt(values):
+       ^^^^^^^^^^^^^^^^^
+src/hodoku/solver/brute_force.py:60: in _solve_bt
+    if _solve_bt(values):
+       ^^^^^^^^^^^^^^^^^
+src/hodoku/solver/brute_force.py:60: in _solve_bt
+    if _solve_bt(values):
+       ^^^^^^^^^^^^^^^^^
+src/hodoku/solver/brute_force.py:60: in _solve_bt
+    if _solve_bt(values):
+       ^^^^^^^^^^^^^^^^^
+src/hodoku/solver/brute_force.py:60: in _solve_bt
+    if _solve_bt(values):
+       ^^^^^^^^^^^^^^^^^
+src/hodoku/solver/brute_force.py:60: in _solve_bt
+    if _solve_bt(values):
+       ^^^^^^^^^^^^^^^^^
 src/hodoku/solver/brute_force.py:58: in _solve_bt
     if _allowed(values, i, d):
        ^^^^^^^^^^^^^^^^^^^^^^
-src/hodoku/solver/brute_force.py:47: in _allowed
-    if values[p] == digit:
-       ^^^^^^^^^^^^^^^^^^
+src/hodoku/solver/brute_force.py:44: in _allowed
+    def _allowed(values: list[int], index: int, digit: int) -&gt; bool:
 tests/parity/test_parity.py:67: in _timeout_handler
     raise TimeoutError(f&quot;Solver exceeded {puzzle_timeout}s timeout&quot;)
 E   TimeoutError: Solver exceeded 30s timeout</pre><button class="copy-btn" onclick="event.stopPropagation(); copyEl(this.previousElementSibling)" title="Copy to clipboard"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="9" height="12" rx="1.5"/><path d="M2 5H1.5A.5.5 0 0 0 1 5.5v9A.5.5 0 0 0 1.5 15H10a.5.5 0 0 0 .5-.5V14"/><rect x="7.5" y="1" width="4" height="2.5" rx="0.75" fill="currentColor" stroke="none"/></svg></button></div></td></tr>
@@ -338,18 +362,17 @@ src/hodoku/solver/solver.py:72: in solve
 src/hodoku/solver/solver.py:102: in _find_next_step
     step = finder.get_step(cfg.solution_type)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-src/hodoku/solver/step_finder.py:211: in get_step
-    return self._tabling.get_step(sol_type)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-src/hodoku/solver/tabling.py:250: in get_step
-    self._get_forcing_chains()
-src/hodoku/solver/tabling.py:354: in _get_forcing_chains
-    self._fill_tables()
-src/hodoku/solver/tabling.py:402: in _fill_tables
-    self.on_table[i].reset()
-src/hodoku/solver/table_entry.py:74: in reset
-    ret_indices[i] = 0
-    ^^^^^^^^^^^^^^
+src/hodoku/solver/step_finder.py:207: in get_step
+    return self._als.get_step(sol_type)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/hodoku/solver/als.py:449: in get_step
+    return self._find_als_xy_wing(allow_overlap=allow_overlap)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/hodoku/solver/als.py:560: in _find_als_xy_wing
+    c_idx, a_idx, b_idx = _identify_pivot(rc1, rc2)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+src/hodoku/solver/als.py:1003: in _identify_pivot
+    def _identify_pivot(
 tests/parity/test_parity.py:67: in _timeout_handler
     raise TimeoutError(f&quot;Solver exceeded {puzzle_timeout}s timeout&quot;)
 E   TimeoutError: Solver exceeded 30s timeout</pre><button class="copy-btn" onclick="event.stopPropagation(); copyEl(this.previousElementSibling)" title="Copy to clipboard"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="9" height="12" rx="1.5"/><path d="M2 5H1.5A.5.5 0 0 0 1 5.5v9A.5.5 0 0 0 1.5 15H10a.5.5 0 0 0 .5-.5V14"/><rect x="7.5" y="1" width="4" height="2.5" rx="0.75" fill="currentColor" stroke="none"/></svg></button></div></td></tr>
@@ -611,7 +634,7 @@ E   TimeoutError: Solver exceeded 30s timeout</pre><button class="copy-btn" oncl
         <tr data-status="passed" data-name="hardestdatabase110626::!sudoku_-c1,puzzler,label,poster,q1,q2,er,ep,ed,sx9,sxt/p0374" data-order="374"><td class="order">374</td><td><span class="badge badge-pass">pass</span></td><td class="name" onclick="toggleCell(this)" style="cursor:pointer"><button class="puzzle-toggle">+</button> HardestDatabase110626::!sudoku_-c1,PuzzleR,Label,Poster,q1,q2,ER,EP,ED,Sx9,Sxt/p0374<span class="puzzle-string" hidden><code>5..6......2.....4...1.2.3..9..8.......7.4.1.......9..6..4.7.2...3.....1......5..8</code> <button class="copy-btn" onclick="event.stopPropagation(); copyEl(this.previousElementSibling)" title="Copy to clipboard"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="9" height="12" rx="1.5"/><path d="M2 5H1.5A.5.5 0 0 0 1 5.5v9A.5.5 0 0 0 1.5 15H10a.5.5 0 0 0 .5-.5V14"/><rect x="7.5" y="1" width="4" height="2.5" rx="0.75" fill="currentColor" stroke="none"/></svg></button></span></td><td class="level"><span style="color:#d02020;font-weight:500">EXTREME</span></td><td class="score">36280</td><td class="message"></td></tr>
     </tbody>
   </table>
-  <p class="footer">Generated 2026-03-29 07:47 UTC &nbsp;·&nbsp; <a href="index.html">← back to index</a></p>
+  <p class="footer">Generated 2026-03-30 08:01 UTC &nbsp;·&nbsp; <a href="index.html">← back to index</a></p>
   <script>
     const rows = Array.from(document.querySelectorAll('#tbody tr'));
     const searchInput = document.getElementById('search');
