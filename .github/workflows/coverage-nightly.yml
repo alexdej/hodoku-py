@@ -23,21 +23,31 @@ jobs:
       - name: Build C extensions
         run: python setup.py build_ext --inplace
 
-      - name: Reglib find-all-steps coverage (test_reglib_ex)
+      - name: Unit tests
+        run: >
+          pytest -m unit -v --tb=short
+          --cov=src/hodoku
+
+      - name: Reglib regression suite
+        run: >
+          pytest tests/reglib/ --ignore=tests/reglib/test_reglib_ex.py -v --tb=short
+          --cov=src/hodoku --cov-append
+
+      - name: Reglib find-all-steps (test_reglib_ex)
         run: >
           pytest tests/reglib/test_reglib_ex.py -v --tb=short
-          --cov=src/hodoku --cov-report=xml
+          --cov=src/hodoku --cov-append
 
-      - name: Run parity coverage
+      - name: Exemplars parity coverage
         run: >
           pytest tests/parity/ --puzzle-file exemplars-1.0 -v --tb=short
           --puzzle-timeout 300
-          --cov=src/hodoku --cov-report=xml --cov-append
+          --cov=src/hodoku --cov-append
+          --cov-report=html:site/coverage
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2
+      - name: Deploy coverage to GitHub Pages
+        uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.xml
-          name: hodoku-py
-          flags: nightly
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: site/
+          keep_files: true
