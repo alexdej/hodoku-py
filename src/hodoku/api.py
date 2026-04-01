@@ -37,24 +37,21 @@ _FISH_CAT_LEVEL = {
     SolutionCategory.FINNED_MUTANT_FISH: 2,
 }
 
-# Fish SolutionType → size (number of base sets). Built from solver/fish.py tables.
+# Fish SolutionType → size (number of base sets).
+_FISH_NAMES_BY_SIZE = [
+    "X_WING", "SWORDFISH", "JELLYFISH", "SQUIRMBAG", "WHALE", "LEVIATHAN",
+]
+_FISH_PREFIXES = [
+    "", "FINNED_", "SASHIMI_",
+    "FRANKEN_", "FINNED_FRANKEN_",
+    "MUTANT_", "FINNED_MUTANT_",
+]
 _FISH_TYPE_SIZE: dict[SolutionType, int] = {}
-for _size in range(2, 8):
-    for _st_name in [
-        # basic
-        ["X_WING", "SWORDFISH", "JELLYFISH", "SQUIRMBAG", "WHALE", "LEVIATHAN"][_size - 2],
-        ["FINNED_X_WING", "FINNED_SWORDFISH", "FINNED_JELLYFISH", "FINNED_SQUIRMBAG", "FINNED_WHALE", "FINNED_LEVIATHAN"][_size - 2],
-        ["SASHIMI_X_WING", "SASHIMI_SWORDFISH", "SASHIMI_JELLYFISH", "SASHIMI_SQUIRMBAG", "SASHIMI_WHALE", "SASHIMI_LEVIATHAN"][_size - 2],
-        # franken
-        ["FRANKEN_X_WING", "FRANKEN_SWORDFISH", "FRANKEN_JELLYFISH", "FRANKEN_SQUIRMBAG", "FRANKEN_WHALE", "FRANKEN_LEVIATHAN"][_size - 2],
-        ["FINNED_FRANKEN_X_WING", "FINNED_FRANKEN_SWORDFISH", "FINNED_FRANKEN_JELLYFISH", "FINNED_FRANKEN_SQUIRMBAG", "FINNED_FRANKEN_WHALE", "FINNED_FRANKEN_LEVIATHAN"][_size - 2],
-        # mutant
-        ["MUTANT_X_WING", "MUTANT_SWORDFISH", "MUTANT_JELLYFISH", "MUTANT_SQUIRMBAG", "MUTANT_WHALE", "MUTANT_LEVIATHAN"][_size - 2],
-        ["FINNED_MUTANT_X_WING", "FINNED_MUTANT_SWORDFISH", "FINNED_MUTANT_JELLYFISH", "FINNED_MUTANT_SQUIRMBAG", "FINNED_MUTANT_WHALE", "FINNED_MUTANT_LEVIATHAN"][_size - 2],
-    ]:
-        _st = getattr(SolutionType, _st_name, None)
+for _i, _name in enumerate(_FISH_NAMES_BY_SIZE):
+    for _prefix in _FISH_PREFIXES:
+        _st = getattr(SolutionType, _prefix + _name, None)
         if _st is not None:
-            _FISH_TYPE_SIZE[_st] = _size
+            _FISH_TYPE_SIZE[_st] = _i + 2
 
 # Primary type → alias subtypes that share the same StepConfig.
 # find_all must dispatch these separately to find all variants.
