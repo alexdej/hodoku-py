@@ -2,12 +2,12 @@ name: Nightly Coverage
 
 on:
   schedule:
-    - cron: "0 6 * * *"  # daily at 06:00 UTC
+    - cron: "0 7 * * *"  # daily at 07:00 UTC (after parity-nightly)
   workflow_dispatch:
 
 jobs:
-  coverage:
-    name: Coverage (exemplars-1.0)
+  accel:
+    name: Coverage (C extensions)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
@@ -23,21 +23,100 @@ jobs:
       - name: Build C extensions
         run: python setup.py build_ext --inplace
 
-      - name: Reglib find-all-steps coverage (test_reglib_ex)
+      - name: Unit tests
+        run: >
+          pytest -m unit -v --tb=short
+          --cov=src/hodoku
+
+      - name: Reglib regression suite
+        run: >
+          pytest tests/reglib/ --ignore=tests/reglib/test_reglib_ex.py -v --tb=short
+          --cov=src/hodoku --cov-append
+
+      - name: Reglib find-all-steps (test_reglib_ex)
         run: >
           pytest tests/reglib/test_reglib_ex.py -v --tb=short
-          --cov=src/hodoku --cov-report=xml
+          --cov=src/hodoku --cov-append
 
-      - name: Run parity coverage
+      - name: Exemplars parity coverage
         run: >
           pytest tests/parity/ --puzzle-file exemplars-1.0 -v --tb=short
           --puzzle-timeout 300
-          --cov=src/hodoku --cov-report=xml --cov-append
+          --cov=src/hodoku --cov-append
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2
+      - name: Upload coverage data
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.xml
-          name: hodoku-py
-          flags: nightly
+          name: coverage-accel
+          path: .coverage
+
+  fallback:
+    name: Coverage (pure-Python fallback)
+    runs-on: ubuntu-latest
+    env:
+      HODOKU_NO_ACCEL: "1"
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+        with:
+          python-version: "3.12"
+      - run: pip install -e .[test]
+
+      - name: Unit tests (generator fallback)
+        run: >
+          pytest -m unit -v --tb=short
+          --cov=src/hodoku
+
+      - name: Generator API tests (generate/validate fallback)
+        run: >
+          pytest tests/generator/test_generator_api.py -v --tb=short
+          --cov=src/hodoku --cov-append
+
+      - name: Reglib suite (fish fallback)
+        run: >
+          pytest tests/reglib/ --ignore=tests/reglib/test_reglib_ex.py -v --tb=short
+          --cov=src/hodoku --cov-append
+
+      - name: Upload coverage data
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: coverage-fallback
+          path: .coverage
+
+  report:
+    name: Combine & publish report
+    runs-on: ubuntu-latest
+    needs: [accel, fallback]
+    if: always()
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+        with:
+          python-version: "3.12"
+      - run: pip install coverage
+
+      - name: Download accel coverage
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: coverage-accel
+          path: coverage-accel/
+
+      - name: Download fallback coverage
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: coverage-fallback
+          path: coverage-fallback/
+
+      - name: Combine and generate HTML report
+        run: |
+          coverage combine coverage-accel/.coverage coverage-fallback/.coverage
+          coverage html -d site/coverage
+
+      - name: Deploy coverage to GitHub Pages
+        uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: site/
+          keep_files: true

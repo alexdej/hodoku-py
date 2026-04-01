@@ -20,15 +20,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: pip install -e .[test]
       - run: make lint
-      - run: pytest -m unit -v --cov=src/hodoku --cov-report=xml
-
-      - name: Upload coverage to Codecov
-        if: matrix.python-version == '3.12'
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.xml
-          flags: unit
+      - run: pytest -m unit -v
 
   reglib:
     name: Reglib regression suite
@@ -40,12 +32,4 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e .[test]
-      - run: pytest tests/reglib/ --ignore=tests/reglib/test_reglib_ex.py -v --cov=src/hodoku --cov-report=xml
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          name: hodoku-py
-          files: coverage.xml
-          flags: reglib
+      - run: pytest tests/reglib/ --ignore=tests/reglib/test_reglib_ex.py -v
