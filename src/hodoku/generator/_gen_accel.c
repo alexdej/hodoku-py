@@ -44,8 +44,8 @@ static inline M81 m81_set_bit(M81 m, int bit) {
     return m;
 }
 static inline int m81_test_bit(M81 m, int bit) {
-    if (bit < 64) return (m.lo >> bit) & 1;
-    else          return (m.hi >> (bit - 64)) & 1;
+    if (bit < 64) return (int)((m.lo >> bit) & 1);
+    else          return (int)((m.hi >> (bit - 64)) & 1);
 }
 static inline int m81_is_zero(M81 m) { return m.lo == 0 && m.hi == 0; }
 static inline M81 m81_zero(void) { return (M81){0, 0}; }

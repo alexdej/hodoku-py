@@ -20,7 +20,7 @@ jobs:
         run: pip install -e .[test]
 
       - name: Lint
-        run: pytest --cppcheck --flake8 -m "flake8 or cppcheck"
+        run: make lint
 
       - name: Unit tests (generator fallback)
         run: pytest -m unit -v --cov=src/hodoku --cov-report=xml --cov-append

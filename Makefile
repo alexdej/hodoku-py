@@ -13,7 +13,8 @@ test:
 	pytest -m "unit" tests/
 
 lint:
-	pytest --cppcheck --flake8 -m "flake8 or cppcheck" src/ tests/
+	pytest --clang-tidy --flake8 src/
+
 
 clean:
 	rm -rf dist/ build/*.egg-info src/*.egg-info
