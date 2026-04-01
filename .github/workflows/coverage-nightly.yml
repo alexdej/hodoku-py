@@ -20,11 +20,19 @@ jobs:
           java-version: "17"
       - run: pip install -e .[test,test-parity]
 
-      - name: Run coverage
+      - name: Build C extensions
+        run: python setup.py build_ext --inplace
+
+      - name: Reglib find-all-steps coverage (test_reglib_ex)
+        run: >
+          pytest tests/reglib/test_reglib_ex.py -v --tb=short
+          --cov=src/hodoku --cov-report=xml
+
+      - name: Run parity coverage
         run: >
           pytest tests/parity/ --puzzle-file exemplars-1.0 -v --tb=short
           --puzzle-timeout 300
-          --cov=src/hodoku --cov-report=xml
+          --cov=src/hodoku --cov-report=xml --cov-append
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2

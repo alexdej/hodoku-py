@@ -32,7 +32,7 @@ Core solver complete through all techniques. Public API (`Solver.solve`, `get_hi
 | Forcing chains/nets | Contradiction + Verity | ✅ |
 | Misc | Sue de Coq | ✅ |
 | Templates | Template Set/Delete | ✅ |
-| Public API | `Solver.solve`, `get_hint`, `rate`, `find_all_steps` | ✅ |
+| Public API | `Solver.solve`, `get_hint`, `rate`, `find_all_steps`, `SolverConfig` | ✅ |
 | Generator | Puzzle generation | ✅ |
 
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) for full details and known gaps.
@@ -153,7 +153,7 @@ Both are built via `python setup.py build_ext --inplace` and have pure Python fa
 ## Quick demo
 
 ```python
-from hodoku import Solver, Generator, DifficultyType
+from hodoku import Solver, Generator, DifficultyType, SolverConfig
 
 # Solve a puzzle
 solver = Solver()
@@ -169,6 +169,15 @@ print(f"Solved in {len(result.steps)} steps")
 gen = Generator()
 puzzle = gen.generate(difficulty=DifficultyType.HARD)
 print(puzzle)  # 81-char string, 0s for empty cells
+
+# Custom solver configuration
+from hodoku.config import StepSearchConfig, FishSearchConfig, FishType
+cfg = SolverConfig(
+    solve_search=StepSearchConfig(
+        fish=FishSearchConfig(fish_type=FishType.BASIC_FRANKEN_MUTANT),
+    ),
+)
+solver = Solver(config=cfg)
 ```
 
 ## Why?

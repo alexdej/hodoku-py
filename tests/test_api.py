@@ -177,16 +177,21 @@ class TestValidation:
 # ---------------------------------------------------------------------------
 
 class TestFindAllSteps:
+    # Nearly-solved puzzle (few open cells) to keep find_all fast.
+    # The easy puzzle has many open cells which causes ALS combinatorial
+    # explosion with als_allow_overlap=True (the find-all default).
+    _NEAR_SOLVED = "534678912672195348198342567859761423426853791713924856961537284287419635045286179"
+
     def test_returns_list(self):
-        steps = Solver().find_all_steps(EASY_PUZZLE)
+        steps = Solver().find_all_steps(self._NEAR_SOLVED)
         assert isinstance(steps, list)
 
     def test_non_empty_on_unsolved(self):
-        steps = Solver().find_all_steps(EASY_PUZZLE)
+        steps = Solver().find_all_steps(self._NEAR_SOLVED)
         assert len(steps) > 0
 
     def test_all_steps_have_type(self):
-        steps = Solver().find_all_steps(EASY_PUZZLE)
+        steps = Solver().find_all_steps(self._NEAR_SOLVED)
         for step in steps:
             assert step.type is not None
 

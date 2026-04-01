@@ -7,10 +7,14 @@ methods in SudokuStepFinder.
 from __future__ import annotations
 
 from functools import cmp_to_key
+from typing import TYPE_CHECKING
 
 from hodoku.core.grid import ALL_UNITS, BUDDIES, Grid
 from hodoku.core.solution_step import SolutionStep
 from hodoku.core.types import SolutionType
+
+if TYPE_CHECKING:
+    from hodoku.config import StepSearchConfig
 
 _MAX_RC = 50  # maximum RCs in an ALS-Chain (matches Java MAX_RC)
 
@@ -437,12 +441,18 @@ class _RCForDeathBlossom:
 class AlsSolver:
     """ALS-XZ, ALS-XY-Wing, ALS-XY-Chain, Death Blossom."""
 
-    def __init__(self, grid: Grid) -> None:
+    def __init__(self, grid: Grid, search_config: StepSearchConfig | None = None) -> None:
         self.grid = grid
+        if search_config is not None:
+            self._allow_overlap = search_config.als_allow_overlap
+        else:
+            self._allow_overlap = False
 
     def get_step(
-        self, sol_type: SolutionType, allow_overlap: bool = False
+        self, sol_type: SolutionType, allow_overlap: bool | None = None
     ) -> SolutionStep | None:
+        if allow_overlap is None:
+            allow_overlap = self._allow_overlap
         if sol_type == SolutionType.ALS_XZ:
             return self._find_als_xz()
         if sol_type == SolutionType.ALS_XY_WING:
@@ -454,8 +464,10 @@ class AlsSolver:
         return None
 
     def find_all(
-        self, sol_type: SolutionType, allow_overlap: bool = False
+        self, sol_type: SolutionType, allow_overlap: bool | None = None
     ) -> list[SolutionStep]:
+        if allow_overlap is None:
+            allow_overlap = self._allow_overlap
         if sol_type == SolutionType.ALS_XZ:
             return self._find_als_xz_all()
         if sol_type == SolutionType.ALS_XY_WING:
