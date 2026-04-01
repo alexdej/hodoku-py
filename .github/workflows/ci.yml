@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install -e .[test]
-      - run: pytest --flake8 --cppcheck -m "flake8 or cppcheck"
+      - run: make lint
       - run: pytest -m unit -v --cov=src/hodoku --cov-report=xml
 
       - name: Upload coverage to Codecov

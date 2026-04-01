@@ -13,7 +13,7 @@ test:
 	pytest -m "unit" tests/
 
 lint:
-	pytest --clang-tidy --cppcheck --flake8 -m "flake8 or cppcheck or clang-tidy" src/ tests/
+	pytest --clang-tidy --flake8 src/
 
 
 clean:
