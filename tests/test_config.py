@@ -212,3 +212,19 @@ class TestFrozen:
         fc = FishSearchConfig()
         with pytest.raises(AttributeError):
             fc.max_fins = 10
+
+    def test_step_config_is_copy(self):
+        """step_config returns a copy — mutating it doesn't affect globals."""
+        from hodoku.core.scoring import STEP_CONFIG
+        cfg = DEFAULT_CONFIG.step_config
+        original_score = STEP_CONFIG[SolutionType.X_WING].base_score
+        cfg[SolutionType.X_WING] = None  # mutate the copy
+        assert STEP_CONFIG[SolutionType.X_WING].base_score == original_score
+
+    def test_difficulty_max_score_is_copy(self):
+        """_difficulty_max_score returns a copy — mutating it doesn't affect globals."""
+        from hodoku.core.scoring import DIFFICULTY_MAX_SCORE
+        cfg = DEFAULT_CONFIG._difficulty_max_score
+        original = DIFFICULTY_MAX_SCORE[DifficultyType.EASY]
+        cfg[DifficultyType.EASY] = 0  # mutate the copy
+        assert DIFFICULTY_MAX_SCORE[DifficultyType.EASY] == original

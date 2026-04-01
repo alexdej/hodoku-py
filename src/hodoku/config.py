@@ -172,7 +172,7 @@ class SolverConfig:
         from hodoku.core.scoring import STEP_CONFIG as _BASE
 
         if not self.step_overrides:
-            return _BASE
+            return dict(_BASE)
 
         from hodoku.core.scoring import DEFAULT_STEPS, StepConfig as SC
 
@@ -205,7 +205,7 @@ class SolverConfig:
         """Difficulty thresholds with overrides applied."""
         from hodoku.core.scoring import DIFFICULTY_MAX_SCORE
         if not self.difficulty_thresholds:
-            return DIFFICULTY_MAX_SCORE
+            return dict(DIFFICULTY_MAX_SCORE)
         result = dict(DIFFICULTY_MAX_SCORE)
         result.update(self.difficulty_thresholds)
         return result

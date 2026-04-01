@@ -1764,7 +1764,7 @@ class TablingSolver:
                 if old_step.get_chain_length() > step.get_chain_length():
                     # New chain is shorter → replace
                     self.steps[old_index] = copy.deepcopy(step)
-            return
+                return
 
         # New step
         self.deletes_map[del_key] = len(self.steps)
