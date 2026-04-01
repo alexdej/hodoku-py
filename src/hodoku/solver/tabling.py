@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import copy
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from hodoku.core.grid import (
     ALL_UNIT_MASKS,
@@ -45,6 +46,9 @@ from hodoku.solver.chain_utils import (
     make_entry_simple,
 )
 from hodoku.solver.table_entry import MAX_TABLE_ENTRY_LENGTH, TableEntry
+
+if TYPE_CHECKING:
+    from hodoku.config import StepSearchConfig
 
 # ---------------------------------------------------------------------------
 # Group nodes (used by TablingSolver for Grouped Nice Loop / AIC)
@@ -162,7 +166,7 @@ def _get_all_candidates(grid: Grid, cell: int) -> list[int]:
 class TablingSolver:
     """Forcing Chain / Forcing Net solver using Trebor's Tables."""
 
-    def __init__(self, grid: Grid) -> None:
+    def __init__(self, grid: Grid, search_config: StepSearchConfig | None = None) -> None:
         self.grid = grid
 
         # Main tables: index = cell*10 + cand (cands 1-indexed, so 810 entries)
@@ -202,9 +206,15 @@ class TablingSolver:
         # Nice loop filter flag
         self._only_grouped_nice_loops: bool = False
 
-        # Config: whether ALS nodes are allowed in tabling chains
-        # (mirrors Java Options.isAllowAlsInTablingChains())
-        self._config_allow_als_in_tabling: bool = False
+        # Config values from StepSearchConfig
+        if search_config is not None:
+            self._config_allow_als_in_tabling = search_config.tabling_allow_als_in_chains
+            self._anz_table_look_ahead = search_config.tabling_net_depth
+            self._only_one_chain_per_elimination = search_config.tabling_only_one_chain_per_elimination
+        else:
+            self._config_allow_als_in_tabling = False
+            self._anz_table_look_ahead = 4
+            self._only_one_chain_per_elimination = True
 
         # Net mode flag: when True, forces all CHAIN types to NET types
         self._nets_mode: bool = False
@@ -454,8 +464,6 @@ class TablingSolver:
     # Step 1b: Fill tables — nets (look-ahead)
     # ------------------------------------------------------------------
 
-    _ANZ_TABLE_LOOK_AHEAD: int = 4
-
     def _fill_tables_nets(self) -> None:
         """Populate on_table/off_table using net-mode (look-ahead).
 
@@ -516,7 +524,7 @@ class TablingSolver:
                                    get_ret_indices=False, naked_single=True)
 
         # Look-ahead rounds: find naked/hidden singles
-        for _ in range(self._ANZ_TABLE_LOOK_AHEAD):
+        for _ in range(self._anz_table_look_ahead):
             singles = self._find_all_singles_net(grid)
             if not singles:
                 break
@@ -1749,13 +1757,14 @@ class TablingSolver:
         else:
             return  # no effect
 
-        old_index = self.deletes_map.get(del_key)
-        if old_index is not None:
-            old_step = self.steps[old_index]
-            if old_step.get_chain_length() > step.get_chain_length():
-                # New chain is shorter → replace
-                self.steps[old_index] = copy.deepcopy(step)
-            return
+        if self._only_one_chain_per_elimination:
+            old_index = self.deletes_map.get(del_key)
+            if old_index is not None:
+                old_step = self.steps[old_index]
+                if old_step.get_chain_length() > step.get_chain_length():
+                    # New chain is shorter → replace
+                    self.steps[old_index] = copy.deepcopy(step)
+                return
 
         # New step
         self.deletes_map[del_key] = len(self.steps)
@@ -1913,10 +1922,11 @@ class TablingSolver:
 
         # Dedup by elimination set
         del_key = self._global_step.get_candidate_string()
-        old_index = self.deletes_map.get(del_key)
-        if old_index is not None:
-            if self.steps[old_index].get_chain_length() <= nl_chain_length:
-                return
+        if self._only_one_chain_per_elimination:
+            old_index = self.deletes_map.get(del_key)
+            if old_index is not None:
+                if self.steps[old_index].get_chain_length() <= nl_chain_length:
+                    return
 
         self.deletes_map[del_key] = len(self.steps)
         self.steps.append(copy.deepcopy(self._global_step))
@@ -2118,10 +2128,11 @@ class TablingSolver:
             return
 
         del_key = self._global_step.get_candidate_string()
-        old_index = self.deletes_map.get(del_key)
-        if old_index is not None:
-            if self.steps[old_index].get_chain_length() <= len(chain):
-                return
+        if self._only_one_chain_per_elimination:
+            old_index = self.deletes_map.get(del_key)
+            if old_index is not None:
+                if self.steps[old_index].get_chain_length() <= len(chain):
+                    return
 
         self.deletes_map[del_key] = len(self.steps)
         self.steps.append(copy.deepcopy(self._global_step))

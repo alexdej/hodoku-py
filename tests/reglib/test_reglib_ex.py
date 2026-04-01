@@ -9,28 +9,8 @@ This exercises the find_all_steps filter loop (the all_steps_enabled gate and
 technique dispatch) in a way that test_reglib.py does not — it calls targeted
 finders directly, bypassing the API layer.
 
-NOT wired into the default conftest collector.  Run explicitly:
+Run:
     pytest tests/reglib/test_reglib_ex.py -v
-
-Known failures (28 as of initial run) and their root causes
-------------------------------------------------------------
-These are the acceptance criteria for SolverConfig Pass 1 — all should pass
-once find_all_search defaults are wired correctly.
-
-| Codes          | Category                  | Root cause / fix needed                          |
-|----------------|---------------------------|--------------------------------------------------|
-| 0300–0364      | Fish (all types)          | all_steps_enabled=False bug; need search_fish    |
-|                |                           | flag from FishSearchConfig to include fish        |
-| 0404, 0405     | Dual Two-String Kite,     | allow_duals_and_siamese=False by default; Java   |
-|                | Dual Empty Rectangle      | RegressionTester sets it True for these tests    |
-| 0501, 0503     | Simple Colors Wrap,       | Alias types: find_all_steps dispatches to the    |
-|                | Multi-Colors 2            | base type (TRAP/1), not the alias variant        |
-| 0707, 0708,    | DNL, AIC, Grouped DNL,    | tabling_only_one_chain_per_elimination=True by   |
-| 0710, 0711     | Grouped AIC               | default; find-all default should be False        |
-| 0904           | Death Blossom             | als_allow_overlap variant interaction; needs     |
-|                |                           | investigation when wiring ALS config             |
-| 1201, 1202     | Template Set/Delete       | In disabled_types by default for find-all;       |
-|                |                           | regression tester enables them explicitly        |
 """
 
 from __future__ import annotations
@@ -38,8 +18,72 @@ from __future__ import annotations
 import pytest
 
 from hodoku import Solver
+from hodoku.config import FishSearchConfig, FishType, SolverConfig, StepSearchConfig
 from hodoku.core.grid import Grid
+from hodoku.core.types import SolutionType as _ST
 from tests.reglib.reglib_parser import ReglibEntry, parse_reglib, REGLIB_FILE
+
+# Shared step overrides: enable templates for find-all
+_STEP_OVERRIDES = {
+    _ST.TEMPLATE_SET: dict(all_steps_enabled=True),
+    _ST.TEMPLATE_DEL: dict(all_steps_enabled=True),
+}
+
+# Default config: Franken fish through jellyfish, ALS overlap off.
+_DEFAULT_CONFIG = SolverConfig(
+    find_all_search=StepSearchConfig(
+        allow_duals_and_siamese=True,
+        tabling_only_one_chain_per_elimination=False,
+        tabling_allow_als_in_chains=True,
+        als_allow_overlap=False,
+        disabled_types=frozenset(),
+    ),
+    step_overrides=_STEP_OVERRIDES,
+)
+
+# Large/mutant fish config: mutant fish through whale.
+_MUTANT_FISH_CONFIG = SolverConfig(
+    find_all_search=StepSearchConfig(
+        allow_duals_and_siamese=True,
+        tabling_only_one_chain_per_elimination=False,
+        tabling_allow_als_in_chains=True,
+        als_allow_overlap=False,
+        disabled_types=frozenset(),
+        fish=FishSearchConfig(
+            fish_type=FishType.BASIC_FRANKEN_MUTANT,
+            max_size=7,
+        ),
+    ),
+    step_overrides=_STEP_OVERRIDES,
+)
+
+# ALS overlap config: for Death Blossom.
+_ALS_OVERLAP_CONFIG = SolverConfig(
+    find_all_search=StepSearchConfig(
+        allow_duals_and_siamese=True,
+        tabling_only_one_chain_per_elimination=False,
+        tabling_allow_als_in_chains=True,
+        als_allow_overlap=True,
+        disabled_types=frozenset(),
+    ),
+    step_overrides=_STEP_OVERRIDES,
+)
+
+# Technique codes that need a non-default config
+_MUTANT_FISH_CODES = frozenset({"0332", "0342", "0362", "0363", "0364"})
+_ALS_OVERLAP_CODES = frozenset({"0904"})
+
+_CONFIG_FOR_CODE = {
+    code: _MUTANT_FISH_CONFIG for code in _MUTANT_FISH_CODES
+} | {
+    code: _ALS_OVERLAP_CONFIG for code in _ALS_OVERLAP_CODES
+}
+
+# Pre-build solvers (one per config to reuse StepFinder caches)
+_SOLVERS = {
+    id(cfg): Solver(config=cfg)
+    for cfg in (_DEFAULT_CONFIG, _MUTANT_FISH_CONFIG, _ALS_OVERLAP_CONFIG)
+}
 
 
 def _build_grid(entry: ReglibEntry) -> Grid:
@@ -76,8 +120,11 @@ _ENTRIES = _select_entries()
     ids=[e.test_id for e in _ENTRIES],
 )
 def test_find_all_steps_contains_technique(entry: ReglibEntry) -> None:
+    config = _CONFIG_FOR_CODE.get(entry.technique_code, _DEFAULT_CONFIG)
+    solver = _SOLVERS[id(config)]
+
     grid = _build_grid(entry)
-    steps = Solver()._find_all_on_grid(grid)
+    steps = solver._find_all_on_grid(grid)
     found_types = {s.type for s in steps}
     assert entry.solution_types & found_types, (
         f"Technique {entry.technique_code} not found in find_all_steps results.\n"

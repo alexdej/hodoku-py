@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import os
 from itertools import combinations
+from typing import TYPE_CHECKING
 
 from hodoku.core.grid import (
     ALL_UNIT_MASKS,
@@ -31,6 +32,9 @@ from hodoku.core.grid import (
     Grid,
     LINE_MASKS,
 )
+
+if TYPE_CHECKING:
+    from hodoku.config import StepSearchConfig
 
 # All 81 cells mask
 _ALL_CELLS = (1 << 81) - 1
@@ -300,8 +304,17 @@ def _apply_siamese(steps: list[SolutionStep]) -> None:
 class FishSolver:
     """X-Wing, Swordfish, Jellyfish — basic, finned/sashimi, Franken, Mutant."""
 
-    def __init__(self, grid: Grid) -> None:
+    def __init__(self, grid: Grid, search_config: StepSearchConfig | None = None) -> None:
         self.grid = grid
+        if search_config is not None:
+            self._max_fins = search_config.fish.max_fins
+            self._max_endo_fins = search_config.fish.max_endo_fins
+            self._allow_duals_and_siamese = search_config.allow_duals_and_siamese
+        else:
+            # Backward-compatible defaults (pre-config behavior)
+            self._max_fins = _MAX_FINS
+            self._max_endo_fins = _MAX_ENDO_FINS
+            self._allow_duals_and_siamese = True
 
     def get_step(self, sol_type: SolutionType) -> SolutionStep | None:
         if sol_type in _FISH_SIZE:
@@ -330,7 +343,8 @@ class FishSolver:
                 # HoDoKu finds finned+sashimi together for siamese combinations
                 sashimi_type = _FINNED_TO_SASHIMI[sol_type]
                 steps = steps + self._find_finned_fish_all(sashimi_type, sashimi=True)
-                _apply_siamese(steps)
+                if self._allow_duals_and_siamese:
+                    _apply_siamese(steps)
             return steps
         if sol_type in _SASHIMI_SIZE:
             n = _SASHIMI_SIZE[sol_type]
@@ -338,12 +352,14 @@ class FishSolver:
             if n >= 3:
                 finned_type = {v: k for k, v in _FINNED_TO_SASHIMI.items()}[sol_type]
                 steps = self._find_finned_fish_all(finned_type, sashimi=False) + sashimi_steps
-                _apply_siamese(steps)
+                if self._allow_duals_and_siamese:
+                    _apply_siamese(steps)
                 return steps
             return sashimi_steps
         if sol_type in _GENERALIZED_INFO:
             steps = self._find_generalized_fish_all(sol_type, for_candidate=for_candidate)
-            _apply_siamese(steps)
+            if self._allow_duals_and_siamese:
+                _apply_siamese(steps)
             return steps
         return []
 
@@ -702,7 +718,7 @@ class FishSolver:
                                 # Basic fish: no endo fins allowed
                                 skip = True
                                 break
-                            if (endo_fins | overlap).bit_count() > _MAX_ENDO_FINS:
+                            if (endo_fins | overlap).bit_count() > self._max_endo_fins:
                                 skip = True
                                 break
                             endo_fins |= overlap
@@ -733,7 +749,7 @@ class FishSolver:
                         ce_masks = [cover_eligible[i][0] for i in range(num_cover)]
                         for indices, cover_cand, fins, elim in _accel.find_covers(
                             ce_masks, n, base_cand, cand_set,
-                            1 if with_fins else 0, _MAX_FINS, endo_fins,
+                            1 if with_fins else 0, self._max_fins, endo_fins,
                         ):
                             cover_bits = 0
                             for k in range(n):
@@ -802,7 +818,7 @@ class FishSolver:
                                     fin_count = all_fins.bit_count()
                                     if fin_count == 0:
                                         continue
-                                    if fin_count > _MAX_FINS:
+                                    if fin_count > self._max_fins:
                                         continue
                                     fin_buddies = _fin_buddies(all_fins)
                                     elim = cand_set & new_cand & fin_buddies & ~base_cand

@@ -7,12 +7,17 @@ actually wired up in step_finder.py.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from hodoku.core.grid import (
     ALL_UNITS, BUDDIES, CELL_CONSTRAINTS,
     CONSTRAINTS, Grid,
 )
 from hodoku.core.solution_step import SolutionStep
 from hodoku.core.types import SolutionType
+
+if TYPE_CHECKING:
+    from hodoku.config import StepSearchConfig
 
 _MAX_CHAIN = 20  # maximum chain length (number of nodes)
 
@@ -87,8 +92,12 @@ def _step_sort_key(step: SolutionStep) -> tuple:
 class ChainSolver:
     """X-Chain, XY-Chain, Remote Pair."""
 
-    def __init__(self, grid: Grid) -> None:
+    def __init__(self, grid: Grid, search_config: StepSearchConfig | None = None) -> None:
         self.grid = grid
+        if search_config is not None:
+            self._max_chain = search_config.chain_max_length
+        else:
+            self._max_chain = _MAX_CHAIN
 
     def get_step(self, sol_type: SolutionType) -> SolutionStep | None:
         if sol_type == SolutionType.TURBOT_FISH:
@@ -105,7 +114,7 @@ class ChainSolver:
         if sol_type == SolutionType.TURBOT_FISH:
             return self._find_x_chain_impl_all(SolutionType.TURBOT_FISH, max_nodes=4)
         if sol_type == SolutionType.X_CHAIN:
-            return self._find_x_chain_impl_all(SolutionType.X_CHAIN, max_nodes=_MAX_CHAIN)
+            return self._find_x_chain_impl_all(SolutionType.X_CHAIN, max_nodes=self._max_chain)
         if sol_type == SolutionType.XY_CHAIN:
             return self._find_xy_type_all(SolutionType.XY_CHAIN)
         if sol_type == SolutionType.REMOTE_PAIR:
@@ -131,7 +140,7 @@ class ChainSolver:
         shortest per set), then returns the one ranked first by HoDoKu's
         comparator (most eliminations, then lowest weighted index sum).
         """
-        return self._find_x_chain_impl(SolutionType.X_CHAIN, max_nodes=_MAX_CHAIN)
+        return self._find_x_chain_impl(SolutionType.X_CHAIN, max_nodes=self._max_chain)
 
     def _find_x_chain_impl(self, sol_type: SolutionType, max_nodes: int) -> SolutionStep | None:
         grid = self.grid
@@ -400,7 +409,7 @@ class ChainSolver:
         sol_type: SolutionType,
         deletes_map: dict,
     ) -> None:
-        if len(chain) >= _MAX_CHAIN:
+        if len(chain) >= self._max_chain:
             return
 
         current_cell, current_cand = chain[-1]

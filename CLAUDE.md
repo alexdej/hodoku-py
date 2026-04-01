@@ -8,12 +8,14 @@ Goal is 100% fidelity to HoDoKu.
 A Python library. Public API surface:
 
 ```python
-from hodoku import Solver, Generator, DifficultyType
+from hodoku import Solver, Generator, DifficultyType, SolverConfig
 
-solver = Solver()
-result = solver.solve("530070000...")   # returns steps, level, score
+solver = Solver()                        # default config
+solver = Solver(config=SolverConfig())   # equivalent — explicit default
+result = solver.solve("530070000...")    # returns steps, level, score
 hint   = solver.get_hint("530070000...") # returns next SolutionStep or None
-rating = solver.rate("530070000...")    # returns level + score only
+rating = solver.rate("530070000...")     # returns level + score only
+steps  = solver.find_all_steps("530...")  # returns all applicable techniques
 
 gen = Generator()
 puzzle = gen.generate(difficulty=DifficultyType.MEDIUM)
@@ -30,7 +32,7 @@ Read the project README.md, docs/ROADMAP.md, and docs/ARCHITECTURE.md before sta
   - `grid.candidates[i]` — per-cell 9-bit mask (bit d-1 = digit d present)
   - `grid.candidate_sets[d]` — per-digit CellSet (which cells have digit d)
   - Keep in sync inside `set_cell()` and `del_candidate()`
-- **Options singleton**: replaced by `SolverConfig` dataclass with a `DEFAULT_CONFIG` constant
+- **Options singleton**: replaced by `SolverConfig` dataclass in `config.py` (see `docs/spec_solver_config.md`)
 - **No threading**: skip SudokuSolverFactory/SudokuGeneratorFactory pools for now
 - **Chain encoding**: use same 32-bit bit-packed int format as Java (required for TablingSolver)
 - **Static tables**: `Sudoku2`'s lookup arrays → module-level constants in `core/grid.py`

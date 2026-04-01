@@ -3,18 +3,73 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from hodoku.core.grid import ALL_UNITS, Grid
-from hodoku.core.scoring import DIFFICULTY_MAX_SCORE, SOLVER_STEPS
 from hodoku.core.solution_step import SolutionStep
-from hodoku.core.types import DifficultyType
+from hodoku.core.types import DifficultyType, SolutionCategory, SolutionType
 from hodoku.generator.generator import SudokuGenerator
 from hodoku.generator.pattern import GeneratorPattern
 from hodoku.solver.solver import SudokuSolver
 from hodoku.solver.step_finder import SudokuStepFinder
 
+if TYPE_CHECKING:
+    from hodoku.config import SolverConfig
+
 _VALID_CELL_CHARS = frozenset("0123456789.")
+
+_FISH_CATEGORIES = frozenset({
+    SolutionCategory.BASIC_FISH,
+    SolutionCategory.FINNED_BASIC_FISH,
+    SolutionCategory.FRANKEN_FISH,
+    SolutionCategory.FINNED_FRANKEN_FISH,
+    SolutionCategory.MUTANT_FISH,
+    SolutionCategory.FINNED_MUTANT_FISH,
+})
+
+# Category → FishType level required
+_FISH_CAT_LEVEL = {
+    SolutionCategory.BASIC_FISH: 0,
+    SolutionCategory.FINNED_BASIC_FISH: 0,
+    SolutionCategory.FRANKEN_FISH: 1,
+    SolutionCategory.FINNED_FRANKEN_FISH: 1,
+    SolutionCategory.MUTANT_FISH: 2,
+    SolutionCategory.FINNED_MUTANT_FISH: 2,
+}
+
+# Fish SolutionType → size (number of base sets).
+_FISH_NAMES_BY_SIZE = [
+    "X_WING", "SWORDFISH", "JELLYFISH", "SQUIRMBAG", "WHALE", "LEVIATHAN",
+]
+_FISH_PREFIXES = [
+    "", "FINNED_", "SASHIMI_",
+    "FRANKEN_", "FINNED_FRANKEN_",
+    "MUTANT_", "FINNED_MUTANT_",
+]
+_FISH_TYPE_SIZE: dict[SolutionType, int] = {}
+for _i, _name in enumerate(_FISH_NAMES_BY_SIZE):
+    for _prefix in _FISH_PREFIXES:
+        _st = getattr(SolutionType, _prefix + _name, None)
+        if _st is not None:
+            _FISH_TYPE_SIZE[_st] = _i + 2
+
+# Primary type → alias subtypes that share the same StepConfig.
+# find_all must dispatch these separately to find all variants.
+_FIND_ALL_ALIASES: dict[SolutionType, list[SolutionType]] = {
+    SolutionType.SIMPLE_COLORS_TRAP: [SolutionType.SIMPLE_COLORS_WRAP],
+    SolutionType.MULTI_COLORS_1: [SolutionType.MULTI_COLORS_2],
+    SolutionType.CONTINUOUS_NICE_LOOP: [
+        SolutionType.DISCONTINUOUS_NICE_LOOP, SolutionType.AIC,
+    ],
+    SolutionType.GROUPED_CONTINUOUS_NICE_LOOP: [
+        SolutionType.GROUPED_DISCONTINUOUS_NICE_LOOP, SolutionType.GROUPED_AIC,
+    ],
+    SolutionType.FORCING_CHAIN_CONTRADICTION: [SolutionType.FORCING_CHAIN_VERITY],
+    SolutionType.FORCING_NET_CONTRADICTION: [SolutionType.FORCING_NET_VERITY],
+    SolutionType.KRAKEN_FISH_TYPE_1: [SolutionType.KRAKEN_FISH_TYPE_2],
+    SolutionType.TWO_STRING_KITE: [SolutionType.DUAL_TWO_STRING_KITE],
+    SolutionType.EMPTY_RECTANGLE: [SolutionType.DUAL_EMPTY_RECTANGLE],
+}
 
 
 def _validate_puzzle(puzzle: str) -> None:
@@ -76,8 +131,12 @@ class RatingResult:
 class Solver:
     """Solves and analyses sudoku puzzles using human-style logic."""
 
-    def __init__(self) -> None:
-        self._solver = SudokuSolver()
+    def __init__(self, config: SolverConfig | None = None) -> None:
+        if config is None:
+            from hodoku.config import DEFAULT_CONFIG
+            config = DEFAULT_CONFIG
+        self._config = config
+        self._solver = SudokuSolver(config)
 
     def solve(self, puzzle: str) -> SolveResult:
         """Solve a puzzle string, returning the full solution path."""
@@ -98,8 +157,8 @@ class Solver:
         grid.set_sudoku(puzzle)
         if grid.is_solved():
             return None
-        finder = SudokuStepFinder(grid)
-        for cfg in SOLVER_STEPS:
+        finder = SudokuStepFinder(grid, self._config.solve_search)
+        for cfg in self._config.solver_steps:
             step = finder.get_step(cfg.solution_type)
             if step is not None:
                 return step
@@ -120,11 +179,31 @@ class Solver:
 
     def _find_all_on_grid(self, grid: Grid) -> list[SolutionStep]:
         """Return every applicable technique on a pre-built grid."""
-        finder = SudokuStepFinder(grid)
+        find_cfg = self._config.find_all_search
+        finder = SudokuStepFinder(grid, find_cfg)
+        disabled = find_cfg.disabled_types
+        fish_cfg = find_cfg.fish
+        fish_type_level = fish_cfg.fish_type  # max fish category level
         steps: list[SolutionStep] = []
-        for cfg in SOLVER_STEPS:
-            if cfg.all_steps_enabled:
-                steps.extend(finder.find_all(cfg.solution_type))
+        for cfg in self._config.all_steps:
+            sol_type = cfg.solution_type
+            if sol_type in disabled:
+                continue
+            if cfg.category in _FISH_CATEGORIES:
+                # Fish gated by search_fish + fish_type + max_size
+                if not fish_cfg.search_fish:
+                    continue
+                if _FISH_CAT_LEVEL[cfg.category] > fish_type_level:
+                    continue
+                size = _FISH_TYPE_SIZE.get(sol_type, 99)
+                if size < fish_cfg.min_size or size > fish_cfg.max_size:
+                    continue
+            elif not cfg.all_steps_enabled:
+                continue
+            steps.extend(finder.find_all(sol_type))
+            for alias in _FIND_ALL_ALIASES.get(sol_type, ()):
+                if alias not in disabled:
+                    steps.extend(finder.find_all(alias))
         return steps
 
 
@@ -137,9 +216,13 @@ class Generator:
 
     MAX_TRIES = 20_000
 
-    def __init__(self) -> None:
+    def __init__(self, config: SolverConfig | None = None) -> None:
+        if config is None:
+            from hodoku.config import DEFAULT_CONFIG
+            config = DEFAULT_CONFIG
+        self._config = config
         self._generator = SudokuGenerator()
-        self._solver = SudokuSolver()
+        self._solver = SudokuSolver(config)
 
     def generate(
         self,
@@ -181,7 +264,7 @@ class Generator:
             # (mirrors Java's rejectTooLowScore logic)
             if difficulty.value > DifficultyType.EASY.value:
                 prev_level = DifficultyType(difficulty.value - 1)
-                if result.score < DIFFICULTY_MAX_SCORE[prev_level]:
+                if result.score < self._config._difficulty_max_score[prev_level]:
                     continue
 
             return puzzle

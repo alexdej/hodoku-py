@@ -5,6 +5,8 @@ Mirrors Java's SingleDigitPatternSolver.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from hodoku.core.grid import (
     Grid,
     ALL_UNITS,
@@ -19,6 +21,9 @@ from hodoku.core.grid import (
 )
 from hodoku.core.solution_step import Candidate, SolutionStep
 from hodoku.core.types import SolutionType
+
+if TYPE_CHECKING:
+    from hodoku.config import StepSearchConfig
 
 # ---------------------------------------------------------------------------
 # Empty Rectangle static lookup tables (computed once at import time)
@@ -72,8 +77,13 @@ _BLOCK_ENTITY = 2  # Entity type for BLOCK (matches Java's Sudoku2.BLOCK)
 class SingleDigitSolver:
     """Skyscraper, 2-String Kite, Empty Rectangle."""
 
-    def __init__(self, grid: Grid) -> None:
+    def __init__(self, grid: Grid, search_config: StepSearchConfig | None = None) -> None:
         self.grid = grid
+        if search_config is not None:
+            self._allow_duals_and_siamese = search_config.allow_duals_and_siamese
+        else:
+            # Backward-compatible default (pre-config behavior)
+            self._allow_duals_and_siamese = True
 
     def get_step(self, sol_type: SolutionType) -> SolutionStep | None:
         if sol_type == SolutionType.SKYSCRAPER:
@@ -83,14 +93,14 @@ class SingleDigitSolver:
         if sol_type == SolutionType.EMPTY_RECTANGLE:
             return self._find_empty_rectangle()
         if sol_type == SolutionType.DUAL_TWO_STRING_KITE:
+            if not self._allow_duals_and_siamese:
+                return None
             steps = self._find_dual_two_string_kites()
-            # NOTE: Java calls Collections.sort(steps) here.  We rely on
-            # iteration order matching.  If a parity divergence traces here,
-            # add a sort (see getCandidateString() side-effect in chains.py).
             return steps[0] if steps else None
         if sol_type == SolutionType.DUAL_EMPTY_RECTANGLE:
+            if not self._allow_duals_and_siamese:
+                return None
             steps = self._find_dual_empty_rectangles()
-            # NOTE: Java calls Collections.sort(steps) here.  See above.
             return steps[0] if steps else None
         return None
 
@@ -102,8 +112,12 @@ class SingleDigitSolver:
         if sol_type == SolutionType.EMPTY_RECTANGLE:
             return self._find_empty_rectangle_all()
         if sol_type == SolutionType.DUAL_TWO_STRING_KITE:
+            if not self._allow_duals_and_siamese:
+                return []
             return self._find_dual_two_string_kites()
         if sol_type == SolutionType.DUAL_EMPTY_RECTANGLE:
+            if not self._allow_duals_and_siamese:
+                return []
             return self._find_dual_empty_rectangles()
         return []
 

@@ -6,6 +6,8 @@ additional solvers will be added as they are implemented.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from hodoku.core.grid import Grid
 from hodoku.core.solution_step import SolutionStep
 from hodoku.core.types import SolutionType
@@ -21,6 +23,9 @@ from hodoku.solver.tabling import TablingSolver
 from hodoku.solver.templates import TemplateSolver
 from hodoku.solver.uniqueness import UniquenessSolver
 from hodoku.solver.wings import WingSolver
+
+if TYPE_CHECKING:
+    from hodoku.config import StepSearchConfig
 
 
 _SIMPLE_TYPES = frozenset({
@@ -144,17 +149,17 @@ _UNIQUENESS_TYPES = frozenset({
 class SudokuStepFinder:
     """Dispatches get_step() calls to the appropriate specialized solver."""
 
-    def __init__(self, grid: Grid) -> None:
+    def __init__(self, grid: Grid, search_config: StepSearchConfig | None = None) -> None:
         self.grid = grid
         self._simple = SimpleSolver(grid)
-        self._single_digit = SingleDigitSolver(grid)
+        self._single_digit = SingleDigitSolver(grid, search_config)
         self._wings = WingSolver(grid)
         self._coloring = ColoringSolver(grid)
-        self._fish = FishSolver(grid)
+        self._fish = FishSolver(grid, search_config)
         self._uniqueness = UniquenessSolver(grid)
-        self._chains = ChainSolver(grid)
-        self._tabling = TablingSolver(grid)
-        self._als = AlsSolver(grid)
+        self._chains = ChainSolver(grid, search_config)
+        self._tabling = TablingSolver(grid, search_config)
+        self._als = AlsSolver(grid, search_config)
         self._misc = MiscSolver(grid)
         self._templates = TemplateSolver(grid)
         self._brute_force = BruteForceSolver(grid)

@@ -23,8 +23,9 @@ Each layer depends only on those above it in the list.
 | 2 | Solution step | `core/solution_step.py` | ✅ | `SolutionStep`, `Candidate`, `Entity` dataclasses |
 | 3 | Grid | `core/grid.py` | ✅ | 81-cell state, `free[][]`, `ns_queue`, `hs_queue`, static lookup tables |
 | 4 | Scoring | `core/scoring.py` | ✅ | `StepConfig` table (90 entries), `SOLVER_STEPS`, difficulty thresholds |
-| 5 | Solver loop | `solver/solver.py` | ✅ | `SudokuSolver.solve()`, SOLVER_STEPS priority loop, scoring |
-| 6 | Step finder | `solver/step_finder.py` | ✅ | Dispatcher skeleton; grows as solvers are added |
+| 4b | Config | `config.py` | ✅ | `SolverConfig`, `StepSearchConfig`, `FishSearchConfig`; wired through solver stack |
+| 5 | Solver loop | `solver/solver.py` | ✅ | `SudokuSolver.solve()`, config-driven step priority loop, scoring |
+| 6 | Step finder | `solver/step_finder.py` | ✅ | Dispatcher; passes `StepSearchConfig` to sub-solvers |
 
 ## Solver techniques
 
@@ -128,13 +129,9 @@ Output: `<puzzle> # <before-cat> <tech>(<count>) <after-cat>`
 **SSTS** = Singles + Locked Candidates + Subsets + X-Wing + Swordfish +
 Jellyfish + XY-Wing + Simple Colors + Multi Colors. All implemented as of row 13.
 
-## Cross-cutting gaps
+## Cross-cutting capabilities
 
-These are capabilities that HoDoKu exposes across all technique layers but that
-we have not yet implemented. They are not tied to a single solver; each one
-requires changes across most or all of the specialized solvers.
-
-### `findAll*()` — enumerate all instances (highest priority)
+### `findAll*()` — enumerate all instances
 
 HoDoKu exposes two parallel execution paths for every technique:
 
@@ -146,7 +143,27 @@ HoDoKu exposes two parallel execution paths for every technique:
 All specialized solvers expose `find_all(sol_type)` and `SudokuStepFinder`
 dispatches to them. The reglib harness uses this for technique-isolation tests.
 
-### Remaining unimplemented techniques
+### `SolverConfig` — unified solver configuration
+
+**Implemented.** `SolverConfig` (`config.py`) unifies all solver tuning into a
+single frozen dataclass passed to `Solver(config=...)`.  Separate
+`solve_search` and `find_all_search` sub-configs (`StepSearchConfig`) control
+the solve loop and `find_all_steps` API respectively, with different defaults
+matching HoDoKu's UI panels.
+
+Config flows through `SudokuSolver` → `SudokuStepFinder` → sub-solvers.
+Wired settings: `chain_max_length`, `tabling_allow_als_in_chains`,
+`tabling_net_depth`, `tabling_only_one_chain_per_elimination`,
+`als_allow_overlap`, `fish.max_fins`, `fish.max_endo_fins`,
+`allow_duals_and_siamese`.  See `docs/spec_solver_config.md` for the full
+spec including `FishSearchConfig`, `KrakenFishSearchConfig`, and
+`step_overrides`.
+
+Settings stored but not yet gating code: `nice_loop_max_length`,
+`chain_restrict_length`, `allow_ers_with_two_candidates`,
+`allow_missing_candidates_in_urs`, `KrakenFishSearchConfig`.
+
+### All techniques implemented
 
 | Technique | Code | Notes |
 |-----------|------|-------|
