@@ -133,8 +133,8 @@ class Solver:
 
     def __init__(self, config: SolverConfig | None = None) -> None:
         if config is None:
-            from hodoku.config import SolverConfig as _SC
-            config = _SC()
+            from hodoku.config import DEFAULT_CONFIG
+            config = DEFAULT_CONFIG
         self._config = config
         self._solver = SudokuSolver(config)
 
@@ -218,8 +218,8 @@ class Generator:
 
     def __init__(self, config: SolverConfig | None = None) -> None:
         if config is None:
-            from hodoku.config import SolverConfig as _SC
-            config = _SC()
+            from hodoku.config import DEFAULT_CONFIG
+            config = DEFAULT_CONFIG
         self._config = config
         self._generator = SudokuGenerator()
         self._solver = SudokuSolver(config)

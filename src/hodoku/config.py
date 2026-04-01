@@ -209,3 +209,9 @@ class SolverConfig:
         result = dict(DIFFICULTY_MAX_SCORE)
         result.update(self.difficulty_thresholds)
         return result
+
+
+# Module-level default instance — shared across Solver(), SudokuSolver(),
+# Generator() when no config is provided.  Frozen + cached_property means
+# derived tables (solver_steps, step_config) are computed once.
+DEFAULT_CONFIG = SolverConfig()

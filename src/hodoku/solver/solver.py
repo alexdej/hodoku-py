@@ -62,8 +62,8 @@ class SudokuSolver:
 
     def __init__(self, config: SolverConfig | None = None) -> None:
         if config is None:
-            from hodoku.config import SolverConfig as _SC
-            config = _SC()
+            from hodoku.config import DEFAULT_CONFIG
+            config = DEFAULT_CONFIG
         self._config = config
 
     def solve(self, puzzle: str) -> SolveResult:
