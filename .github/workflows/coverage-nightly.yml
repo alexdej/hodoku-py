@@ -46,6 +46,7 @@ jobs:
         with:
           name: coverage-accel
           path: .coverage
+          include-hidden-files: true
 
   fallback:
     name: Coverage (pure-Python fallback)
@@ -79,6 +80,7 @@ jobs:
         with:
           name: coverage-fallback
           path: .coverage
+          include-hidden-files: true
 
   report:
     name: Combine & publish report
