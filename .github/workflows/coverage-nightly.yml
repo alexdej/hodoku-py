@@ -20,9 +20,6 @@ jobs:
           java-version: "17"
       - run: pip install -e .[test,test-parity]
 
-      - name: Build C extensions
-        run: python setup.py build_ext --inplace
-
       - name: Unit tests
         run: >
           pytest -m unit -v --tb=short
