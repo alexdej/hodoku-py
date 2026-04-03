@@ -46,6 +46,12 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for full details and known gaps.
 
 ## Installation
 
+### pip (recommended)
+```bash
+pip install hodoku-py
+```
+
+### from source
 ```bash
 pip install -e .
 ```
@@ -55,7 +61,7 @@ pip install -e .
 ### Install test dependencies
 
 ```bash
-pip install -e ".[test]
+pip install -e ".[test]"
 ```
 
 ### Unit tests
