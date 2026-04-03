@@ -15,7 +15,7 @@ jobs:
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
         with:
           python-version: "3.12"
-      - run: pip install coverage
+      - run: pip install coverage anybadge
 
       # --- Coverage: download artifacts from last successful coverage run ---
       - name: Download coverage artifacts
@@ -33,6 +33,7 @@ jobs:
           coverage combine coverage-accel/.coverage coverage-fallback/.coverage
           coverage html -d site/coverage/
           coverage json -o site/coverage/coverage.json
+          rm -f site/coverage/.gitignore
           echo "Coverage files:"
           find site/coverage/ -type f | head -20
           echo "... $(find site/coverage/ -type f | wc -l) files total"
