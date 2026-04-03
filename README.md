@@ -5,14 +5,14 @@
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](https://www.gnu.org/licenses/gpl-3.0.html)
 [![CI](https://github.com/alexdej/hodoku-py/actions/workflows/ci.yml/badge.svg)](https://github.com/alexdej/hodoku-py/actions/workflows/ci.yml)
 [![Nightly](https://github.com/alexdej/hodoku-py/actions/workflows/parity-nightly.yml/badge.svg)](https://github.com/alexdej/hodoku-py/actions/workflows/parity-nightly.yml)
-[![flake8](https://alexdej.github.io/hodoku-py/badges/flake8.svg)](https://github.com/alexdej/hodoku-py/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/alexdej/hodoku-py/graph/badge.svg)](https://codecov.io/gh/alexdej/hodoku-py)
+[![Coverage](https://img.shields.io/badge/dynamic/json?url=https://alexdej.github.io/hodoku-py/coverage/coverage.json&
+  query=$.totals.percent_covered_display&suffix=%25&label=coverage)](https://alexdej.github.io/hodoku-py/coverage/)
 
 A pure Python port of [HoDoKu](https://hodoku.sourceforge.net/) — Sudoku solver, hint engine, puzzle generator, and difficulty rater minus the GUI.
 
 hodoku-py has full fidelity with HoDoKu 2.2.0: exact same solution path and score across all tested puzzles, in pure python (well, a couple small bits in c).
 
-**[Nightly parity test results](https://alexdej.github.io/hodoku-py/)** — head-to-head comparison against HoDoKu across thousands of puzzles.
+**[Nightly parity test results](https://alexdej.github.io/hodoku-py/parity/)** — head-to-head comparison against HoDoKu across thousands of puzzles.
 
 ## Status
 
