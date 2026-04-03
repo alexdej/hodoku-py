@@ -113,6 +113,7 @@ jobs:
           coverage combine coverage-accel/.coverage coverage-fallback/.coverage
           coverage html -d site/coverage/
           coverage json -o site/coverage/coverage.json
+          rm -f site/coverage/.gitignore
 
       - name: Deploy coverage to GitHub Pages
         uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e
