@@ -67,12 +67,11 @@ jobs:
           path: parity-results/
 
       - name: Generate report
-        run: python scripts/generate_parity_report.py --results-dir parity-results/ --output-dir site/
+        run: python scripts/generate_parity_report.py --results-dir parity-results/ --output-dir site/parity/
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: site/
-          destination_dir: parity
           keep_files: true

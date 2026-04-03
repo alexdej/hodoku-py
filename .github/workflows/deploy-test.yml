@@ -1,0 +1,65 @@
+name: Test deploy (manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-test:
+    name: Rebuild & deploy from previous artifacts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+        with:
+          python-version: "3.12"
+      - run: pip install coverage
+
+      # --- Coverage: download artifacts from last successful coverage run ---
+      - name: Download coverage artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh run list --workflow=coverage-nightly.yml --status=success --limit=1 --json databaseId -q '.[0].databaseId' > /tmp/run_id.txt
+          RUN_ID=$(cat /tmp/run_id.txt)
+          echo "Downloading artifacts from coverage run $RUN_ID"
+          gh run download "$RUN_ID" --name coverage-accel --dir coverage-accel/
+          gh run download "$RUN_ID" --name coverage-fallback --dir coverage-fallback/
+
+      - name: Generate coverage HTML
+        run: |
+          coverage combine coverage-accel/.coverage coverage-fallback/.coverage
+          coverage html -d site/coverage/
+          coverage json -o site/coverage/coverage.json
+          echo "Coverage files:"
+          find site/coverage/ -type f | head -20
+          echo "... $(find site/coverage/ -type f | wc -l) files total"
+
+      # --- Parity: download artifacts from last successful parity run ---
+      - name: Download parity artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh run list --workflow=parity-nightly.yml --status=success --limit=1 --json databaseId -q '.[0].databaseId' > /tmp/run_id.txt
+          RUN_ID=$(cat /tmp/run_id.txt)
+          echo "Downloading artifacts from parity run $RUN_ID"
+          gh run download "$RUN_ID" --pattern 'parity-*' --dir parity-results/
+
+      - name: Generate parity report
+        run: |
+          python scripts/generate_parity_report.py --results-dir parity-results/ --output-dir site/parity/
+          echo "Parity files:"
+          find site/parity/ -type f | head -20
+
+      # --- Deploy both ---
+      - name: Show site layout
+        run: find site/ -type f | sort
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: site/
+          keep_files: true
