@@ -40,7 +40,6 @@ hodoku = ["py.typed"]
 where = ["src"]
 
 [tool.pytest.ini_options]
-addopts = "--clang-tidy --flake8"
 testpaths = ["src", "tests"]
 clang_tidy_include_python_headers = true
 junit_family = "legacy"
