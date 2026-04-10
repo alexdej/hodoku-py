@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      - uses: pypa/cibuildwheel@ee63bf16da6cddfb925f542f2c7b59ad50e93969
+      - uses: pypa/cibuildwheel@8d2b08b68458a16aeb24b64e68a09ab1c8e82084
         env:
           CIBW_BUILD: "cp311-* cp312-* cp313-*"
 
@@ -63,7 +63,7 @@ jobs:
 
       - name: Publish to PyPI
         id: pypi
-        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe
