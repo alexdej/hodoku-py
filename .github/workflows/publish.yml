@@ -19,7 +19,7 @@ jobs:
         env:
           CIBW_BUILD: "cp311-* cp312-* cp313-*"
 
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: wheels-${{ matrix.os }}
           path: ./wheelhouse/*.whl
@@ -36,7 +36,7 @@ jobs:
 
       - run: pip install build && python -m build --sdist
 
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: sdist
           path: dist/*.tar.gz
@@ -66,7 +66,7 @@ jobs:
         uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda
         with:
           files: dist/*
           generate_release_notes: true
