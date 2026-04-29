@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Coverage for src/hodoku/solver/fish.py: 98%</title>
+    <title>Coverage for src/hodoku/solver/fish.py: 99%</title>
     <link rel="icon" sizes="32x32" href="favicon_32_cb_c827f16f.png">
     <link rel="stylesheet" href="style_cb_9ff733b0.css" type="text/css">
     <script src="coverage_html_cb_dd2e7eb5.js" defer></script>
@@ -12,7 +12,7 @@
     <div class="content">
         <h1>
             <span class="text">Coverage for </span><b>src&#8201;/&#8201;hodoku&#8201;/&#8201;solver&#8201;/&#8201;fish.py</b>:
-            <span class="pc_cov">98%</span>
+            <span class="pc_cov">99%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
@@ -55,8 +55,8 @@
         </aside>
         <h2>
             <span class="text">539 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">529<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">10<span class="text"> missing</span></button>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">532<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">7<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">2<span class="text"> excluded</span></button>
         </h2>
         <p class="text">
@@ -65,7 +65,7 @@
             <a id="nextFileLink" class="nav" href="z_1a3cad2e6a8c50b6_misc_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-28 08:20 +0000
+            created at 2026-04-29 08:42 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -734,11 +734,11 @@
     <p class="run"><span class="n"><a id="t652" href="#t652">652</a></span><span class="t">                        <span class="key">for</span> <span class="nam">u</span> <span class="key">in</span> <span class="nam">combo</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t653" href="#t653">653</a></span><span class="t">                            <span class="nam">body</span> <span class="op">=</span> <span class="nam">cand_set</span> <span class="op">&amp;</span> <span class="nam">unit_masks</span><span class="op">[</span><span class="nam">u</span><span class="op">]</span> <span class="op">&amp;</span> <span class="nam">cover_mask</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t654" href="#t654">654</a></span><span class="t">                            <span class="key">if</span> <span class="nam">body</span><span class="op">.</span><span class="nam">bit_count</span><span class="op">(</span><span class="op">)</span> <span class="op">&lt;=</span> <span class="num">1</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t655" href="#t655">655</a></span><span class="t">                                <span class="nam">is_sashimi</span> <span class="op">=</span> <span class="key">True</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t656" href="#t656">656</a></span><span class="t">                                <span class="key">break</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t655" href="#t655">655</a></span><span class="t">                                <span class="nam">is_sashimi</span> <span class="op">=</span> <span class="key">True</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t656" href="#t656">656</a></span><span class="t">                                <span class="key">break</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t657" href="#t657">657</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t658" href="#t658">658</a></span><span class="t">                        <span class="key">if</span> <span class="nam">is_sashimi</span> <span class="op">!=</span> <span class="nam">sashimi</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t659" href="#t659">659</a></span><span class="t">                            <span class="key">continue</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t659" href="#t659">659</a></span><span class="t">                            <span class="key">continue</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t660" href="#t660">660</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t661" href="#t661">661</a></span><span class="t">                        <span class="nam">actual_type</span> <span class="op">=</span> <span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t662" href="#t662">662</a></span><span class="t">                            <span class="nam">_FINNED_TO_SASHIMI</span><span class="op">[</span><span class="nam">finned_type</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
@@ -1053,7 +1053,7 @@
             <a class="nav" href="z_1a3cad2e6a8c50b6_misc_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-28 08:20 +0000
+            created at 2026-04-29 08:42 +0000
         </p>
     </div>
 </footer>

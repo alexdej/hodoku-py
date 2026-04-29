@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Coverage for src/hodoku/solver/tabling.py: 92%</title>
+    <title>Coverage for src/hodoku/solver/tabling.py: 93%</title>
     <link rel="icon" sizes="32x32" href="favicon_32_cb_c827f16f.png">
     <link rel="stylesheet" href="style_cb_9ff733b0.css" type="text/css">
     <script src="coverage_html_cb_dd2e7eb5.js" defer></script>
@@ -12,7 +12,7 @@
     <div class="content">
         <h1>
             <span class="text">Coverage for </span><b>src&#8201;/&#8201;hodoku&#8201;/&#8201;solver&#8201;/&#8201;tabling.py</b>:
-            <span class="pc_cov">92%</span>
+            <span class="pc_cov">93%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
@@ -55,8 +55,8 @@
         </aside>
         <h2>
             <span class="text">1364 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">1260<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">104<span class="text"> missing</span></button>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">1267<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">97<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">2<span class="text"> excluded</span></button>
         </h2>
         <p class="text">
@@ -65,7 +65,7 @@
             <a id="nextFileLink" class="nav" href="z_1a3cad2e6a8c50b6_templates_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-28 08:20 +0000
+            created at 2026-04-29 08:42 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -2285,7 +2285,7 @@
     <p class="run"><span class="n"><a id="t2203" href="#t2203">2203</a></span><span class="t">        <span class="key">return</span> <span class="nam">sum1</span> <span class="op">-</span> <span class="nam">sum2</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t2204" href="#t2204">2204</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t2205" href="#t2205">2205</a></span><span class="t">    <span class="com"># SPECIAL: fish steps</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t2206" href="#t2206">2206</a></span><span class="t">    <span class="key">if</span> <span class="nam">_is_fish</span><span class="op">(</span><span class="nam">o1</span><span class="op">.</span><span class="nam">type</span><span class="op">)</span> <span class="key">and</span> <span class="nam">_is_fish</span><span class="op">(</span><span class="nam">o2</span><span class="op">.</span><span class="nam">type</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t2206" href="#t2206">2206</a></span><span class="t">    <span class="key">if</span> <span class="nam">_is_fish</span><span class="op">(</span><span class="nam">o1</span><span class="op">.</span><span class="nam">type</span><span class="op">)</span> <span class="key">and</span> <span class="nam">_is_fish</span><span class="op">(</span><span class="nam">o2</span><span class="op">.</span><span class="nam">type</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t2207" href="#t2207">2207</a></span><span class="t">        <span class="com"># fish type/size comparison, cannibalism, endo fins, fins, values</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t2208" href="#t2208">2208</a></span><span class="t">        <span class="nam">ret</span> <span class="op">=</span> <span class="nam">_compare_fish_types</span><span class="op">(</span><span class="nam">o1</span><span class="op">.</span><span class="nam">type</span><span class="op">,</span> <span class="nam">o2</span><span class="op">.</span><span class="nam">type</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t2209" href="#t2209">2209</a></span><span class="t">        <span class="key">if</span> <span class="nam">ret</span> <span class="op">!=</span> <span class="num">0</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -2296,9 +2296,9 @@
     <p class="mis show_mis"><span class="n"><a id="t2214" href="#t2214">2214</a></span><span class="t">        <span class="key">return</span> <span class="num">0</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t2215" href="#t2215">2215</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t2216" href="#t2216">2216</a></span><span class="t">    <span class="com"># Chain length (ascending &#8212; shorter is better)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t2217" href="#t2217">2217</a></span><span class="t">    <span class="nam">chain_diff</span> <span class="op">=</span> <span class="nam">o1</span><span class="op">.</span><span class="nam">get_chain_length</span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="nam">o2</span><span class="op">.</span><span class="nam">get_chain_length</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t2218" href="#t2218">2218</a></span><span class="t">    <span class="key">if</span> <span class="nam">chain_diff</span> <span class="op">!=</span> <span class="num">0</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t2219" href="#t2219">2219</a></span><span class="t">        <span class="key">return</span> <span class="nam">chain_diff</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t2217" href="#t2217">2217</a></span><span class="t">    <span class="nam">chain_diff</span> <span class="op">=</span> <span class="nam">o1</span><span class="op">.</span><span class="nam">get_chain_length</span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="nam">o2</span><span class="op">.</span><span class="nam">get_chain_length</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t2218" href="#t2218">2218</a></span><span class="t">    <span class="key">if</span> <span class="nam">chain_diff</span> <span class="op">!=</span> <span class="num">0</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t2219" href="#t2219">2219</a></span><span class="t">        <span class="key">return</span> <span class="nam">chain_diff</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t2220" href="#t2220">2220</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t2221" href="#t2221">2221</a></span><span class="t">    <span class="com"># Values comparison &#8212; Java uses isEqualInteger (set equality)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t2222" href="#t2222">2222</a></span><span class="t">    <span class="key">if</span> <span class="key">not</span> <span class="nam">_same_integers</span><span class="op">(</span><span class="nam">o1</span><span class="op">.</span><span class="nam">values</span><span class="op">,</span> <span class="nam">o2</span><span class="op">.</span><span class="nam">values</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -2353,11 +2353,11 @@
     <p class="run"><span class="n"><a id="t2271" href="#t2271">2271</a></span><span class="t">        <span class="nam">found</span> <span class="op">=</span> <span class="key">False</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t2272" href="#t2272">2272</a></span><span class="t">        <span class="key">for</span> <span class="nam">c2</span> <span class="key">in</span> <span class="nam">b</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t2273" href="#t2273">2273</a></span><span class="t">            <span class="key">if</span> <span class="nam">c1</span><span class="op">.</span><span class="nam">index</span> <span class="op">==</span> <span class="nam">c2</span><span class="op">.</span><span class="nam">index</span> <span class="key">and</span> <span class="nam">c1</span><span class="op">.</span><span class="nam">value</span> <span class="op">==</span> <span class="nam">c2</span><span class="op">.</span><span class="nam">value</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t2274" href="#t2274">2274</a></span><span class="t">                <span class="nam">found</span> <span class="op">=</span> <span class="key">True</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t2275" href="#t2275">2275</a></span><span class="t">                <span class="key">break</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t2274" href="#t2274">2274</a></span><span class="t">                <span class="nam">found</span> <span class="op">=</span> <span class="key">True</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t2275" href="#t2275">2275</a></span><span class="t">                <span class="key">break</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t2276" href="#t2276">2276</a></span><span class="t">        <span class="key">if</span> <span class="key">not</span> <span class="nam">found</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t2277" href="#t2277">2277</a></span><span class="t">            <span class="key">return</span> <span class="key">False</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t2278" href="#t2278">2278</a></span><span class="t">    <span class="key">return</span> <span class="key">True</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t2278" href="#t2278">2278</a></span><span class="t">    <span class="key">return</span> <span class="key">True</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t2279" href="#t2279">2279</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t2280" href="#t2280">2280</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t2281" href="#t2281">2281</a></span><span class="t"><span class="key">def</span> <span class="nam">_same_integers</span><span class="op">(</span><span class="nam">a</span><span class="op">:</span> <span class="nam">list</span><span class="op">[</span><span class="nam">int</span><span class="op">]</span><span class="op">,</span> <span class="nam">b</span><span class="op">:</span> <span class="nam">list</span><span class="op">[</span><span class="nam">int</span><span class="op">]</span><span class="op">)</span> <span class="op">-></span> <span class="nam">bool</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -2528,7 +2528,7 @@
             <a class="nav" href="z_1a3cad2e6a8c50b6_templates_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-28 08:20 +0000
+            created at 2026-04-29 08:42 +0000
         </p>
     </div>
 </footer>

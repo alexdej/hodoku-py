@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Coverage for src/hodoku/solver/coloring.py: 91%</title>
+    <title>Coverage for src/hodoku/solver/coloring.py: 92%</title>
     <link rel="icon" sizes="32x32" href="favicon_32_cb_c827f16f.png">
     <link rel="stylesheet" href="style_cb_9ff733b0.css" type="text/css">
     <script src="coverage_html_cb_dd2e7eb5.js" defer></script>
@@ -12,7 +12,7 @@
     <div class="content">
         <h1>
             <span class="text">Coverage for </span><b>src&#8201;/&#8201;hodoku&#8201;/&#8201;solver&#8201;/&#8201;coloring.py</b>:
-            <span class="pc_cov">91%</span>
+            <span class="pc_cov">92%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
@@ -55,8 +55,8 @@
         </aside>
         <h2>
             <span class="text">300 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">274<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">26<span class="text"> missing</span></button>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">277<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">23<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">0<span class="text"> excluded</span></button>
         </h2>
         <p class="text">
@@ -65,7 +65,7 @@
             <a id="nextFileLink" class="nav" href="z_1a3cad2e6a8c50b6_fish_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-28 08:20 +0000
+            created at 2026-04-29 08:42 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -303,12 +303,12 @@
     <p class="pln"><span class="n"><a id="t221" href="#t221">221</a></span><span class="t">                <span class="com"># Wrap: two same-color cells see each other &#8594; eliminate that color</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t222" href="#t222">222</a></span><span class="t">                <span class="nam">step</span> <span class="op">=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_check_wrap</span><span class="op">(</span><span class="nam">cand</span><span class="op">,</span> <span class="nam">c1</span><span class="op">,</span> <span class="nam">c2</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t223" href="#t223">223</a></span><span class="t">                <span class="key">if</span> <span class="nam">step</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t224" href="#t224">224</a></span><span class="t">                    <span class="key">return</span> <span class="nam">step</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t224" href="#t224">224</a></span><span class="t">                    <span class="key">return</span> <span class="nam">step</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t225" href="#t225">225</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t226" href="#t226">226</a></span><span class="t">                <span class="com"># Trap: any cell that sees both a c1 and a c2 cell</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t227" href="#t227">227</a></span><span class="t">                <span class="nam">step</span> <span class="op">=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_check_trap</span><span class="op">(</span><span class="nam">cand</span><span class="op">,</span> <span class="nam">c1</span><span class="op">,</span> <span class="nam">c2</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t228" href="#t228">228</a></span><span class="t">                <span class="key">if</span> <span class="nam">step</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t229" href="#t229">229</a></span><span class="t">                    <span class="key">return</span> <span class="nam">step</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t229" href="#t229">229</a></span><span class="t">                    <span class="key">return</span> <span class="nam">step</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t230" href="#t230">230</a></span><span class="t">        <span class="key">return</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t231" href="#t231">231</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t232" href="#t232">232</a></span><span class="t">    <span class="key">def</span> <span class="nam">_check_wrap</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
@@ -429,7 +429,7 @@
     <p class="run"><span class="n"><a id="t347" href="#t347">347</a></span><span class="t">                    <span class="key">if</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_sets_intersect_buddies</span><span class="op">(</span><span class="nam">a2</span><span class="op">,</span> <span class="nam">b2</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t348" href="#t348">348</a></span><span class="t">                        <span class="nam">elim_mc1</span> <span class="op">|=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_trap_elim</span><span class="op">(</span><span class="nam">cand</span><span class="op">,</span> <span class="nam">a1</span><span class="op">,</span> <span class="nam">b1</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t349" href="#t349">349</a></span><span class="t">                    <span class="key">if</span> <span class="nam">elim_mc1</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t350" href="#t350">350</a></span><span class="t">                        <span class="key">return</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_make_mc_step</span><span class="op">(</span><span class="nam">SolutionType</span><span class="op">.</span><span class="nam">MULTI_COLORS_1</span><span class="op">,</span> <span class="nam">cand</span><span class="op">,</span> <span class="nam">a1</span><span class="op">,</span> <span class="nam">a2</span><span class="op">,</span> <span class="nam">b1</span><span class="op">,</span> <span class="nam">b2</span><span class="op">,</span> <span class="nam">elim_mc1</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t350" href="#t350">350</a></span><span class="t">                        <span class="key">return</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_make_mc_step</span><span class="op">(</span><span class="nam">SolutionType</span><span class="op">.</span><span class="nam">MULTI_COLORS_1</span><span class="op">,</span> <span class="nam">cand</span><span class="op">,</span> <span class="nam">a1</span><span class="op">,</span> <span class="nam">a2</span><span class="op">,</span> <span class="nam">b1</span><span class="op">,</span> <span class="nam">b2</span><span class="op">,</span> <span class="nam">elim_mc1</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t351" href="#t351">351</a></span><span class="t">        <span class="key">return</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t352" href="#t352">352</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t353" href="#t353">353</a></span><span class="t">    <span class="key">def</span> <span class="nam">_set_sees_both</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
@@ -531,7 +531,7 @@
             <a class="nav" href="z_1a3cad2e6a8c50b6_fish_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-28 08:20 +0000
+            created at 2026-04-29 08:42 +0000
         </p>
     </div>
 </footer>
