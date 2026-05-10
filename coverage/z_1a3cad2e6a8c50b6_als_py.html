@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Coverage for src/hodoku/solver/als.py: 89%</title>
+    <title>Coverage for src/hodoku/solver/als.py: 91%</title>
     <link rel="icon" sizes="32x32" href="favicon_32_cb_c827f16f.png">
     <link rel="stylesheet" href="style_cb_9ff733b0.css" type="text/css">
     <script src="coverage_html_cb_dd2e7eb5.js" defer></script>
@@ -12,7 +12,7 @@
     <div class="content">
         <h1>
             <span class="text">Coverage for </span><b>src&#8201;/&#8201;hodoku&#8201;/&#8201;solver&#8201;/&#8201;als.py</b>:
-            <span class="pc_cov">89%</span>
+            <span class="pc_cov">91%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
@@ -55,8 +55,8 @@
         </aside>
         <h2>
             <span class="text">611 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">545<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">66<span class="text"> missing</span></button>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">555<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">56<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">2<span class="text"> excluded</span></button>
         </h2>
         <p class="text">
@@ -65,7 +65,7 @@
             <a id="nextFileLink" class="nav" href="z_1a3cad2e6a8c50b6_brute_force_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-05-09 08:35 +0000
+            created at 2026-05-10 08:41 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -446,12 +446,12 @@
     <p class="pln"><span class="n"><a id="t364" href="#t364">364</a></span><span class="t"><span class="str">    Java sorts candidatesToDelete by (value, index) before computing:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t365" href="#t365">365</a></span><span class="t"><span class="str">    sum += index * offset + value, with offset starting at 1, incrementing by 80.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t366" href="#t366">366</a></span><span class="t"><span class="str">    """</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t367" href="#t367">367</a></span><span class="t">    <span class="nam">total</span> <span class="op">=</span> <span class="num">0</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t368" href="#t368">368</a></span><span class="t">    <span class="nam">offset</span> <span class="op">=</span> <span class="num">1</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t369" href="#t369">369</a></span><span class="t">    <span class="key">for</span> <span class="nam">c</span> <span class="key">in</span> <span class="nam">sorted</span><span class="op">(</span><span class="nam">candidates</span><span class="op">,</span> <span class="nam">key</span><span class="op">=</span><span class="key">lambda</span> <span class="nam">c</span><span class="op">:</span> <span class="op">(</span><span class="nam">c</span><span class="op">.</span><span class="nam">value</span><span class="op">,</span> <span class="nam">c</span><span class="op">.</span><span class="nam">index</span><span class="op">)</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t370" href="#t370">370</a></span><span class="t">        <span class="nam">total</span> <span class="op">+=</span> <span class="nam">c</span><span class="op">.</span><span class="nam">index</span> <span class="op">*</span> <span class="nam">offset</span> <span class="op">+</span> <span class="nam">c</span><span class="op">.</span><span class="nam">value</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t371" href="#t371">371</a></span><span class="t">        <span class="nam">offset</span> <span class="op">+=</span> <span class="num">80</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t372" href="#t372">372</a></span><span class="t">    <span class="key">return</span> <span class="nam">total</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t367" href="#t367">367</a></span><span class="t">    <span class="nam">total</span> <span class="op">=</span> <span class="num">0</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t368" href="#t368">368</a></span><span class="t">    <span class="nam">offset</span> <span class="op">=</span> <span class="num">1</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t369" href="#t369">369</a></span><span class="t">    <span class="key">for</span> <span class="nam">c</span> <span class="key">in</span> <span class="nam">sorted</span><span class="op">(</span><span class="nam">candidates</span><span class="op">,</span> <span class="nam">key</span><span class="op">=</span><span class="key">lambda</span> <span class="nam">c</span><span class="op">:</span> <span class="op">(</span><span class="nam">c</span><span class="op">.</span><span class="nam">value</span><span class="op">,</span> <span class="nam">c</span><span class="op">.</span><span class="nam">index</span><span class="op">)</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t370" href="#t370">370</a></span><span class="t">        <span class="nam">total</span> <span class="op">+=</span> <span class="nam">c</span><span class="op">.</span><span class="nam">index</span> <span class="op">*</span> <span class="nam">offset</span> <span class="op">+</span> <span class="nam">c</span><span class="op">.</span><span class="nam">value</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t371" href="#t371">371</a></span><span class="t">        <span class="nam">offset</span> <span class="op">+=</span> <span class="num">80</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t372" href="#t372">372</a></span><span class="t">    <span class="key">return</span> <span class="nam">total</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t373" href="#t373">373</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t374" href="#t374">374</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t375" href="#t375">375</a></span><span class="t"><span class="key">def</span> <span class="nam">_als_cmp</span><span class="op">(</span><span class="nam">s1</span><span class="op">:</span> <span class="nam">SolutionStep</span><span class="op">,</span> <span class="nam">s2</span><span class="op">:</span> <span class="nam">SolutionStep</span><span class="op">)</span> <span class="op">-></span> <span class="nam">int</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -460,12 +460,12 @@
     <p class="run"><span class="n"><a id="t378" href="#t378">378</a></span><span class="t">    <span class="key">if</span> <span class="nam">d</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t379" href="#t379">379</a></span><span class="t">        <span class="key">return</span> <span class="nam">d</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t380" href="#t380">380</a></span><span class="t">    <span class="com"># 2. Equivalence check: same elimination set?</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t381" href="#t381">381</a></span><span class="t">    <span class="nam">k1</span> <span class="op">=</span> <span class="nam">tuple</span><span class="op">(</span><span class="nam">sorted</span><span class="op">(</span><span class="op">(</span><span class="nam">c</span><span class="op">.</span><span class="nam">index</span><span class="op">,</span> <span class="nam">c</span><span class="op">.</span><span class="nam">value</span><span class="op">)</span> <span class="key">for</span> <span class="nam">c</span> <span class="key">in</span> <span class="nam">s1</span><span class="op">.</span><span class="nam">candidates_to_delete</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t382" href="#t382">382</a></span><span class="t">    <span class="nam">k2</span> <span class="op">=</span> <span class="nam">tuple</span><span class="op">(</span><span class="nam">sorted</span><span class="op">(</span><span class="op">(</span><span class="nam">c</span><span class="op">.</span><span class="nam">index</span><span class="op">,</span> <span class="nam">c</span><span class="op">.</span><span class="nam">value</span><span class="op">)</span> <span class="key">for</span> <span class="nam">c</span> <span class="key">in</span> <span class="nam">s2</span><span class="op">.</span><span class="nam">candidates_to_delete</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t383" href="#t383">383</a></span><span class="t">    <span class="key">if</span> <span class="nam">k1</span> <span class="op">!=</span> <span class="nam">k2</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t381" href="#t381">381</a></span><span class="t">    <span class="nam">k1</span> <span class="op">=</span> <span class="nam">tuple</span><span class="op">(</span><span class="nam">sorted</span><span class="op">(</span><span class="op">(</span><span class="nam">c</span><span class="op">.</span><span class="nam">index</span><span class="op">,</span> <span class="nam">c</span><span class="op">.</span><span class="nam">value</span><span class="op">)</span> <span class="key">for</span> <span class="nam">c</span> <span class="key">in</span> <span class="nam">s1</span><span class="op">.</span><span class="nam">candidates_to_delete</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t382" href="#t382">382</a></span><span class="t">    <span class="nam">k2</span> <span class="op">=</span> <span class="nam">tuple</span><span class="op">(</span><span class="nam">sorted</span><span class="op">(</span><span class="op">(</span><span class="nam">c</span><span class="op">.</span><span class="nam">index</span><span class="op">,</span> <span class="nam">c</span><span class="op">.</span><span class="nam">value</span><span class="op">)</span> <span class="key">for</span> <span class="nam">c</span> <span class="key">in</span> <span class="nam">s2</span><span class="op">.</span><span class="nam">candidates_to_delete</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t383" href="#t383">383</a></span><span class="t">    <span class="key">if</span> <span class="nam">k1</span> <span class="op">!=</span> <span class="nam">k2</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t384" href="#t384">384</a></span><span class="t">        <span class="com"># Not equivalent: sort by weighted index sum (ascending), matching Java's getIndexSumme</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t385" href="#t385">385</a></span><span class="t">        <span class="key">return</span> <span class="op">(</span><span class="nam">_als_index_summe</span><span class="op">(</span><span class="nam">s1</span><span class="op">.</span><span class="nam">candidates_to_delete</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis mis2 show_mis"><span class="n"><a id="t386" href="#t386">386</a></span><span class="t">                <span class="op">-</span> <span class="nam">_als_index_summe</span><span class="op">(</span><span class="nam">s2</span><span class="op">.</span><span class="nam">candidates_to_delete</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t385" href="#t385">385</a></span><span class="t">        <span class="key">return</span> <span class="op">(</span><span class="nam">_als_index_summe</span><span class="op">(</span><span class="nam">s1</span><span class="op">.</span><span class="nam">candidates_to_delete</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t386" href="#t386">386</a></span><span class="t">                <span class="op">-</span> <span class="nam">_als_index_summe</span><span class="op">(</span><span class="nam">s2</span><span class="op">.</span><span class="nam">candidates_to_delete</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t387" href="#t387">387</a></span><span class="t">    <span class="com"># Equivalent: 3. Fewer ALSes</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t388" href="#t388">388</a></span><span class="t">    <span class="nam">d</span> <span class="op">=</span> <span class="nam">len</span><span class="op">(</span><span class="nam">s1</span><span class="op">.</span><span class="nam">alses</span><span class="op">)</span> <span class="op">-</span> <span class="nam">len</span><span class="op">(</span><span class="nam">s2</span><span class="op">.</span><span class="nam">alses</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t389" href="#t389">389</a></span><span class="t">    <span class="key">if</span> <span class="nam">d</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -1123,7 +1123,7 @@
             <a class="nav" href="z_1a3cad2e6a8c50b6_brute_force_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-05-09 08:35 +0000
+            created at 2026-05-10 08:41 +0000
         </p>
     </div>
 </footer>
