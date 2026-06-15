@@ -23,7 +23,7 @@ dependencies = []
 
 [project.optional-dependencies]
 test = [
-    "pytest",
+    "pytest<9.1",  # 9.1 introduces a breaking change that prevents pytest-flake8 from loading
     "pytest-cov",
     "pytest-flake8>=1.3.0",
     "pytest-clang-tidy>=0.2.0",
