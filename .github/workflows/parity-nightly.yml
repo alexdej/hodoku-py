@@ -95,7 +95,18 @@ jobs:
       - name: Generate report
         run: |
           python scripts/generate_parity_report.py --results-dir parity-results/ --output-dir site/parity/
-          echo "$GITHUB_SHA" > site/parity/source-sha.txt
+          # Only mark this SHA as published when every dataset produced results
+          # (keep in sync with the parity matrix), so an incomplete report is
+          # retried on the next scheduled run. Write an empty marker rather than
+          # omitting it, since keep_files would preserve an old one.
+          expected=7
+          found=$(find parity-results -name parity-results.xml | wc -l)
+          if [ "$found" -eq "$expected" ]; then
+            echo "$GITHUB_SHA" > site/parity/source-sha.txt
+          else
+            echo "Only $found of $expected datasets have results; not marking $GITHUB_SHA as published."
+            : > site/parity/source-sha.txt
+          fi
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453

@@ -27,8 +27,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh run list --workflow=coverage-nightly.yml --status=success --limit=1 --json databaseId -q '.[0].databaseId' > /tmp/run_id.txt
-          RUN_ID=$(cat /tmp/run_id.txt)
+          # Nightly runs skipped for an unchanged main succeed without artifacts,
+          # so pick the latest successful run that still has the ones we need.
+          RUN_ID=""
+          for id in $(gh run list --workflow=coverage-nightly.yml --status=success --limit=30 --json databaseId -q '.[].databaseId'); do
+            n=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$id/artifacts" \
+              -q '[.artifacts[] | select(.expired | not) | .name | select(. == "coverage-accel" or . == "coverage-fallback")] | length')
+            if [ "$n" -eq 2 ]; then RUN_ID=$id; break; fi
+          done
+          [ -n "$RUN_ID" ] || { echo "No successful coverage run with artifacts found"; exit 1; }
           echo "Downloading artifacts from coverage run $RUN_ID"
           gh run download "$RUN_ID" --name coverage-accel --dir coverage-accel/
           gh run download "$RUN_ID" --name coverage-fallback --dir coverage-fallback/
@@ -48,8 +55,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh run list --workflow=parity-nightly.yml --status=success --limit=1 --json databaseId -q '.[0].databaseId' > /tmp/run_id.txt
-          RUN_ID=$(cat /tmp/run_id.txt)
+          RUN_ID=""
+          for id in $(gh run list --workflow=parity-nightly.yml --status=success --limit=30 --json databaseId -q '.[].databaseId'); do
+            n=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$id/artifacts" \
+              -q '[.artifacts[] | select(.expired | not) | select(.name | startswith("parity-"))] | length')
+            if [ "$n" -gt 0 ]; then RUN_ID=$id; break; fi
+          done
+          [ -n "$RUN_ID" ] || { echo "No successful parity run with artifacts found"; exit 1; }
           echo "Downloading artifacts from parity run $RUN_ID"
           gh run download "$RUN_ID" --pattern 'parity-*' --dir parity-results/
 
@@ -69,3 +81,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: site/
           keep_files: ${{ inputs.keep_files }}
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
