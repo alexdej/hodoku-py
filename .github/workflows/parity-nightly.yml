@@ -6,8 +6,34 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Skip scheduled runs when main hasn't changed since the last published
+  # report (tracked in parity/source-sha.txt on gh-pages). Manual runs always proceed.
+  check:
+    name: Check for changes
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.check.outputs.changed }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          last=$(gh api -H "Accept: application/vnd.github.raw" \
+            "repos/$REPO/contents/parity/source-sha.txt?ref=gh-pages" 2>/dev/null || true)
+          if [ "$EVENT" = "schedule" ] && [ "$last" = "$SHA" ]; then
+            echo "Report already published for $SHA; skipping."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
   parity:
     name: ${{ matrix.puzzle-file }}
+    needs: check
+    if: needs.check.outputs.changed == 'true'
     runs-on: ubuntu-latest
     continue-on-error: true
     strategy:
@@ -49,8 +75,8 @@ jobs:
   report:
     name: Generate report
     runs-on: ubuntu-latest
-    needs: parity
-    if: always()
+    needs: [check, parity]
+    if: always() && needs.check.outputs.changed == 'true'
     permissions:
       contents: write
     steps:
@@ -67,7 +93,20 @@ jobs:
           path: parity-results/
 
       - name: Generate report
-        run: python scripts/generate_parity_report.py --results-dir parity-results/ --output-dir site/parity/
+        run: |
+          python scripts/generate_parity_report.py --results-dir parity-results/ --output-dir site/parity/
+          # Only mark this SHA as published when every dataset produced results
+          # (keep in sync with the parity matrix), so an incomplete report is
+          # retried on the next scheduled run. Write an empty marker rather than
+          # omitting it, since keep_files would preserve an old one.
+          expected=7
+          found=$(find parity-results -name parity-results.xml | wc -l)
+          if [ "$found" -eq "$expected" ]; then
+            echo "$GITHUB_SHA" > site/parity/source-sha.txt
+          else
+            echo "Only $found of $expected datasets have results; not marking $GITHUB_SHA as published."
+            : > site/parity/source-sha.txt
+          fi
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453
@@ -75,3 +114,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: site/
           keep_files: true
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
